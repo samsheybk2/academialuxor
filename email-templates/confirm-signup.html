@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirma tu correo - Academia LUXOR</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f2f5;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #28315F 0%, #3D4F7C 100%);padding:40px 40px 32px;text-align:center;">
+              <div style="width:72px;height:72px;background-color:rgba(255,255,255,0.15);border-radius:50%;margin:0 auto 16px;line-height:72px;font-size:32px;">
+                <img src="https://abunpdglbgmoauqwihzk.supabase.co/storage/v1/object/public/logos/logo-luxor.png" alt="LUXOR" width="72" height="72" style="border-radius:50%;object-fit:cover;" onerror="this.style.display='none';this.parentElement.innerHTML='🎓'">
+              </div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:0.5px;">Academia LUXOR</h1>
+              <p style="margin:8px 0 0;color:#8B9CC7;font-size:14px;font-weight:400;">Plataforma de Formación Corporativa</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px;">
+              <h2 style="margin:0 0 8px;color:#28315F;font-size:22px;font-weight:700;text-align:center;">¡Bienvenido!</h2>
+              <p style="margin:0 0 24px;color:#555555;font-size:15px;text-align:center;line-height:1.6;">
+                Gracias por registrarte en <strong style="color:#28315F;">Academia LUXOR</strong>. Para comenzar a acceder a nuestros cursos de capacitación, confirma tu dirección de correo electrónico.
+              </p>
+
+              <!-- Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:8px 0 32px;">
+                    <a href="{{ .ConfirmationURL }}" style="display:inline-block;background: linear-gradient(135deg, #28315F 0%, #3D4F7C 100%);color:#ffffff;text-decoration:none;padding:14px 48px;border-radius:8px;font-size:16px;font-weight:600;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(40,49,95,0.3);">
+                      Confirmar mi correo
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Info box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f8fc;border-radius:10px;border:1px solid #e8ecf4;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 8px;color:#28315F;font-size:14px;font-weight:600;">📧 Correo registrado:</p>
+                    <p style="margin:0 0 16px;color:#3D4F7C;font-size:14px;font-weight:500;">{{ .Email }}</p>
+                    <p style="margin:0;color:#888888;font-size:12px;line-height:1.5;">
+                      Si no solicitaste esta cuenta, puedes ignorar este mensaje de forma segura.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Steps -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
+                <tr>
+                  <td style="padding:0 8px;">
+                    <p style="margin:0 0 12px;color:#28315F;font-size:14px;font-weight:600;">Después de confirmar tu correo:</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="32" valign="top" style="padding:6px 12px 6px 0;">
+                          <div style="width:24px;height:24px;background-color:#28315F;border-radius:50%;color:#ffffff;font-size:12px;font-weight:700;text-align:center;line-height:24px;">1</div>
+                        </td>
+                        <td style="padding:6px 0;color:#666666;font-size:14px;line-height:1.5;">
+                          Tu cuenta será revisada por un administrador
+                        </td>
+                      </tr>
+                      <tr>
+                        <td width="32" valign="top" style="padding:6px 12px 6px 0;">
+                          <div style="width:24px;height:24px;background-color:#3D4F7C;border-radius:50%;color:#ffffff;font-size:12px;font-weight:700;text-align:center;line-height:24px;">2</div>
+                        </td>
+                        <td style="padding:6px 0;color:#666666;font-size:14px;line-height:1.5;">
+                          Recibirás acceso a los cursos de tu nivel
+                        </td>
+                      </tr>
+                      <tr>
+                        <td width="32" valign="top" style="padding:6px 12px 6px 0;">
+                          <div style="width:24px;height:24px;background-color:#8B9CC7;border-radius:50%;color:#ffffff;font-size:12px;font-weight:700;text-align:center;line-height:24px;">3</div>
+                        </td>
+                        <td style="padding:6px 0;color:#666666;font-size:14px;line-height:1.5;">
+                          ¡Comenzarás a aprender y obtener certificados!
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#28315F;padding:24px 40px;text-align:center;">
+              <p style="margin:0 0 4px;color:#8B9CC7;font-size:12px;">
+                © 2026 Supermercados Luxor — Todos los derechos reservados
+              </p>
+              <p style="margin:0;color:#6b7ba8;font-size:11px;">
+                Plataforma de Formación Corporativa Academia LUXOR
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
