@@ -230,6 +230,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- 2.6 Limpiar imágenes de noticias mayores a 30 días
+CREATE OR REPLACE FUNCTION public.cleanup_noticias_imagenes()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  pub_record RECORD;
+  storage_path TEXT;
+BEGIN
+  FOR pub_record IN
+    SELECT id, imagen_url
+    FROM publicaciones
+    WHERE imagen_url IS NOT NULL
+      AND created_at < NOW() - INTERVAL '30 days'
+  LOOP
+    -- Extraer path del URL de storage
+    storage_path := regexp_replace(
+      pub_record.imagen_url,
+      '.*publicaciones/',
+      ''
+    );
+    storage_path := regexp_replace(storage_path, '\?.*$', '');
+
+    -- Eliminar archivo del storage
+    DELETE FROM storage.objects
+    WHERE bucket_id = 'publicaciones'
+      AND name = storage_path;
+
+    -- Limpiar la referencia en la publicación
+    UPDATE publicaciones
+    SET imagen_url = NULL
+    WHERE id = pub_record.id;
+  END LOOP;
+END;
+$$;
+
 -- 2.2 Contador de modulos en curso
 CREATE OR REPLACE FUNCTION update_curso_modulos_count()
 RETURNS TRIGGER AS $$
@@ -762,6 +800,125 @@ CREATE POLICY "cargo_elementos_all_admin"
 -- ============================================================
 -- 5. INDICES PARA RENDIMIENTO
 -- ============================================================
+
+-- 1.15 PUBLICACIONES (Muro de Noticias)
+CREATE TABLE IF NOT EXISTS publicaciones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  autor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  contenido TEXT NOT NULL,
+  imagen_url TEXT,
+  enlace_url TEXT,
+  enlace_titulo TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_publicaciones_autor ON publicaciones(autor_id);
+CREATE INDEX IF NOT EXISTS idx_publicaciones_fecha ON publicaciones(created_at DESC);
+
+ALTER TABLE publicaciones ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "publicaciones_select_auth" ON publicaciones
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "publicaciones_insert_facilitador" ON publicaciones
+  FOR INSERT WITH CHECK (
+    public.get_my_role() IN ('decano', 'facilitador')
+    AND autor_id = auth.uid()
+  );
+
+CREATE POLICY "publicaciones_delete_own" ON publicaciones
+  FOR DELETE USING (
+    autor_id = auth.uid() OR public.get_my_role() = 'decano'
+  );
+
+-- 1.16 REACCIONES
+CREATE TABLE IF NOT EXISTS reacciones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  publicacion_id UUID NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
+  usuario_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL CHECK (tipo IN ('me_gusta', 'me_encanta', 'me_enoja', 'me_entristece', 'me_divierte', 'estoy_confundido')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(publicacion_id, usuario_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_reacciones_publicacion ON reacciones(publicacion_id);
+CREATE INDEX IF NOT EXISTS idx_reacciones_usuario ON reacciones(usuario_id);
+
+ALTER TABLE reacciones ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "reacciones_select_auth" ON reacciones
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "reacciones_insert_own" ON reacciones
+  FOR INSERT WITH CHECK (usuario_id = auth.uid());
+
+CREATE POLICY "reacciones_delete_own" ON reacciones
+  FOR DELETE USING (usuario_id = auth.uid());
+
+-- 1.17 ENCUESTAS
+CREATE TABLE IF NOT EXISTS encuestas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  publicacion_id UUID NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
+  pregunta TEXT NOT NULL,
+  multiple BOOLEAN DEFAULT FALSE,
+  cerrada BOOLEAN DEFAULT FALSE,
+  fecha_cierre TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_encuestas_publicacion ON encuestas(publicacion_id);
+
+ALTER TABLE encuestas ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "encuestas_select_auth" ON encuestas
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "encuestas_insert_facilitador" ON encuestas
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador'));
+
+-- 1.18 OPCIONES DE ENCUESTA
+CREATE TABLE IF NOT EXISTS encuesta_opciones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  encuesta_id UUID NOT NULL REFERENCES encuestas(id) ON DELETE CASCADE,
+  texto TEXT NOT NULL,
+  orden INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_encuesta_opciones_encuesta ON encuesta_opciones(encuesta_id);
+
+ALTER TABLE encuesta_opciones ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "encuesta_opciones_select_auth" ON encuesta_opciones
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "encuesta_opciones_insert_facilitador" ON encuesta_opciones
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador'));
+
+-- 1.19 VOTOS DE ENCUESTA
+CREATE TABLE IF NOT EXISTS encuesta_votos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  encuesta_id UUID NOT NULL REFERENCES encuestas(id) ON DELETE CASCADE,
+  opcion_id UUID NOT NULL REFERENCES encuesta_opciones(id) ON DELETE CASCADE,
+  usuario_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(encuesta_id, usuario_id, opcion_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_encuesta_votos_encuesta ON encuesta_votos(encuesta_id);
+CREATE INDEX IF NOT EXISTS idx_encuesta_votos_usuario ON encuesta_votos(usuario_id);
+
+ALTER TABLE encuesta_votos ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "encuesta_votos_select_auth" ON encuesta_votos
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "encuesta_votos_insert_own" ON encuesta_votos
+  FOR INSERT WITH CHECK (usuario_id = auth.uid());
+
+CREATE POLICY "encuesta_votos_delete_own" ON encuesta_votos
+  FOR DELETE USING (usuario_id = auth.uid());
+
 CREATE INDEX idx_cursos_estado ON cursos(estado);
 CREATE INDEX idx_cursos_facilitador ON cursos(facilitador_id);
 CREATE INDEX idx_cursos_nivel ON cursos USING gin(nivel);

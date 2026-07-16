@@ -77,15 +77,10 @@ export function LoginForm() {
       setLookingUp(true)
       const result = await lookupCedula(cleaned)
       if (result.data) {
-        const allNombres = [
-          result.data.primerNombre,
-          result.data.segundoNombre,
-          result.data.primerApellido,
-          result.data.segundoApellido,
-        ]
-          .filter(Boolean)
-          .join(" ")
-        setNombres(allNombres)
+        const nombresStr = [result.data.primerNombre, result.data.segundoNombre].filter(Boolean).join(" ")
+        const apellidosStr = [result.data.primerApellido, result.data.segundoApellido].filter(Boolean).join(" ")
+        setNombres(nombresStr)
+        setApellidos(apellidosStr)
         setNameAutoFilled(true)
         setCedulaError("")
       } else if (result.error) {
@@ -300,6 +295,7 @@ export function LoginForm() {
             <div className="text-right">
               <button
                 type="button"
+                onClick={() => router.push("/recuperar-contrasena")}
                 className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
               >
                 ¿Olvidaste tu contraseña?

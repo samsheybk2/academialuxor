@@ -60,3 +60,49 @@ export interface Progreso {
   fechaInicio: string
   fechaFin?: string
 }
+
+export type TipoReaccion = "me_gusta" | "me_encanta" | "me_enoja" | "me_entristece" | "me_divierte" | "estoy_confundido"
+
+export interface Publicacion {
+  id: string
+  autor_id: string
+  contenido: string
+  imagen_url?: string
+  enlace_url?: string
+  enlace_titulo?: string
+  created_at: string
+  autor?: UserProfile
+  mis_reacciones?: string
+  total_reacciones?: Record<string, number>
+  encuesta_id?: string
+}
+
+export interface Reaccion {
+  id: string
+  publicacion_id: string
+  usuario_id: string
+  tipo: TipoReaccion
+  created_at: string
+}
+
+export interface Encuesta {
+  id: string
+  publicacion_id: string
+  pregunta: string
+  multiple: boolean
+  cerrada: boolean
+  fecha_cierre?: string
+  created_at: string
+  opciones?: EncuestaOpcion[]
+  mis_votos?: string[]
+  total_votos?: number
+}
+
+export interface EncuestaOpcion {
+  id: string
+  encuesta_id: string
+  texto: string
+  orden: number
+  created_at: string
+  votos?: number
+}

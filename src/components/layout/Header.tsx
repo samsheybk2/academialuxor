@@ -3,12 +3,13 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
-import { LogOut, LayoutDashboard, GraduationCap, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft } from "lucide-react"
+import { LogOut, LayoutDashboard, GraduationCap, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper } from "lucide-react"
 import Link from "next/link"
 
 const navByRole = {
   decano: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Gestionar Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
@@ -16,6 +17,7 @@ const navByRole = {
   ],
   facilitador: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Mis Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
@@ -23,6 +25,7 @@ const navByRole = {
   ],
   estudiante: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/rutas-aprendizaje", label: "Mi Ruta", icon: Route },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],

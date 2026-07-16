@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   Route,
   Calendar,
+  Newspaper,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -24,6 +25,7 @@ interface SidebarProps {
 const navByRole = {
   decano: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Gestionar Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
@@ -31,6 +33,7 @@ const navByRole = {
   ],
   facilitador: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Mis Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
@@ -38,6 +41,7 @@ const navByRole = {
   ],
   estudiante: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/rutas-aprendizaje", label: "Mi Ruta", icon: Route },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
