@@ -96,7 +96,7 @@ function CargoContent({ id }: { id: string }) {
         .select("id, titulo, descripcion, duracion, nivel")
         .eq("estado", "aprobado")
 
-      const cursosFiltrados = (cursosAll || []).filter((c) => {
+      const cursosFiltrados = (cursosAll || []).filter((c: any) => {
         if (!c.nivel) return false
         if (Array.isArray(c.nivel)) return c.nivel.includes(nivel)
         return c.nivel === nivel
