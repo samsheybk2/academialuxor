@@ -110,7 +110,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
 
         if (modulosData) {
           const modulosConPreguntas = await Promise.all(
-            modulosData.map(async (mod) => {
+            modulosData.map(async (mod: { id: string; titulo?: string; introduccion?: string; video_url?: string; imagen_portada?: string; duracion?: string }) => {
               const { data: preguntasData } = await supabase
                 .from("preguntas")
                 .select("*")
@@ -124,7 +124,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
                 videoUrl: mod.video_url || "",
                 imagenPortada: mod.imagen_portada || "",
                 duracion: mod.duracion?.replace(" min", "") || "",
-                preguntas: (preguntasData || []).map((p) => ({
+                preguntas: (preguntasData || []).map((p: { id: string; pregunta: string; tipo?: string; opciones?: string[]; respuesta_correcta?: number | string }) => ({
                   id: p.id,
                   pregunta: p.pregunta,
                   tipo: p.tipo || "multiple",
@@ -147,7 +147,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
           .order("orden")
 
         if (materialData) {
-          const materials = materialData.map((m) => ({
+          const materials = materialData.map((m: { id: string; nombre: string; url: string; modulo_id?: string | null; tipo?: string; storage_path?: string }) => ({
             id: m.id,
             nombre: m.nombre,
             url: m.url,

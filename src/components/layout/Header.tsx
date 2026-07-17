@@ -279,7 +279,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         )}
       </div>
 
-      <nav className="hidden lg:flex items-center gap-4 absolute left-1/2 -translate-x-1/2">
+      <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
         {nav.map((item) => (
           <TooltipIcon
             key={item.href}

@@ -106,7 +106,7 @@ function RutasContent() {
           .order("orden")
 
         if (elementos && elementos.length > 0) {
-          const elementosMapeados: ElementoRuta[] = elementos.map((e) => ({
+           const elementosMapeados: ElementoRuta[] = elementos.map((e: any) => ({
             id: e.id,
             titulo: e.titulo,
             tipo: (e.tipo || "curso") as TipoEtapa,
@@ -131,7 +131,7 @@ function RutasContent() {
               .in("id", cursoIdsFromFk)
 
             for (const cursoId of cursoIdsFromFk) {
-              const cursoReal = cursos?.find((c) => c.id === cursoId)
+               const cursoReal = cursos?.find((c: any) => c.id === cursoId)
               if (!cursoReal) continue
 
               const { data: inscripcion } = await supabase

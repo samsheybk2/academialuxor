@@ -23,7 +23,7 @@ export default function CertificadoPreview({ params }: { params: Promise<{ id: s
       .select("id, titulo, duracion")
       .eq("id", id)
       .single()
-      .then(({ data }) => setCurso(data))
+      .then(({ data }: { data: Curso | null }) => setCurso(data))
   }, [id, supabase])
 
   if (!curso) {

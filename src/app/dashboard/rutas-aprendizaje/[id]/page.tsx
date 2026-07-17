@@ -96,7 +96,7 @@ function CargoContent({ id }: { id: string }) {
         .select("id, titulo, descripcion, duracion, nivel")
         .eq("estado", "aprobado")
 
-      const cursosFiltrados = (cursosAll || []).filter((c) => {
+      const cursosFiltrados = (cursosAll || []).filter((c: any) => {
         if (!c.nivel) return false
         if (Array.isArray(c.nivel)) return c.nivel.includes(nivel)
         return c.nivel === nivel
@@ -112,7 +112,7 @@ function CargoContent({ id }: { id: string }) {
 
       if (elems) {
         setElementos(
-          elems.map((e) => ({
+           elems.map((e: any) => ({
             id: e.id,
             titulo: e.titulo,
             tipo: e.tipo,
@@ -133,7 +133,7 @@ function CargoContent({ id }: { id: string }) {
 
       if (profiles) {
         const studentsWithProgress = await Promise.all(
-          profiles.map(async (p) => {
+           profiles.map(async (p: any) => {
             const { data: inscripciones } = await supabase
               .from("inscripciones")
               .select("id, estado")
@@ -146,8 +146,8 @@ function CargoContent({ id }: { id: string }) {
               .limit(1)
 
             const total = inscripciones?.length || 0
-            const completadas = inscripciones?.filter((i) => i.estado === "completada").length || 0
-            const activas = inscripciones?.filter((i) => i.estado === "activa").length || 0
+            const completadas = inscripciones?.filter((i: any) => i.estado === "completada").length || 0
+            const activas = inscripciones?.filter((i: any) => i.estado === "activa").length || 0
 
             let estado = "sin_iniciar"
             if (completadas > 0 && total === completadas) estado = "graduado"

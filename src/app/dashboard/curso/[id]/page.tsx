@@ -669,7 +669,7 @@ function CursoContent({ id }: { id: string }) {
 
       if (modulosData) {
         const modulosConPreguntas = await Promise.all(
-          modulosData.map(async (mod) => {
+          modulosData.map(async (mod: { id: string; titulo: string; descripcion?: string; video_url?: string; duracion?: string; orden: number }) => {
             const { data: preguntasData } = await supabase
               .from("preguntas")
               .select("*")
@@ -678,7 +678,7 @@ function CursoContent({ id }: { id: string }) {
 
             const preguntas: Pregunta[] = (
               preguntasData || []
-            ).map((p) => ({
+            ).map((p: { id: string; pregunta: string; opciones?: string[]; respuesta_correcta?: string; tipo?: string }) => ({
               id: p.id,
               pregunta: p.pregunta,
               opciones: p.opciones,
@@ -723,7 +723,7 @@ function CursoContent({ id }: { id: string }) {
             .eq("completado", true)
 
           if (progreso) {
-            setModuloCompletados(progreso.map((p) => p.modulo_id))
+            setModuloCompletados(progreso.map((p: { modulo_id: string }) => p.modulo_id))
           }
         }
 
