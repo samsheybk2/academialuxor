@@ -24,15 +24,21 @@ import {
   Plus,
   Trash2,
   Check,
+  ThumbsUp,
+  Heart,
+  Flame,
+  Frown,
+  Smile,
+  CircleHelp,
 } from "lucide-react"
 
-const REACCIONES_CONFIG: Record<TipoReaccion, { emoji: string; label: string }> = {
-  me_gusta: { emoji: "👍", label: "Me gusta" },
-  me_encanta: { emoji: "❤️", label: "Me encanta" },
-  me_enoja: { emoji: "😡", label: "Me enoja" },
-  me_entristece: { emoji: "😢", label: "Me entristece" },
-  me_divierte: { emoji: "😂", label: "Me divierte" },
-  estoy_confundido: { emoji: "🤔", label: "Estoy confundido" },
+const REACCIONES_CONFIG: Record<TipoReaccion, { icon: typeof ThumbsUp; color: string; bg: string; hoverBg: string; label: string }> = {
+  me_gusta: { icon: ThumbsUp, color: "text-blue-600", bg: "bg-blue-50 border-blue-200", hoverBg: "hover:bg-blue-50", label: "Me gusta" },
+  me_encanta: { icon: Heart, color: "text-rose-500", bg: "bg-rose-50 border-rose-200", hoverBg: "hover:bg-rose-50", label: "Me encanta" },
+  me_enoja: { icon: Flame, color: "text-orange-500", bg: "bg-orange-50 border-orange-200", hoverBg: "hover:bg-orange-50", label: "Me enoja" },
+  me_entristece: { icon: Frown, color: "text-sky-500", bg: "bg-sky-50 border-sky-200", hoverBg: "hover:bg-sky-50", label: "Me entristece" },
+  me_divierte: { icon: Smile, color: "text-amber-500", bg: "bg-amber-50 border-amber-200", hoverBg: "hover:bg-amber-50", label: "Me divierte" },
+  estoy_confundido: { icon: CircleHelp, color: "text-purple-500", bg: "bg-purple-50 border-purple-200", hoverBg: "hover:bg-purple-50", label: "Estoy confundido" },
 }
 
 const REACCION_KEYS = Object.keys(REACCIONES_CONFIG) as TipoReaccion[]
@@ -714,26 +720,25 @@ export default function NoticiasPage() {
               )}
             </div>
 
-            <div className="px-5 pb-2 flex items-center gap-1 flex-wrap">
+            <div className="px-5 pb-3 pt-1 flex items-center gap-1.5 flex-wrap border-t border-gray-100 mt-2">
               {REACCION_KEYS.map((tipo) => {
                 const config = REACCIONES_CONFIG[tipo]
+                const Icon = config.icon
                 const count = pub.total_reacciones?.[tipo] || 0
                 const isActive = pub.mis_reacciones === tipo
                 return (
                   <button
                     key={tipo}
                     onClick={() => toggleReaccion(pub.id, tipo)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
                       isActive
-                        ? "bg-luxor-primary/10 text-luxor-primary border border-luxor-primary/20"
-                        : count > 0
-                        ? "bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-100"
-                        : "text-gray-400 hover:bg-gray-50 border border-transparent"
+                        ? `${config.bg} ${config.color} shadow-sm scale-105`
+                        : `border-gray-100 text-gray-400 ${config.hoverBg} hover:text-gray-600 hover:border-gray-200 hover:shadow-sm`
                     }`}
                     title={config.label}
                   >
-                    <span className="text-sm">{config.emoji}</span>
-                    {count > 0 && <span>{count}</span>}
+                    <Icon className={`w-4 h-4 ${isActive ? config.color : ""}`} fill={isActive ? "currentColor" : "none"} />
+                    {count > 0 && <span className={isActive ? config.color : ""}>{count}</span>}
                   </button>
                 )
               })}
