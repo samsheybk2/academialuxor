@@ -112,7 +112,7 @@ function CargoContent({ id }: { id: string }) {
 
       if (elems) {
         setElementos(
-          elems.map((e) => ({
+           elems.map((e: any) => ({
             id: e.id,
             titulo: e.titulo,
             tipo: e.tipo,
