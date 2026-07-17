@@ -733,12 +733,12 @@ export default function NoticiasPage() {
                     className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
                       isActive
                         ? `${config.bg} ${config.color} shadow-md scale-110`
-                        : `border-gray-100 text-gray-300 hover:text-gray-500 hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm`
+                        : `border-gray-100 ${config.color} opacity-50 hover:opacity-100 hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm`
                     }`}
                     title={config.label}
                   >
-                    <Icon className={`w-5 h-5 ${isActive ? config.color : "text-gray-300 group-hover:text-gray-500"}`} fill={isActive ? "currentColor" : "none"} strokeWidth={isActive ? 2.5 : 2} />
-                    {count > 0 && <span className={isActive ? config.color : "text-gray-500"}>{count}</span>}
+                    <Icon className={`w-5 h-5`} fill={isActive ? "currentColor" : "none"} strokeWidth={isActive ? 2.5 : 2} />
+                    {count > 0 && <span>{count}</span>}
                   </button>
                 )
               })}
