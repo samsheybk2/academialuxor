@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, use } from "react"
+import { useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 import { Quiz } from "@/components/course/Quiz"
@@ -83,6 +84,10 @@ function getYouTubeEmbedUrl(url: string): string {
 
 function getYouTubeVideoId(url: string): string {
   if (!url) return ""
+  if (url.includes("/embed/")) {
+    const embedMatch = url.match(/embed\/([a-zA-Z0-9_-]{11})/)
+    if (embedMatch) return embedMatch[1]
+  }
   const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/)
   if (match) return match[1]
   const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
@@ -94,33 +99,91 @@ function YouTubePlayer({
   videoId,
   className,
   onEnd,
+  noSkip = false,
 }: {
   videoId: string
   className?: string
   onEnd?: () => void
+  noSkip?: boolean
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const playerRef = useRef<{ destroy: () => void } | null>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const playerRef = useRef<any>(null)
+  const lastTimeRef = useRef(0)
+  const watchedRef = useRef(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const endedRef = useRef(false)
 
   useEffect(() => {
-    if (!videoId || !containerRef.current) return
+    if (!videoId || !wrapperRef.current) return
+
+    const wrapper = wrapperRef.current
+    wrapper.innerHTML = ""
+    const playerDiv = document.createElement("div")
+    playerDiv.style.width = "100%"
+    playerDiv.style.height = "100%"
+    wrapper.appendChild(playerDiv)
+
+    endedRef.current = false
+    lastTimeRef.current = 0
+    watchedRef.current = 0
 
     function initPlayer() {
-      if (playerRef.current) playerRef.current.destroy()
-
-      const container = containerRef.current
-      if (!container) return
-
-      playerRef.current = new window.YT.Player(container, {
+      playerRef.current = new window.YT.Player(playerDiv, {
         videoId,
         playerVars: {
           controls: 1,
           modestbranding: 1,
           rel: 0,
+          disablekb: noSkip ? 1 : 0,
+          fs: 1,
+          iv_load_policy: 3,
+          playsinline: 1,
         },
         events: {
+          onReady: () => {
+            if (noSkip && playerRef.current) {
+              lastTimeRef.current = 0
+              watchedRef.current = 0
+              intervalRef.current = setInterval(() => {
+                const p = playerRef.current
+                if (!p || typeof p.getCurrentTime !== "function") return
+                try {
+                  const ct = p.getCurrentTime()
+                  const ps = p.getPlayerState?.()
+                  if (ps === 1) {
+                    if (ct >= lastTimeRef.current && ct < lastTimeRef.current + 3) {
+                      watchedRef.current += 0.5
+                    }
+                    if (ct > lastTimeRef.current + 2) {
+                      p.seekTo(lastTimeRef.current + 0.1, true)
+                    } else {
+                      lastTimeRef.current = ct
+                    }
+                  }
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                } catch (_e) {}
+              }, 500)
+            }
+          },
           onStateChange: (event: { data: number }) => {
             if (event.data === window.YT.PlayerState.ENDED) {
+              if (intervalRef.current) {
+                clearInterval(intervalRef.current)
+                intervalRef.current = null
+              }
+              if (endedRef.current) return
+              if (noSkip) {
+                const duration = playerRef.current?.getDuration?.() || 0
+                if (duration > 0 && watchedRef.current < duration * 0.9) {
+                  playerRef.current?.seekTo?.(0, true)
+                  playerRef.current?.playVideo?.()
+                  lastTimeRef.current = 0
+                  watchedRef.current = 0
+                  return
+                }
+              }
+              endedRef.current = true
               onEnd?.()
             }
           },
@@ -136,18 +199,24 @@ function YouTubePlayer({
       document.head.appendChild(tag)
       window.onYouTubeIframeAPIReady = () => initPlayer()
       const timer = setTimeout(() => initPlayer(), 2000)
-      return () => clearTimeout(timer)
-    }
-
-    return () => {
-      if (playerRef.current) {
-        playerRef.current.destroy()
+      return () => {
+        clearTimeout(timer)
+        if (intervalRef.current) clearInterval(intervalRef.current)
         playerRef.current = null
       }
     }
-  }, [videoId])
 
-  return <div ref={containerRef} className={className} />
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+      playerRef.current = null
+      if (wrapperRef.current) wrapperRef.current.innerHTML = ""
+    }
+  }, [videoId, noSkip])
+
+  return <div ref={wrapperRef} className={className} />
 }
 
 function Pestañas({
@@ -224,108 +293,73 @@ function TabInformacion({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="font-semibold text-gray-900 mb-3">
-          Descripcion del curso
-        </h3>
-        <p className="text-gray-600 leading-relaxed whitespace-pre-line">
-          {curso.descripcion || "Este curso aun no tiene descripcion."}
-        </p>
-      </div>
+      <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6">
+        {curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Play className="w-4 h-4 text-luxor-primary" />
+                Video de presentacion
+              </h3>
+            </div>
+            <div className="aspect-video">
+              <iframe
+                src={`https://www.youtube.com/embed/${getYouTubeVideoId(curso.video_bienvenida)}`}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="Video de presentacion"
+              />
+            </div>
+          </div>
+        )}
 
-      {curso.video_bienvenida && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-              <Play className="w-4 h-4 text-luxor-primary" />
-              Video de presentacion
-            </h3>
-          </div>
-          <div className="aspect-video">
-            <YouTubePlayer
-              videoId={getYouTubeVideoId(curso.video_bienvenida)}
-              className="w-full h-full"
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="grid sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="w-10 h-10 rounded-lg bg-luxor-primary/10 flex items-center justify-center mb-3">
-            <GraduationCap className="w-5 h-5 text-luxor-primary" />
-          </div>
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-            Facilitador
-          </p>
-          <p className="font-medium text-gray-900">
-            {curso.facilitador_nombre}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center mb-3">
-            <Users className="w-5 h-5 text-amber-600" />
-          </div>
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-            Nivel
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {niveles.map((n) => (
-              <span
-                key={n}
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${
-                  nivelIcon[n] || "bg-gray-100 text-gray-700"
-                }`}
-              >
-                {nivelLabel[n] || n}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center mb-3">
-            {curso.tipo === "asincronico" ? (
-              <Globe className="w-5 h-5 text-emerald-600" />
-            ) : (
-              <Zap className="w-5 h-5 text-emerald-600" />
-            )}
-          </div>
-          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
-            Tipo
-          </p>
-          <p className="font-medium text-gray-900">
-            {tipoLabel[curso.tipo || ""] || curso.tipo || "Sin definir"}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
+          <h3 className="font-semibold text-gray-900 mb-3">
+            Descripcion del curso
+          </h3>
+          <p className="text-gray-600 leading-relaxed whitespace-pre-line flex-1">
+            {curso.descripcion || curso.introduccion || "Este curso aun no tiene descripcion."}
           </p>
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">
-              {modulos.length}
-            </p>
-            <p className="text-sm text-gray-500">
-              Modulo{modulos.length === 1 ? "" : "s"}
-            </p>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center">
-            <Clock className="w-5 h-5 text-violet-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">
-              {curso.duracion}
-            </p>
-            <p className="text-sm text-gray-500">Duracion total</p>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-luxor-primary/10 text-luxor-primary text-xs font-medium">
+          <GraduationCap className="w-3.5 h-3.5" />
+          {curso.facilitador_nombre}
+        </span>
+
+        {niveles.map((n) => (
+          <span
+            key={n}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium capitalize ${
+              nivelIcon[n] || "bg-gray-100 text-gray-700"
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            {nivelLabel[n] || n}
+          </span>
+        ))}
+
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">
+          {curso.tipo === "asincronico" ? (
+            <Globe className="w-3.5 h-3.5" />
+          ) : (
+            <Zap className="w-3.5 h-3.5" />
+          )}
+          {tipoLabel[curso.tipo || ""] || curso.tipo || "Sin definir"}
+        </span>
+
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+          <BookOpen className="w-3.5 h-3.5" />
+          {modulos.length} {modulos.length === 1 ? "Módulo" : "Módulos"}
+        </span>
+
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-xs font-medium">
+          <Clock className="w-3.5 h-3.5" />
+          {curso.duracion}
+        </span>
       </div>
     </div>
   )
@@ -389,18 +423,23 @@ function TabContenido({
   const embedUrl = getYouTubeEmbedUrl(modulo.video_url)
 
   return (
-    <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-      <div className="space-y-6">
-        <div className="bg-black rounded-xl overflow-hidden aspect-video">
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
+      <div className="space-y-5">
+        <div className="bg-black rounded-xl overflow-hidden max-w-2xl mx-auto aspect-video">
           {embedUrl ? (
             <YouTubePlayer
               key={modulo.id}
               videoId={getYouTubeVideoId(modulo.video_url)}
               className="w-full h-full"
+              noSkip={!isDecano && inscrito}
               onEnd={() => {
                 if (!isDecano && inscrito && !isModuloCompleted(modulo.id)) {
-                  const evt = new CustomEvent("video-modulo-completado")
-                  window.dispatchEvent(evt)
+                  if (modulo.preguntas.length === 0) {
+                    onModuloCompletado(true, [])
+                  } else {
+                    const evt = new CustomEvent("video-modulo-completado")
+                    window.dispatchEvent(evt)
+                  }
                 }
               }}
             />
@@ -506,20 +545,20 @@ function TabContenido({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 h-fit lg:sticky lg:top-24">
-        <h4 className="font-semibold text-gray-900 mb-3 px-2">
+      <div className="bg-white rounded-xl border border-gray-200 p-3 h-fit lg:sticky lg:top-24">
+        <h4 className="font-semibold text-gray-900 mb-2 px-2">
           Modulos del Curso
         </h4>
-        <p className="text-sm text-gray-500 mb-4 px-2">
+        <p className="text-xs text-gray-500 mb-3 px-2">
           {isDecano
             ? `${modulos.length} modulos`
             : `${moduloCompletados.length} de ${modulos.length} completados`}
         </p>
 
         {!isDecano && (
-          <div className="w-full bg-gray-100 rounded-full h-2 mb-4 mx-2">
+          <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3 mx-2">
             <div
-              className="h-2 rounded-full bg-luxor-primary transition-all duration-500"
+              className="h-1.5 rounded-full bg-luxor-primary transition-all duration-500"
               style={{
                 width: `${
                   (moduloCompletados.length / modulos.length) * 100
@@ -529,7 +568,7 @@ function TabContenido({
           </div>
         )}
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {modulos.map((mod, index) => {
             const locked = isModuloLocked(index)
             const completed = isModuloCompleted(mod.id)
@@ -549,7 +588,7 @@ function TabContenido({
                 }`}
               >
                 <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-medium ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-medium ${
                     completed
                       ? "bg-blue-500 text-white"
                       : active
@@ -558,9 +597,9 @@ function TabContenido({
                   }`}
                 >
                   {completed ? (
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-3.5 h-3.5" />
                   ) : locked ? (
-                    <Lock className="w-3.5 h-3.5" />
+                    <Lock className="w-3 h-3" />
                   ) : (
                     mod.orden
                   )}
@@ -589,6 +628,8 @@ function CursoContent({ id }: { id: string }) {
   const isDecano = user?.rol === "decano"
   const isEstudiante = user?.rol === "estudiante"
   const supabase = createSupabaseClient()
+  const searchParams = useSearchParams()
+  const verCertificado = searchParams.get("certificado") === "1"
 
   const [curso, setCurso] = useState<CursoData | null>(null)
   const [modulos, setModulos] = useState<ModuloData[]>([])
@@ -662,12 +703,16 @@ function CursoContent({ id }: { id: string }) {
       if (isEstudiante) {
         const { data: inscripcion } = await supabase
           .from("inscripciones")
-          .select("id")
+          .select("id, estado")
           .eq("user_id", user?.id)
           .eq("curso_id", id)
           .maybeSingle()
 
         setInscrito(!!inscripcion)
+
+        if (inscripcion?.estado === "completada") {
+          setCursoCompletado(true)
+        }
 
         if (inscripcion) {
           const { data: progreso } = await supabase
@@ -869,16 +914,16 @@ function CursoContent({ id }: { id: string }) {
     }
   }
 
-  if (cursoCompletado && !isDecano) {
+  if (verCertificado && cursoCompletado && !isDecano) {
     return (
       <ProtectedRoute>
         <div className="max-w-full">
           <Link
-            href="/dashboard/cursos"
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
+            href={`/dashboard/curso/${id}`}
+            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver al catalogo
+            Volver al curso
           </Link>
           <Certificado
             nombre={user?.nombre || "Estudiante"}
@@ -898,14 +943,6 @@ function CursoContent({ id }: { id: string }) {
   return (
     <ProtectedRoute>
       <div className="space-y-6">
-        <Link
-          href="/dashboard/cursos"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver al catalogo
-        </Link>
-
         {isDecano && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -943,13 +980,25 @@ function CursoContent({ id }: { id: string }) {
           </div>
         )}
 
+        {isEstudiante && inscrito && cursoCompletado && (
+          <Link
+            href={`/dashboard/curso/${id}?certificado=1`}
+            className="flex items-center gap-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 hover:from-amber-100 hover:to-yellow-100 transition-colors"
+          >
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-medium text-amber-800">Curso completado</p>
+              <p className="text-sm text-amber-600">Toca aquí para ver tu certificado</p>
+            </div>
+          </Link>
+        )}
+
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             {curso.titulo}
           </h1>
-          <p className="text-gray-500 mt-1">
-            {curso.facilitador_nombre} &bull; {curso.duracion}
-          </p>
         </div>
 
         {(isDecano || inscrito) && (

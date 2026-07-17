@@ -11,6 +11,7 @@ interface CertificadoProps {
   curso: string
   fecha: string
   duracion: string
+  tipo?: "curso" | "taller"
   preview?: boolean
 }
 
@@ -47,8 +48,10 @@ function loadImage(url: string): Promise<string> {
   })
 }
 
-async function buildPdf(origin: string, nombre: string, curso: string, fecha: string, duracion: string, certId: string, qrDataUrl: string): Promise<Blob> {
+async function buildPdf(origin: string, nombre: string, curso: string, fecha: string, duracion: string, certId: string, qrDataUrl: string, tipo: "curso" | "taller"): Promise<Blob> {
   const W = 900, H = 630, cx = W / 2
+  const tipoLabel = tipo === "taller" ? "Aprobación de Taller" : "Aprobación de Curso"
+  const tipoCompleto = tipo === "taller" ? "ha completado exitosamente el taller" : "ha completado exitosamente el curso"
   const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [W, H] })
 
   try {
@@ -77,7 +80,7 @@ async function buildPdf(origin: string, nombre: string, curso: string, fecha: st
   try { const l = await loadImage(`${origin}/logo-luxor.png`); pdf.addImage(l, "PNG", cx - 75, 30, 150, 150) } catch {}
 
   pdf.setFontSize(65); pdf.setTextColor(40, 49, 95)
-  pdf.text("Aprobación de Curso", cx, 200, { align: "center" })
+  pdf.text(tipoLabel, cx, 200, { align: "center" })
   pdf.setDrawColor(139, 156, 199); pdf.setLineWidth(2)
   pdf.line(cx - 45, 218, cx + 45, 218)
   pdf.setFontSize(41); pdf.setTextColor(107, 114, 128)
@@ -88,7 +91,7 @@ async function buildPdf(origin: string, nombre: string, curso: string, fecha: st
   pdf.setDrawColor(139, 156, 199); pdf.setLineWidth(1.2)
   pdf.line(cx - nw / 2 - 5, 306, cx + nw / 2 + 5, 306)
   pdf.setFontSize(41); pdf.setTextColor(107, 114, 128)
-  pdf.text("ha completado exitosamente el curso", cx, 350, { align: "center" })
+  pdf.text(tipoCompleto, cx, 350, { align: "center" })
   pdf.setFontSize(57); pdf.setTextColor(61, 79, 124)
   pdf.text(curso, cx, 400, { align: "center" })
   pdf.setFontSize(28); pdf.setTextColor(40, 49, 95)
@@ -106,7 +109,7 @@ async function buildPdf(origin: string, nombre: string, curso: string, fecha: st
   return pdf.output("blob")
 }
 
-export function Certificado({ nombre, curso, fecha, duracion, preview }: CertificadoProps) {
+export function Certificado({ nombre, curso, fecha, duracion, tipo = "curso", preview }: CertificadoProps) {
   const [pdfUrl, setPdfUrl] = useState<string>("")
   const [descargando, setDescargando] = useState(false)
   const pdfGenRef = useRef(false)
@@ -119,7 +122,7 @@ export function Certificado({ nombre, curso, fecha, duracion, preview }: Certifi
   async function handleDescargar() {
     setDescargando(true)
     try {
-      const blob = await buildPdf(origin, nombre, curso, fecha, duracion, certId, "")
+      const blob = await buildPdf(origin, nombre, curso, fecha, duracion, certId, "", tipo)
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url; a.download = `Certificado-${curso.replace(/\s+/g, "_")}.pdf`
@@ -146,7 +149,7 @@ export function Certificado({ nombre, curso, fecha, duracion, preview }: Certifi
           <div className="space-y-3">
             <h2 className="text-3xl font-bold">¡Felicitaciones!</h2>
             <p className="text-base text-luxor-accent leading-relaxed">
-              Has completado exitosamente el curso <strong className="text-white">{curso}</strong>. Este certificado acredita tu participación y logro académico.
+              Has completado exitosamente el {tipo === "taller" ? "taller" : "curso"} <strong className="text-white">{curso}</strong>. Este certificado acredita tu participación y logro académico.
             </p>
           </div>
 
@@ -204,7 +207,7 @@ export function Certificado({ nombre, curso, fecha, duracion, preview }: Certifi
         <div className="text-center space-y-2">
           <h2 className="text-xl font-bold text-gray-900">¡Felicitaciones!</h2>
           <p className="text-sm text-gray-500">
-            Has completado exitosamente el curso <strong>{curso}</strong>
+            Has completado exitosamente el {tipo === "taller" ? "taller" : "curso"} <strong>{curso}</strong>
           </p>
         </div>
 
@@ -235,7 +238,7 @@ export function Certificado({ nombre, curso, fecha, duracion, preview }: Certifi
             pdfGenRef.current = true
             const nodeRef = node
             setTimeout(() => {
-              buildPdf(origin, nombre, curso, fecha, duracion, certId, nodeRef.toDataURL("image/png"))
+              buildPdf(origin, nombre, curso, fecha, duracion, certId, nodeRef.toDataURL("image/png"), tipo)
                 .then(blob => setPdfUrl(URL.createObjectURL(blob)))
                 .catch(() => {})
             }, 500)

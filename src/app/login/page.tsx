@@ -41,9 +41,9 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-[58%] h-screen sticky top-0 relative overflow-hidden">
         {/* Slideshow de fondos */}
         <div className="absolute inset-0">
-          <img src="/fondo (1).jpg" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow1_12s_infinite]" />
-          <img src="/fondo (2).jpg" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow2_12s_infinite]" />
-          <img src="/fondo (3).jpg" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow3_12s_infinite]" />
+          <img src="/fondo (1).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow1_12s_infinite]" />
+          <img src="/fondo (2).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow2_12s_infinite]" />
+          <img src="/fondo (3).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow3_12s_infinite]" />
         </div>
         {/* Overlay oscuro para legibilidad */}
         <div className="absolute inset-0 bg-luxor-primary/60" />

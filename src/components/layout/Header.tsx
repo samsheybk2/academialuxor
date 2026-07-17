@@ -343,9 +343,6 @@ export function Header({ onMenuClick }: HeaderProps) {
 
         <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
           <Link href="/dashboard/perfil" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <p className="text-sm font-medium text-gray-900 leading-tight hidden sm:block">
-              {user?.nombre || "Usuario"}
-            </p>
             {user?.avatar_url ? (
               <img src={user.avatar_url} alt={user.nombre} className="w-10 h-10 rounded-full object-cover" />
             ) : (

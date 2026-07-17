@@ -19,6 +19,9 @@ export default function DashboardLayout({
   const router = useRouter()
 
   useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login")
+    }
     if (!loading && user) {
       if (user.aprobado === false && user.rol === "estudiante") {
         router.push("/pendiente-aprobacion")
@@ -37,6 +40,8 @@ export default function DashboardLayout({
   if (user && user.aprobado === false && user.rol === "estudiante") {
     return null
   }
+
+  if (!user) return null
 
   return (
     <div className="min-h-screen bg-gray-50">

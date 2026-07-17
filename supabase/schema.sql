@@ -211,8 +211,13 @@ CREATE TABLE IF NOT EXISTS cargos (
 CREATE TABLE IF NOT EXISTS cargo_elementos (
   id TEXT PRIMARY KEY,
   cargo_id TEXT NOT NULL REFERENCES cargos(id) ON DELETE CASCADE,
-  nombre TEXT NOT NULL,
+  titulo TEXT NOT NULL,
+  tipo TEXT NOT NULL DEFAULT 'curso' CHECK (tipo IN ('curso', 'taller', 'examen')),
   descripcion TEXT,
+  duracion TEXT,
+  orden INTEGER DEFAULT 0,
+  obligatorio BOOLEAN DEFAULT TRUE,
+  curso_id UUID REFERENCES cursos(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -795,6 +800,41 @@ CREATE POLICY "cargo_elementos_select_authenticated"
 CREATE POLICY "cargo_elementos_all_admin"
   ON cargo_elementos FOR ALL
   USING (public.get_my_role() IN ('decano', 'facilitador'));
+
+
+-- 1.13 EVALUACIONES DE TALLERES
+CREATE TABLE IF NOT EXISTS evaluacion_talleres (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  taller_id TEXT NOT NULL REFERENCES cargo_elementos(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  facilitador_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  aprobado BOOLEAN DEFAULT false,
+  observaciones TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(taller_id, user_id)
+);
+
+ALTER TABLE evaluacion_talleres ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "eval_talleres_select_own"
+  ON evaluacion_talleres FOR SELECT
+  USING (user_id = auth.uid());
+
+CREATE POLICY "eval_talleres_select_facilitador"
+  ON evaluacion_talleres FOR SELECT
+  USING (public.get_my_role() IN ('decano', 'facilitador'));
+
+CREATE POLICY "eval_talleres_insert_facilitador"
+  ON evaluacion_talleres FOR INSERT
+  WITH CHECK (public.get_my_role() IN ('decano', 'facilitador') AND facilitador_id = auth.uid());
+
+CREATE POLICY "eval_talleres_update_facilitador"
+  ON evaluacion_talleres FOR UPDATE
+  USING (public.get_my_role() IN ('decano', 'facilitador') AND facilitador_id = auth.uid());
+
+CREATE POLICY "eval_talleres_delete_facilitador"
+  ON evaluacion_talleres FOR DELETE
+  USING (public.get_my_role() IN ('decano', 'facilitador') AND facilitador_id = auth.uid());
 
 
 -- ============================================================

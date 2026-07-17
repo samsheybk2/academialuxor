@@ -4,11 +4,13 @@ import { useState, useEffect } from "react"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
-import type { RutaAprendizaje } from "@/types/ruta-aprendizaje"
+import { tipoEtapaConfig } from "@/types/ruta-aprendizaje"
+import type { RutaAprendizaje, TipoEtapa, ElementoRuta } from "@/types/ruta-aprendizaje"
 import {
   Plus,
   Trash2,
   ChevronRight,
+  ChevronDown,
   BookOpen,
   Wrench,
   FileText,
@@ -21,11 +23,10 @@ import {
   Lock,
   Sparkles,
   Construction,
-  ChevronDown,
-  Users,
-  Clock,
   Play,
   CheckCircle2,
+  XCircle,
+  Award,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -61,7 +62,10 @@ function RutasContent() {
 
   const [pestaña, setPestaña] = useState<"obligatoria" | "selectiva">("obligatoria")
   const [studentCargo, setStudentCargo] = useState<EstudianteCargoInfo | null>(null)
-  const [cursosEnRuta, setCursosEnRuta] = useState<{ id: string; titulo: string; duracion: string; estado: string; orden: number }[]>([])
+  const [elementosEnRuta, setElementosEnRuta] = useState<ElementoRuta[]>([])
+  const [expandedStep, setExpandedStep] = useState<string | null>(null)
+  const [elementosProgreso, setElementosProgreso] = useState<Record<string, { inscrito: boolean; estado: string; totalModulos: number; modulosCompletados: number; porcentaje: number }>>({})
+  const [evaluacionesTalleres, setEvaluacionesTalleres] = useState<Record<string, { aprobado: boolean; observaciones: string }>>({})
 
   useEffect(() => {
     if (isEstudiante) {
@@ -69,7 +73,7 @@ function RutasContent() {
     } else {
       fetchCargos()
     }
-  }, [user])
+  }, [user?.id])
 
   async function fetchStudentData() {
     if (!user) return
@@ -97,36 +101,91 @@ function RutasContent() {
       if (cargoId) {
         const { data: elementos } = await supabase
           .from("cargo_elementos")
-          .select("id, nombre, tipo, duracion, orden")
+          .select("id, titulo, tipo, duracion, orden, obligatorio, descripcion, curso_id")
           .eq("cargo_id", cargoId)
           .order("orden")
 
-        if (elementos) {
-          const cursoIds = elementos.filter((e) => e.tipo === "curso").map((e) => e.id)
+        if (elementos && elementos.length > 0) {
+          const elementosMapeados: ElementoRuta[] = elementos.map((e) => ({
+            id: e.id,
+            titulo: e.titulo,
+            tipo: (e.tipo || "curso") as TipoEtapa,
+            descripcion: e.descripcion || "",
+            duracion: e.duracion || "Sin definir",
+            orden: e.orden || 0,
+            obligatorio: e.obligatorio ?? true,
+            cursoId: e.curso_id || undefined,
+          }))
+          setElementosEnRuta(elementosMapeados)
 
-          let cursosData: { id: string; titulo: string; duracion: string; estado: string; orden: number }[] = []
+          const cursoElementos = elementosMapeados.filter((e) => e.tipo === "curso")
+          const cursoIdsFromFk = cursoElementos.map((e) => e.cursoId).filter(Boolean) as string[]
+          const cursoIdsFromTitle: string[] = []
 
-          if (cursoIds.length > 0) {
+          if (cursoIdsFromFk.length > 0) {
+            const progresoMap: Record<string, { inscrito: boolean; estado: string; totalModulos: number; modulosCompletados: number; porcentaje: number }> = {}
+
             const { data: cursos } = await supabase
               .from("cursos")
-              .select("id, titulo, duracion, estado")
-              .in("id", cursoIds)
+              .select("id")
+              .in("id", cursoIdsFromFk)
 
-            if (cursos) {
-              cursosData = cursos.map((c) => {
-                const elem = elementos.find((e) => e.id === c.id)
-                return {
-                  id: c.id,
-                  titulo: c.titulo,
-                  duracion: c.duracion || "Sin definir",
-                  estado: c.estado,
-                  orden: elem?.orden || 0,
-                }
-              }).sort((a, b) => a.orden - b.orden)
+            for (const cursoId of cursoIdsFromFk) {
+              const cursoReal = cursos?.find((c) => c.id === cursoId)
+              if (!cursoReal) continue
+
+              const { data: inscripcion } = await supabase
+                .from("inscripciones")
+                .select("id, estado")
+                .eq("user_id", user.id)
+                .eq("curso_id", cursoId)
+                .maybeSingle()
+
+              const { count: totalModulos } = await supabase
+                .from("modulos")
+                .select("id", { count: "exact", head: true })
+                .eq("curso_id", cursoId)
+
+              let modulosCompletados = 0
+              if (inscripcion) {
+                const { count } = await supabase
+                  .from("progreso_modulos")
+                  .select("id", { count: "exact", head: true })
+                  .eq("user_id", user.id)
+                  .eq("curso_id", cursoId)
+                  .eq("completado", true)
+                modulosCompletados = count || 0
+              }
+
+              const total = totalModulos || 0
+              progresoMap[cursoId] = {
+                inscrito: !!inscripcion,
+                estado: inscripcion?.estado || "pendiente",
+                totalModulos: total,
+                modulosCompletados,
+                porcentaje: total > 0 ? Math.round((modulosCompletados / total) * 100) : 0,
+              }
             }
+            setElementosProgreso(progresoMap)
           }
 
-          setCursosEnRuta(cursosData)
+          const tallerElementos = elementosMapeados.filter((e) => e.tipo === "taller")
+          if (tallerElementos.length > 0) {
+            const tallerIds = tallerElementos.map((e) => e.id)
+            const { data: evals } = await supabase
+              .from("evaluacion_talleres")
+              .select("taller_id, aprobado, observaciones")
+              .eq("user_id", user.id)
+              .in("taller_id", tallerIds)
+
+            if (evals) {
+              const evalMap: Record<string, { aprobado: boolean; observaciones: string }> = {}
+              for (const e of evals) {
+                evalMap[e.taller_id] = { aprobado: e.aprobado, observaciones: e.observaciones || "" }
+              }
+              setEvaluacionesTalleres(evalMap)
+            }
+          }
         }
       }
     }
@@ -193,6 +252,20 @@ function RutasContent() {
   }
 
   if (isEstudiante) {
+    const iconMapStudent: Record<TipoEtapa, React.ElementType> = {
+      curso: BookOpen,
+      taller: Wrench,
+      examen: FileText,
+    }
+    const stepColorsStudent: Record<TipoEtapa, { ring: string; bg: string; line: string; text: string }> = {
+      curso: { ring: "border-blue-400", bg: "bg-blue-50", line: "bg-blue-300", text: "text-blue-700" },
+      taller: { ring: "border-violet-400", bg: "bg-violet-50", line: "bg-violet-300", text: "text-violet-700" },
+      examen: { ring: "border-amber-400", bg: "bg-amber-50", line: "bg-amber-300", text: "text-amber-700" },
+    }
+
+    const cursosCompletados = Object.values(elementosProgreso).filter((p) => p.estado === "completada").length
+    const totalCursosEnRuta = elementosEnRuta.filter((e) => e.tipo === "curso").length
+
     return (
       <div className="space-y-6">
         {/* Pestañas */}
@@ -259,58 +332,181 @@ function RutasContent() {
                 </div>
                 <div className="flex items-center gap-4 mt-4 text-sm text-white/80">
                   <span className="flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4" />
-                    {cursosEnRuta.length} cursos
+                    <Route className="w-4 h-4" />
+                    {elementosEnRuta.length} etapas
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    {cursosEnRuta.reduce((sum, c) => {
-                      const min = parseInt(c.duracion) || 0
-                      return sum + min
-                    }, 0)} min total
+                    <BookOpen className="w-4 h-4" />
+                    {totalCursosEnRuta} cursos
                   </span>
+                  {totalCursosEnRuta > 0 && (
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4" />
+                      {cursosCompletados}/{totalCursosEnRuta} cursos completados
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Lista de cursos */}
-              {cursosEnRuta.length === 0 ? (
+              {/* Timeline */}
+              {elementosEnRuta.length === 0 ? (
                 <div className="text-center py-12 bg-white rounded-2xl border border-gray-200">
-                  <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 font-medium">Aún no hay cursos asignados a tu cargo</p>
-                  <p className="text-sm text-gray-400 mt-1">Pronto se agregarán cursos a tu ruta de formación</p>
+                  <Route className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 font-medium">Aún no hay etapas en tu ruta</p>
+                  <p className="text-sm text-gray-400 mt-1">Pronto se agregará contenido a tu ruta de formación</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {cursosEnRuta.map((curso, index) => (
-                    <Link
-                      key={curso.id}
-                      href={`/dashboard/cursos/${curso.id}`}
-                      className="flex items-center gap-4 bg-white rounded-xl border border-gray-200 p-4 hover:border-luxor-primary/40 hover:shadow-md transition-all group"
-                    >
-                      <span className="w-10 h-10 bg-luxor-primary/10 rounded-xl flex items-center justify-center text-luxor-primary font-bold text-sm shrink-0">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 group-hover:text-luxor-primary transition-colors truncate">
-                          {curso.titulo}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {curso.duracion}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-full font-medium ${
-                            curso.estado === "aprobado" ? "bg-green-100 text-green-700" :
-                            curso.estado === "pendiente" ? "bg-amber-100 text-amber-700" :
-                            "bg-gray-100 text-gray-500"
+                <div className="relative">
+                  {elementosEnRuta.map((elemento, index) => {
+                    const config = tipoEtapaConfig[elemento.tipo]
+                    const Icon = iconMapStudent[elemento.tipo]
+                    const colors = stepColorsStudent[elemento.tipo]
+                    const isLast = index === elementosEnRuta.length - 1
+                    const isExpanded = expandedStep === elemento.id
+                    const progreso = elemento.cursoId ? elementosProgreso[elemento.cursoId] : undefined
+                    const esCurso = elemento.tipo === "curso"
+                    const estaInscrito = progreso?.inscrito || false
+                    const estadoCurso = progreso?.estado || "pendiente"
+                    const porcentaje = progreso?.porcentaje || 0
+                    const modulosComp = progreso?.modulosCompletados || 0
+                    const totalModulos = progreso?.totalModulos || 0
+
+                    const esTaller = elemento.tipo === "taller"
+                    const evalTaller = esTaller ? evaluacionesTalleres[elemento.id] : undefined
+                    const tallerAprobado = evalTaller?.aprobado
+                    const tallerObservaciones = evalTaller?.observaciones
+
+                    const isElementCompleted = (el: ElementoRuta, idx: number): boolean => {
+                      if (el.tipo === "curso") {
+                        const p = el.cursoId ? elementosProgreso[el.cursoId] : undefined
+                        return p?.estado === "completada"
+                      }
+                      if (el.tipo === "taller") {
+                        const ev = evaluacionesTalleres[el.id]
+                        return ev?.aprobado === true
+                      }
+                      return false
+                    }
+
+                    const isLocked = index > 0 && !elementosEnRuta.slice(0, index).every((el, i) => isElementCompleted(el, i))
+
+                    let estadoLabel = "Pendiente"
+                    let estadoBg = "bg-gray-100 text-gray-600"
+                    if (estadoCurso === "completada") {
+                      estadoLabel = "Completado"
+                      estadoBg = "bg-green-100 text-green-700"
+                    } else if (estaInscrito) {
+                      estadoLabel = "En Progreso"
+                      estadoBg = "bg-blue-100 text-blue-700"
+                    }
+
+                    const cardContent = (
+                      <div key={elemento.id} className={`relative flex gap-4 pb-2 ${isLocked ? "opacity-50" : ""}`}>
+                        {!isLast && <div className={`absolute left-[19px] top-[40px] w-0.5 h-[calc(100%-16px)] ${colors.line}`} />}
+
+                        <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-white border-2 ${colors.ring} shadow-sm`}>
+                          {isLocked ? (
+                            <Lock className={`w-4 h-4 ${colors.text}`} />
+                          ) : (
+                            <span className={`text-xs font-bold ${colors.text}`}>{elemento.orden}</span>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0 pb-4">
+                          <div className={`w-full text-left p-3 sm:p-4 rounded-xl border transition-all ${
+                            isLocked ? "bg-gray-50 border-gray-200" : isExpanded ? `${colors.bg} border-current/20` : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                           }`}>
-                            {curso.estado}
-                          </span>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}>
+                                    <Icon className="w-3 h-3" />
+                                    {config.label}
+                                  </span>
+                                  {elemento.obligatorio && <span className="text-xs font-medium text-red-500">Obligatorio</span>}
+                                  {esCurso && (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${estadoBg}`}>
+                                      {estadoLabel}
+                                    </span>
+                                  )}
+                                  {esTaller && (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      tallerAprobado === true ? "bg-green-100 text-green-700" :
+                                      tallerAprobado === false ? "bg-red-100 text-red-700" :
+                                      "bg-gray-100 text-gray-600"
+                                    }`}>
+                                      {tallerAprobado === true ? "Aprobado" :
+                                       tallerAprobado === false ? "No Aprobado" :
+                                       "Pendiente"}
+                                    </span>
+                                  )}
+                                </div>
+                                <h4 className="font-medium text-gray-900 mt-1.5 text-sm sm:text-base">{elemento.titulo}</h4>
+                              </div>
+                              {isLocked && (
+                                <span className="p-1.5 text-gray-300 flex-shrink-0">
+                                  <Lock className="w-4 h-4" />
+                                </span>
+                              )}
+                            </div>
+
+                            {esCurso && elemento.cursoId && estaInscrito && (
+                              <div className="mt-3 space-y-1.5">
+                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                  <span>{modulosComp}/{totalModulos} módulos completados</span>
+                                  <span className="font-medium">{porcentaje}%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div
+                                    className={`h-1.5 rounded-full transition-all duration-500 ${
+                                      porcentaje === 100 ? "bg-green-500" : "bg-luxor-primary"
+                                    }`}
+                                    style={{ width: `${porcentaje}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {esCurso && elemento.cursoId && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <Link
+                                  href={`/dashboard/curso/${elemento.cursoId}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-luxor-primary text-white rounded-lg font-medium text-sm hover:bg-luxor-secondary transition-colors"
+                                >
+                                  <Play className="w-4 h-4" />
+                                  {estaInscrito ? "Continuar curso" : "Iniciar curso"}
+                                </Link>
+                                {estadoCurso === "completada" && (
+                                  <Link
+                                    href={`/dashboard/curso/${elemento.cursoId}?certificado=1`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors"
+                                  >
+                                    <Award className="w-4 h-4" />
+                                    Ver Certificado
+                                  </Link>
+                                )}
+                              </div>
+                            )}
+                            {esTaller && tallerAprobado && (
+                              <div className="mt-3">
+                                <Link
+                                  href={`/dashboard/rutas-aprendizaje/taller/${elemento.id}/certificado`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors"
+                                >
+                                  <Award className="w-4 h-4" />
+                                  Ver Certificado
+                                </Link>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-luxor-primary transition-colors shrink-0" />
-                    </Link>
-                  ))}
+                    )
+
+                    return <div key={elemento.id}>{cardContent}</div>
+                  })}
                 </div>
               )}
             </div>
