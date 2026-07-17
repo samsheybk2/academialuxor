@@ -88,7 +88,7 @@ function UsuariosContent() {
       .in("curso_id", cursoIds)
 
     if (inscripciones) {
-       const ids = new Set(inscripciones.map((i: any) => i.user_id))
+      const ids = new Set(inscripciones.map((i: any) => i.user_id))
       setMisEstudiantesIds(ids)
     }
   }
@@ -110,7 +110,7 @@ function UsuariosContent() {
       .order("created_at", { ascending: false })
 
     if (data) {
-      const all = data.map((u) => ({
+      const all = data.map((u: any) => ({
         id: u.id,
         nombre: u.nombre,
         email: u.email,
@@ -123,7 +123,7 @@ function UsuariosContent() {
         fechaCreacion: u.created_at,
       }))
       setUsuarios(all)
-      setPendingUsers(all.filter((u) => !u.aprobado))
+      setPendingUsers(all.filter((u: any) => !u.aprobado))
     }
     setLoading(false)
   }
