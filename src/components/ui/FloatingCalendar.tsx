@@ -34,6 +34,7 @@ export function FloatingCalendar() {
   const [anio, setAnio] = useState(new Date().getFullYear())
 
   const isAgenda = pathname === "/dashboard/agenda"
+  const isNoticias = pathname === "/dashboard/noticias"
 
   const fetchEventos = useCallback(async () => {
     if (!user) return
@@ -70,7 +71,7 @@ export function FloatingCalendar() {
   const prevMes = () => { if (mes === 0) { setMes(11); setAnio(anio - 1) } else setMes(mes - 1) }
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(anio + 1) } else setMes(mes + 1) }
 
-  if (isAgenda) return null
+  if (isAgenda || isNoticias) return null
 
   return (
     <>
