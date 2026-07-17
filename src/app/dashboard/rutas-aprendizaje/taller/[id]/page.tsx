@@ -79,7 +79,7 @@ function TallerContent({ id }: { id: string }) {
         .eq("cargo_id", taller.cargo_id)
         .order("orden")
 
-      const elementosAnteriores = (elementos || []).filter((e) => e.orden < (elementos?.find((e) => e.id === id)?.orden || 0))
+      const elementosAnteriores = (elementos || []).filter((e: any) => e.orden < (elementos?.find((e2: any) => e2.id === id)?.orden || 0))
 
       const { data: profiles } = await supabase
         .from("profiles")
@@ -100,7 +100,7 @@ function TallerContent({ id }: { id: string }) {
         }
       }
 
-      const userIds = (profiles || []).map((p) => p.id)
+       const userIds = (profiles || []).map((p: any) => p.id)
 
       const { data: inscripcionesAll } = await supabase
         .from("inscripciones")
@@ -129,7 +129,7 @@ function TallerContent({ id }: { id: string }) {
         }
       }
 
-      const studentList: StudentEval[] = (profiles || []).map((p) => {
+       const studentList: StudentEval[] = (profiles || []).map((p: any) => {
         const existing = evalMap.get(p.id)
         const userCompletados = completadosMap.get(p.id) || new Set()
 

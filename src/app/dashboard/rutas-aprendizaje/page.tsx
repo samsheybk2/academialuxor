@@ -131,7 +131,7 @@ function RutasContent() {
               .in("id", cursoIdsFromFk)
 
             for (const cursoId of cursoIdsFromFk) {
-              const cursoReal = cursos?.find((c) => c.id === cursoId)
+               const cursoReal = cursos?.find((c: any) => c.id === cursoId)
               if (!cursoReal) continue
 
               const { data: inscripcion } = await supabase
