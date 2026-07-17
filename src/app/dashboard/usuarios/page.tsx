@@ -88,7 +88,7 @@ function UsuariosContent() {
       .in("curso_id", cursoIds)
 
     if (inscripciones) {
-      const ids = new Set(inscripciones.map((i: any) => i.user_id))
+      const ids = new Set<string>(inscripciones.map((i: any) => i.user_id))
       setMisEstudiantesIds(ids)
     }
   }
