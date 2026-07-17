@@ -122,7 +122,7 @@ function EncuestaCard({
       .select("opcion_id, usuario_id")
       .eq("encuesta_id", encuestaId)
 
-    const misVotos = (votos || []).filter((v) => v.usuario_id === userId).map((v) => v.opcion_id)
+    const misVotos = (votos || []).filter((v: { usuario_id: string; opcion_id: string }) => v.usuario_id === userId).map((v: { opcion_id: string }) => v.opcion_id)
     const votosPorOpcion = new Map<string, number>()
     for (const v of votos || []) {
       votosPorOpcion.set(v.opcion_id, (votosPorOpcion.get(v.opcion_id) || 0) + 1)
@@ -301,15 +301,15 @@ export default function NoticiasPage() {
       return
     }
 
-    const autorIds = [...new Set(pubData.map((p) => p.autor_id))]
+    const autorIds = [...new Set(pubData.map((p: { autor_id: string }) => p.autor_id))]
     const { data: perfiles } = await supabase
       .from("profiles")
       .select("id, nombre, avatar_url, rol")
       .in("id", autorIds)
 
-    const perfilMap = new Map((perfiles || []).map((p) => [p.id, p]))
+    const perfilMap = new Map((perfiles || []).map((p: { id: string }) => [p.id, p]))
 
-    const pubIds = pubData.map((p) => p.id)
+    const pubIds = pubData.map((p: { id: string }) => p.id)
     const { data: reacciones } = await supabase
       .from("reacciones")
       .select("publicacion_id, usuario_id, tipo")
@@ -320,7 +320,7 @@ export default function NoticiasPage() {
       .select("id, publicacion_id")
       .in("publicacion_id", pubIds)
 
-    const encuestaMap = new Map((encuestas || []).map((e) => [e.publicacion_id, e.id]))
+    const encuestaMap = new Map((encuestas || []).map((e: { publicacion_id: string; id: string }) => [e.publicacion_id, e.id]))
 
     const myReactions = new Map<string, string>()
     const reactionCounts = new Map<string, Record<string, number>>()
@@ -334,7 +334,7 @@ export default function NoticiasPage() {
       reactionCounts.set(r.publicacion_id, counts)
     }
 
-    const enriched: Publicacion[] = pubData.map((p) => ({
+    const enriched: Publicacion[] = pubData.map((p: { id: string; autor_id: string; [key: string]: any }) => ({
       ...p,
       autor: perfilMap.get(p.autor_id) as any,
       mis_reacciones: myReactions.get(p.id),

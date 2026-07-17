@@ -355,7 +355,7 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
 
       if (modulosData) {
         const modulosConPreguntas = await Promise.all(
-          modulosData.map(async (mod) => {
+          modulosData.map(async (mod: { id: string; [key: string]: any }) => {
             const { data: preguntasData } = await supabase
               .from("preguntas")
               .select("*")

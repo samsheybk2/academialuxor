@@ -177,10 +177,10 @@ function PerfilContent() {
   async function fetchFacilitadorStats() {
     setLoadingStats(true)
     const { data: cursos } = await supabase.from("cursos").select("id, estado").eq("facilitador_id", user!.id)
-    const cursoIds = cursos?.map((c) => c.id) || []
-    const aprobados = cursos?.filter((c) => c.estado === "aprobado").length || 0
-    const rechazados = cursos?.filter((c) => c.estado === "rechazado").length || 0
-    const pendientes = cursos?.filter((c) => c.estado === "pendiente").length || 0
+    const cursoIds = (cursos || []).map((c: { id: string }) => c.id)
+    const aprobados = (cursos || []).filter((c: { estado: string }) => c.estado === "aprobado").length
+    const rechazados = (cursos || []).filter((c: { estado: string }) => c.estado === "rechazado").length
+    const pendientes = (cursos || []).filter((c: { estado: string }) => c.estado === "pendiente").length
     let estudiantes = 0
     if (cursoIds.length > 0) {
       const { count } = await supabase.from("inscripciones").select("*", { count: "exact", head: true }).in("curso_id", cursoIds)
@@ -189,7 +189,7 @@ function PerfilContent() {
     let calificacion = 0
     if (cursoIds.length > 0) {
       const { data: progreso } = await supabase.from("progreso_modulos").select("puntuacion").in("curso_id", cursoIds).not("puntuacion", "is", null)
-      if (progreso && progreso.length > 0) calificacion = Math.round(progreso.reduce((s, p) => s + (p.puntuacion || 0), 0) / progreso.length)
+      if (progreso && progreso.length > 0) calificacion = Math.round(progreso.reduce((s: number, p: { puntuacion?: number | null }) => s + (p.puntuacion || 0), 0) / progreso.length)
     }
     setFacStats({ cursosCreados: cursos?.length || 0, cursosAprobados: aprobados, cursosRechazados: rechazados, cursosPendientes: pendientes, estudiantesCapacitados: estudiantes, calificacionPromedio: calificacion })
     setLoadingStats(false)
@@ -198,8 +198,8 @@ function PerfilContent() {
   async function fetchStudentStats() {
     setLoadingStats(true)
     const { data: inscripciones } = await supabase.from("inscripciones").select("id, curso_id, estado, fecha_inscripcion").eq("user_id", user!.id)
-    const cursoIds = inscripciones?.map((i) => i.curso_id) || []
-    const cursosCompletados = inscripciones?.filter((i) => i.estado === "completada").length || 0
+    const cursoIds = (inscripciones || []).map((i: { curso_id: string }) => i.curso_id)
+    const cursosCompletados = (inscripciones || []).filter((i: { estado: string }) => i.estado === "completada").length
 
     let modulosCompletados = 0
     let quizzesAprobados = 0
@@ -207,9 +207,9 @@ function PerfilContent() {
     if (cursoIds.length > 0) {
       const { data: progreso } = await supabase.from("progreso_modulos").select("completado, quiz_aprobado, puntuacion").eq("user_id", user!.id)
       if (progreso) {
-        modulosCompletados = progreso.filter((p) => p.completado).length
-        quizzesAprobados = progreso.filter((p) => p.quiz_aprobado).length
-        calificaciones = progreso.filter((p) => p.puntuacion != null).map((p) => p.puntuacion!)
+        modulosCompletados = progreso.filter((p: { completado: boolean }) => p.completado).length
+        quizzesAprobados = progreso.filter((p: { quiz_aprobado: boolean }) => p.quiz_aprobado).length
+        calificaciones = progreso.filter((p: { puntuacion?: number | null }) => p.puntuacion != null).map((p: { puntuacion?: number | null }) => p.puntuacion!)
       }
     }
 
@@ -223,7 +223,7 @@ function PerfilContent() {
     if (calificacionPromedio >= 90) puntos += 50
 
     const { data: actividad } = await supabase.from("actividad_usuario").select("fecha").eq("user_id", user!.id).order("fecha", { ascending: false })
-    const fechasActividad = actividad?.map((a) => a.fecha) || []
+    const fechasActividad = (actividad || []).map((a: { fecha: string }) => a.fecha)
     const { actual, mejor } = calcRacha(fechasActividad)
 
     setStuStats({

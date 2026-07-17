@@ -127,7 +127,7 @@ function AgendaContent() {
       .from("evento_etiquetas")
       .select("usuario_id")
       .eq("evento_id", eventoId)
-    setEtiquetados(data?.map((e) => e.usuario_id) || [])
+    setEtiquetados((data || []).map((e: { usuario_id: string }) => e.usuario_id))
   }, [supabase])
 
   useEffect(() => {
@@ -137,7 +137,7 @@ function AgendaContent() {
         .select("id, nombre, apellido, fecha_nacimiento")
         .not("fecha_nacimiento", "is", null)
       if (data) {
-        const mapped = data.map((p) => {
+        const mapped = data.map((p: { id: string; nombre: string; apellido?: string; fecha_nacimiento: string }) => {
           const bd = new Date(p.fecha_nacimiento + "T12:00:00")
           return {
             id: p.id,
