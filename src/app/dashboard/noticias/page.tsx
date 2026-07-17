@@ -720,7 +720,7 @@ export default function NoticiasPage() {
               )}
             </div>
 
-            <div className="px-5 pb-3 pt-1 flex items-center gap-1.5 flex-wrap border-t border-gray-100 mt-2">
+            <div className="px-5 pb-3 pt-2 flex items-center gap-2 flex-wrap border-t border-gray-100 mt-2">
               {REACCION_KEYS.map((tipo) => {
                 const config = REACCIONES_CONFIG[tipo]
                 const Icon = config.icon
@@ -730,15 +730,15 @@ export default function NoticiasPage() {
                   <button
                     key={tipo}
                     onClick={() => toggleReaccion(pub.id, tipo)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
                       isActive
-                        ? `${config.bg} ${config.color} shadow-sm scale-105`
-                        : `border-gray-100 text-gray-400 ${config.hoverBg} hover:text-gray-600 hover:border-gray-200 hover:shadow-sm`
+                        ? `${config.bg} ${config.color} shadow-md scale-110`
+                        : `border-gray-100 text-gray-300 hover:text-gray-500 hover:border-gray-200 hover:bg-gray-50 hover:shadow-sm`
                     }`}
                     title={config.label}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? config.color : ""}`} fill={isActive ? "currentColor" : "none"} />
-                    {count > 0 && <span className={isActive ? config.color : ""}>{count}</span>}
+                    <Icon className={`w-5 h-5 ${isActive ? config.color : "text-gray-300 group-hover:text-gray-500"}`} fill={isActive ? "currentColor" : "none"} strokeWidth={isActive ? 2.5 : 2} />
+                    {count > 0 && <span className={isActive ? config.color : "text-gray-500"}>{count}</span>}
                   </button>
                 )
               })}
