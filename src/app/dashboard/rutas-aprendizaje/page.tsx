@@ -106,7 +106,7 @@ function RutasContent() {
           .order("orden")
 
         if (elementos && elementos.length > 0) {
-          const elementosMapeados: ElementoRuta[] = elementos.map((e) => ({
+           const elementosMapeados: ElementoRuta[] = elementos.map((e: any) => ({
             id: e.id,
             titulo: e.titulo,
             tipo: (e.tipo || "curso") as TipoEtapa,
