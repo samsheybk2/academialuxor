@@ -146,8 +146,8 @@ function CargoContent({ id }: { id: string }) {
               .limit(1)
 
             const total = inscripciones?.length || 0
-            const completadas = inscripciones?.filter((i) => i.estado === "completada").length || 0
-            const activas = inscripciones?.filter((i) => i.estado === "activa").length || 0
+            const completadas = inscripciones?.filter((i: any) => i.estado === "completada").length || 0
+            const activas = inscripciones?.filter((i: any) => i.estado === "activa").length || 0
 
             let estado = "sin_iniciar"
             if (completadas > 0 && total === completadas) estado = "graduado"
