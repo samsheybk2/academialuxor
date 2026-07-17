@@ -133,7 +133,7 @@ function CargoContent({ id }: { id: string }) {
 
       if (profiles) {
         const studentsWithProgress = await Promise.all(
-          profiles.map(async (p) => {
+           profiles.map(async (p: any) => {
             const { data: inscripciones } = await supabase
               .from("inscripciones")
               .select("id, estado")
