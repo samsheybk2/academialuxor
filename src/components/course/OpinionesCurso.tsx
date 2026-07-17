@@ -94,7 +94,7 @@ export function OpinionesCurso({ cursoId, inscrito }: OpinionesCursoProps) {
       if (data) {
         setOpiniones(data as Opinion[])
         if (user) {
-          const mia = data.find((o) => o.user_id === user.id)
+          const mia = data.find((o: any) => o.user_id === user.id)
           if (mia) {
             setYaOpino(true)
             setMiCalificacion(mia.calificacion)

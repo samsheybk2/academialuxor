@@ -20,7 +20,7 @@ export default function RestablecerContrasenaPage() {
 
   useEffect(() => {
     const supabase = createSupabaseClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: any) => {
       setSessionReady(!!session)
     })
   }, [])
