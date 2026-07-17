@@ -15,7 +15,15 @@ export function createSupabaseClient() {
               },
             },
           }),
+          getUser: async () => ({ data: { user: null }, error: null }),
+          getSession: async () => ({ data: { session: null }, error: null }),
         },
+        from: () => ({
+          select: () => ({ data: null, error: null }),
+          insert: () => ({ data: null, error: null }),
+          update: () => ({ data: null, error: null }),
+          delete: () => ({ data: null, error: null }),
+        }),
       } as any
     }
 
