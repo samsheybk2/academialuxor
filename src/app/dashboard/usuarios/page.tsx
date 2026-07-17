@@ -81,7 +81,7 @@ function UsuariosContent() {
 
     if (!cursos || cursos.length === 0) return
 
-    const cursoIds = cursos.map((c) => c.id)
+    const cursoIds = cursos.map((c: any) => c.id)
     const { data: inscripciones } = await supabase
       .from("inscripciones")
       .select("user_id")
