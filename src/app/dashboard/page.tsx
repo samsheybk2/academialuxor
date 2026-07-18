@@ -39,7 +39,7 @@ function DashboardContent() {
   }, [])
 
   return (
-    <div className="relative min-h-[calc(100vh-8rem)] -m-4 sm:-m-6 flex flex-col items-center justify-center overflow-hidden">
+    <div className="relative min-h-[calc(100vh-10rem)] -m-4 sm:-m-6 flex flex-col items-center justify-center overflow-hidden">
       {/* Slideshow de fondos */}
       <div className="absolute inset-0">
         <img src="/fondo (1).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow1_12s_infinite]" />

@@ -1,0 +1,24 @@
+{
+  "name": "Academia Luxor",
+  "short_name": "Academia Luxor",
+  "description": "Plataforma de formación profesional de Supermercados Luxor",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#28315F",
+  "theme_color": "#28315F",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo_academia_luxor.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo_academia_luxor.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
