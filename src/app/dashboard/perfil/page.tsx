@@ -709,15 +709,14 @@ function PerfilContent() {
               </div>
             ) : null}
           </div>
-        </CardContent>
-      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-1 space-y-4">
-          {/* Insignias */}
+          {/* Insignias - Dentro del contenedor principal */}
           {(isFac || isStu || (isDev && godMode)) && (
-            <Accordion title="Insignias" badge={`${isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.filter(b => b.ok).length : stuBadges.filter(b => b.ok).length) : isFac ? facUnlocked : stuUnlocked}/${isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.length : stuBadges.length) : isFac ? facBadges.length : stuBadges.length}`} defaultOpen={true}>
-              <div className="badge-container pt-3 flex flex-wrap gap-2">
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                Insignias <span className="text-xs font-normal text-gray-500">({isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.filter(b => b.ok).length : stuBadges.filter(b => b.ok).length) : isFac ? facUnlocked : stuUnlocked}/{isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.length : stuBadges.length) : isFac ? facBadges.length : stuBadges.length})</span>
+              </h3>
+              <div className="badge-container flex flex-wrap gap-2">
                 {(isDev && godMode ? (simulatedRole === "facilitador" ? facBadges : stuBadges) : isFac ? facBadges : stuBadges).map((b) => (
                   <div key={b.id} className="relative group">
                     <button
@@ -773,69 +772,13 @@ function PerfilContent() {
                   </div>
                 ))}
               </div>
-            </Accordion>
+            </div>
           )}
+        </CardContent>
+      </Card>
 
-          {/* Opiniones - Solo para facilitador */}
-          {(isFac || (isDev && godMode && simulatedRole === "facilitador")) && (
-            <Card>
-              <CardContent className="p-4">
-                {loadingOpiniones ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 text-luxor-primary animate-spin" />
-                  </div>
-                ) : (
-                  <>
-                    {(() => {
-                      const totalOpiniones = opiniones.length
-                      const promedio = totalOpiniones > 0 
-                        ? Math.round((opiniones.reduce((sum, o) => sum + o.calificacion, 0) / totalOpiniones) * 10) / 10 
-                        : 0
-                      const distribucion = [5, 4, 3, 2, 1].map(estrella => ({
-                        estrella,
-                        count: opiniones.filter(o => o.calificacion === estrella).length
-                      }))
-                      const maxCount = Math.max(...distribucion.map(d => d.count), 1)
-
-                      return (
-                        <>
-                          {/* Promedio y estrellas */}
-                          <div className="text-center mb-4">
-                            <div className="text-4xl font-bold text-gray-900">{promedio.toFixed(1)}</div>
-                            <div className="flex items-center justify-center gap-1 mt-2">
-                              {[1, 2, 3, 4, 5].map(estrella => (
-                                <Star
-                                  key={estrella}
-                                  className={`w-5 h-5 ${estrella <= Math.round(promedio) ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
-                                />
-                              ))}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">{totalOpiniones} {totalOpiniones === 1 ? "opinión" : "opiniones"}</p>
-                          </div>
-
-                          {/* Distribución de estrellas */}
-                          <div className="space-y-2">
-                            {distribucion.map(({ estrella, count }) => (
-                              <div key={estrella} className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500 w-3">{estrella}</span>
-                                <div className="flex-1 bg-gray-100 rounded-full h-2">
-                                  <div
-                                    className="h-2 rounded-full bg-amber-400 transition-all duration-500"
-                                    style={{ width: `${(count / maxCount) * 100}%` }}
-                                  />
-                                </div>
-                                <span className="text-xs text-gray-500 w-3">{count}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-1 space-y-4">
         </div>
 
         <div className="lg:col-span-2 space-y-4">
@@ -1235,10 +1178,68 @@ function PerfilContent() {
                   {saving ? "Guardando..." : "Guardar"}
                 </Button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+                          </div>
+                        </div>
+
+                        {/* Opiniones */}
+                        <div className="border-t border-gray-200 pt-4">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Opiniones</h4>
+                          {loadingOpiniones ? (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader2 className="w-5 h-5 text-luxor-primary animate-spin" />
+                            </div>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                              {(() => {
+                                const totalOpiniones = opiniones.length
+                                const promedio = totalOpiniones > 0 
+                                  ? Math.round((opiniones.reduce((sum, o) => sum + o.calificacion, 0) / totalOpiniones) * 10) / 10 
+                                  : 0
+                                return (
+                                  <>
+                                    {/* Promedio y estrellas */}
+                                    <div className="text-center">
+                                      <div className="text-3xl font-bold text-gray-900">{promedio.toFixed(1)}</div>
+                                      <div className="flex items-center justify-center gap-1 mt-2">
+                                        {[1, 2, 3, 4, 5].map(estrella => (
+                                          <Star
+                                            key={estrella}
+                                            className={`w-4 h-4 ${estrella <= Math.round(promedio) ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                                          />
+                                        ))}
+                                      </div>
+                                      <p className="text-xs text-gray-500 mt-1">{totalOpiniones} {totalOpiniones === 1 ? "opinión" : "opiniones"}</p>
+                                    </div>
+
+                                    {/* Distribución de estrellas */}
+                                    <div className="flex-1 w-full">
+                                      <div className="space-y-1.5">
+                                        {[5, 4, 3, 2, 1].map(estrella => {
+                                          const count = opiniones.filter(o => o.calificacion === estrella).length
+                                          const maxCount = Math.max(...[5, 4, 3, 2, 1].map(e => opiniones.filter(o => o.calificacion === e).length), 1)
+                                          return (
+                                            <div key={estrella} className="flex items-center gap-2">
+                                              <span className="text-xs text-gray-500 w-3">{estrella}</span>
+                                              <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                                                <div
+                                                  className="h-1.5 rounded-full bg-amber-400 transition-all duration-500"
+                                                  style={{ width: `${(count / maxCount) * 100}%` }}
+                                                />
+                                              </div>
+                                              <span className="text-xs text-gray-500 w-3">{count}</span>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  </>
+                                )
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
     </div>
   )
 }
