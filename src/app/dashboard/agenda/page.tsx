@@ -301,8 +301,8 @@ function AgendaContent() {
   })() : []
 
   return (
-    <div className="w-full h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="w-full flex flex-col lg:h-[calc(100vh-7rem)]">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 min-h-0 flex flex-col">
           <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <CardContent className="flex-1 min-h-0 flex flex-col p-4 overflow-hidden">

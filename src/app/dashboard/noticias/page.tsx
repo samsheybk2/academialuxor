@@ -521,8 +521,8 @@ async function handleEliminar(pubId: string) {
 
   return (
     <>
-       <div className="relative z-[2] w-full h-[calc(100vh-64px)] overflow-hidden flex flex-col">
-       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 h-full w-full items-stretch overflow-hidden">
+       <div className="relative z-[2] w-full min-h-[calc(100vh-64px)] lg:h-[calc(100vh-64px)] flex flex-col">
+       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 w-full items-stretch">
          {/* Sidebar izquierdo — Calendario */}
          <div className="hidden lg:block h-full w-full overflow-hidden rounded-none bg-[#F0F2F5] p-0">
            <CalendarioSidebar />

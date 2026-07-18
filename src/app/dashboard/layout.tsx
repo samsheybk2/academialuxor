@@ -44,7 +44,7 @@ export default function DashboardLayout({
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <LoadingBar />
       <Sidebar
         open={sidebarOpen}
@@ -53,7 +53,7 @@ export default function DashboardLayout({
         onToggleCollapse={() => {}}
       />
       <Header onMenuClick={() => setSidebarOpen(true)} />
-      <main className="p-0">{children}</main>
+      <main className="flex-1 p-4 sm:p-6 pb-20 lg:pb-6 overflow-x-hidden">{children}</main>
       <MobileNav />
       <FloatingCalendar />
     </div>

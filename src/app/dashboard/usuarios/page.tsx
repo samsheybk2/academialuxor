@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Modal } from "@/components/ui/Modal"
@@ -55,6 +55,9 @@ function UsuariosContent() {
   const [saving, setSaving] = useState(false)
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [approvingCargo, setApprovingCargo] = useState<Record<string, string>>({})
+  const [cargoSearch, setCargoSearch] = useState("")
+  const [showCargoDropdown, setShowCargoDropdown] = useState(false)
+  const cargoDropdownRef = useRef<HTMLDivElement>(null)
   const [form, setForm] = useState({
     nombre: "",
     email: "",
@@ -71,6 +74,16 @@ function UsuariosContent() {
     fetchUsers()
     fetchCargos()
     if (canApprove) fetchMisEstudiantes()
+  }, [])
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (cargoDropdownRef.current && !cargoDropdownRef.current.contains(e.target as Node)) {
+        setShowCargoDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
   async function fetchMisEstudiantes() {
@@ -174,6 +187,7 @@ function UsuariosContent() {
   function openCreate() {
     setEditingUser(null)
     setForm({ nombre: "", email: "", cedula: "", rol: "estudiante", cargo: "", nivel: "operadores" })
+    setCargoSearch("")
     setShowModal(true)
   }
 
@@ -187,6 +201,7 @@ function UsuariosContent() {
       cargo: user.cargo,
       nivel: user.nivel || "operadores",
     })
+    setCargoSearch("")
     setShowModal(true)
   }
 
@@ -556,18 +571,52 @@ function UsuariosContent() {
           </div>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">Cargo</label>
-            <select
-              value={form.cargo}
-              onChange={(e) => setForm({ ...form, cargo: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-            >
-              <option value="">Sin cargo</option>
-              {cargosList.map((c) => (
-                <option key={c.id} value={c.nombre}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
+            <div className="relative" ref={cargoDropdownRef}>
+              <input
+                type="text"
+                value={form.cargo || cargoSearch}
+                onChange={(e) => {
+                  setCargoSearch(e.target.value)
+                  setForm({ ...form, cargo: "" })
+                  setShowCargoDropdown(true)
+                }}
+                onFocus={() => setShowCargoDropdown(true)}
+                placeholder="Buscar cargo..."
+                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+              />
+              {form.cargo && (
+                <button
+                  onClick={() => { setForm({ ...form, cargo: "" }); setCargoSearch("") }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              )}
+              {showCargoDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <button
+                    onClick={() => { setForm({ ...form, cargo: "" }); setCargoSearch(""); setShowCargoDropdown(false) }}
+                    className="w-full text-left px-3.5 py-2 text-sm text-gray-500 hover:bg-gray-50"
+                  >
+                    Sin cargo
+                  </button>
+                  {cargosList
+                    .filter((c) => c.nombre.toLowerCase().includes((form.cargo || cargoSearch).toLowerCase()))
+                    .map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => { setForm({ ...form, cargo: c.nombre }); setCargoSearch(""); setShowCargoDropdown(false) }}
+                        className="w-full text-left px-3.5 py-2 text-sm text-gray-900 hover:bg-gray-50"
+                      >
+                        {c.nombre}
+                      </button>
+                    ))}
+                  {cargosList.filter((c) => c.nombre.toLowerCase().includes((form.cargo || cargoSearch).toLowerCase())).length === 0 && (
+                    <div className="px-3.5 py-2 text-sm text-gray-400">No se encontraron cargos</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" onClick={() => setShowModal(false)} className="flex-1">
