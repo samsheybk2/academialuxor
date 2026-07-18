@@ -68,6 +68,7 @@ function CursosContent() {
   const [search, setSearch] = useState("")
   const [filterNivel, setFilterNivel] = useState("todos")
   const [filterEstado, setFilterEstado] = useState("todos")
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [showAprobarModal, setShowAprobarModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -246,30 +247,60 @@ function CursosContent() {
           />
         </div>
         <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <select
-            value={filterNivel}
-            onChange={(e) => setFilterNivel(e.target.value)}
-            className="pl-10 pr-8 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm appearance-none"
+          <button
+            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
           >
-            <option value="todos">Todos los niveles</option>
-            <option value="gerentes">Gerentes</option>
-            <option value="coordinadores">Coordinadores</option>
-            <option value="administrativos">Administrativos</option>
-            <option value="operadores">Operadores</option>
-          </select>
+            <Filter className="w-4 h-4" />
+            Filtros
+            {(filterNivel !== "todos" || filterEstado !== "todos") && (
+              <span className="w-2 h-2 bg-luxor-primary rounded-full" />
+            )}
+          </button>
+          {showFilterDropdown && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowFilterDropdown(false)} />
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                <div className="p-3 border-b border-gray-100">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Nivel</label>
+                  <select
+                    value={filterNivel}
+                    onChange={(e) => setFilterNivel(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                  >
+                    <option value="todos">Todos los niveles</option>
+                    <option value="gerentes">Gerentes</option>
+                    <option value="coordinadores">Coordinadores</option>
+                    <option value="administrativos">Administrativos</option>
+                    <option value="operadores">Operadores</option>
+                  </select>
+                </div>
+                <div className="p-3">
+                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Estado</label>
+                  <select
+                    value={filterEstado}
+                    onChange={(e) => setFilterEstado(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                  >
+                    <option value="todos">Todos los estados</option>
+                    <option value="aprobado">Aprobados</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="rechazado">Rechazados</option>
+                    <option value="borrador">Borradores</option>
+                  </select>
+                </div>
+                {(filterNivel !== "todos" || filterEstado !== "todos") && (
+                  <button
+                    onClick={() => { setFilterNivel("todos"); setFilterEstado("todos"); setShowFilterDropdown(false) }}
+                    className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100 transition-colors"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
-        <select
-          value={filterEstado}
-          onChange={(e) => setFilterEstado(e.target.value)}
-          className="px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm appearance-none"
-        >
-          <option value="todos">Todos los estados</option>
-          <option value="aprobado">Aprobados</option>
-          <option value="pendiente">Pendientes</option>
-          <option value="rechazado">Rechazados</option>
-          <option value="borrador">Borradores</option>
-        </select>
       </div>
 
       {loading ? (
@@ -277,7 +308,7 @@ function CursosContent() {
           <Loader2 className="w-8 h-8 text-luxor-primary animate-spin" />
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((curso) => {
             const estadoInfo = estadoConfig[curso.estado]
             const EstadoIcon = estadoInfo.icon
@@ -288,9 +319,9 @@ function CursosContent() {
                 href={`/dashboard/cursos/${curso.id}`}
                 className="block"
               >
-              <Card className="hover:shadow-md transition-shadow h-full cursor-pointer">
+              <Card className="hover:shadow-md transition-shadow h-full cursor-pointer overflow-hidden">
                 <CardContent className="space-y-3">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-900 truncate">
                         {curso.titulo}
@@ -299,11 +330,11 @@ function CursosContent() {
                         {curso.descripcion || curso.introduccion || "Sin descripción"}
                       </p>
                     </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-2">
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       {(Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]).map((n) => (
                         <span
                           key={n}
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize whitespace-nowrap ${
                             nivelColors[n] || "bg-gray-100 text-gray-700"
                           }`}
                         >
@@ -311,7 +342,7 @@ function CursosContent() {
                         </span>
                       ))}
                       {curso.tipo === "electivo" && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 flex items-center gap-1 whitespace-nowrap">
                           <Star className="w-2.5 h-2.5" />
                           Electivo
                         </span>
@@ -319,23 +350,23 @@ function CursosContent() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <GraduationCap className="w-3.5 h-3.5" />
-                      {curso.facilitador_nombre}
+                  <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
+                    <span className="flex items-center gap-1 min-w-0">
+                      <GraduationCap className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate">{curso.facilitador_nombre}</span>
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <BookOpen className="w-3.5 h-3.5" />
                       {curso.modulos_count} módulos
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
+                  <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <Users className="w-3.5 h-3.5" />
                       {curso.estudiantes_count} estudiantes
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <Clock className="w-3.5 h-3.5" />
                       {curso.duracion}
                     </span>
