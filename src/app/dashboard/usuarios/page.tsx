@@ -247,15 +247,6 @@ function UsuariosContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        {canManage && (
-          <Button onClick={openCreate}>
-            <Plus className="w-4 h-4" />
-            Nuevo Usuario
-          </Button>
-        )}
-      </div>
-
       {canApprove && pendingUsers.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -324,21 +315,21 @@ function UsuariosContent() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nombre, email o cargo..."
+            placeholder="Buscar..."
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
           />
         </div>
         {canApprove && (
           <button
             onClick={() => { setFilterMisEstudiantes(!filterMisEstudiantes); setFilterRol("todos") }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap ${
               filterMisEstudiantes
                 ? "bg-luxor-primary text-white border-luxor-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
@@ -359,13 +350,19 @@ function UsuariosContent() {
             <select
               value={filterRol}
               onChange={(e) => { setFilterRol(e.target.value); setFilterMisEstudiantes(false) }}
-              className="pl-10 pr-8 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm appearance-none"
+              className="pl-10 pr-8 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm appearance-none whitespace-nowrap"
             >
               <option value="todos">Todos los roles</option>
               <option value="facilitador">Facilitadores</option>
               <option value="estudiante">Estudiantes</option>
             </select>
           </div>
+        )}
+        {canManage && (
+          <Button onClick={openCreate} className="whitespace-nowrap">
+            <Plus className="w-4 h-4" />
+            Nuevo Usuario
+          </Button>
         )}
       </div>
 
