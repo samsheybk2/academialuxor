@@ -166,6 +166,9 @@ function PerfilContent() {
   const [godMode, setGodMode] = useState(false)
   const [godModeCollapsed, setGodModeCollapsed] = useState(false)
   const [simulatedRole, setSimulatedRole] = useState<"facilitador" | "estudiante">("facilitador")
+  const [facTab, setFacTab] = useState<"publicaciones" | "estadisticas" | "cursos">("estadisticas")
+  const [facCursos, setFacCursos] = useState<any[]>([])
+  const [loadingCursos, setLoadingCursos] = useState(false)
   const [simulatedStudentStats, setSimulatedStudentStats] = useState({
     rachaActual: 0,
     mejorRacha: 0,
@@ -197,7 +200,10 @@ function PerfilContent() {
       fetchedRef.current = true
       setModalForm({ nombre: user.nombre || "", bio: user.bio || "", newPassword: "", confirmPassword: "" })
       if (user.avatar_url) setAvatarPreview(user.avatar_url)
-      if (user.rol === "facilitador") fetchFacilitadorStats()
+      if (user.rol === "facilitador") {
+        fetchFacilitadorStats()
+        fetchFacilitadorCursos()
+      }
       else if (user.rol === "estudiante") fetchStudentStats()
       else setLoadingStats(false)
     }
@@ -237,6 +243,17 @@ function PerfilContent() {
     }
     setFacStats({ cursosCreados: cursos?.length || 0, cursosAprobados: aprobados, cursosRechazados: rechazados, cursosPendientes: pendientes, estudiantesCapacitados: estudiantes, calificacionPromedio: calificacion })
     setLoadingStats(false)
+  }
+
+  async function fetchFacilitadorCursos() {
+    setLoadingCursos(true)
+    const { data: cursos } = await supabase
+      .from("cursos")
+      .select("id, titulo, descripcion, nivel, estado, fecha_creacion, imagen_url")
+      .eq("facilitador_id", user!.id)
+      .order("fecha_creacion", { ascending: false })
+    setFacCursos(cursos || [])
+    setLoadingCursos(false)
   }
 
   async function fetchStudentStats() {
@@ -846,104 +863,223 @@ function PerfilContent() {
             )
           )}
 
-          {/* Facilitador - Stats */}
+          {/* Facilitador - Tabs */}
           {(isFac || (isDev && godMode && simulatedRole === "facilitador")) && (
             loadingStats && !isDev ? (
               <Card><CardContent><div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-luxor-primary animate-spin" /></div></CardContent></Card>
             ) : (facStats || isDev) && (
-              <Accordion title="Estadisticas" defaultOpen={true}>
-                <div className="pt-4 space-y-4">
-                  {/* Tags de métricas */}
-                  <div className="flex flex-wrap gap-2">
-                    {(() => {
-                      const stats = isDev && godMode ? simulatedFacStats : facStats!
-                      return (
-                        <>
-                          <div className="flex items-center gap-2 px-3 py-2 bg-violet-50 text-violet-700 rounded-lg">
-                            <span className="text-lg">👥</span>
-                            <div>
-                              <div className="text-lg font-bold leading-tight">{stats.estudiantesCapacitados}</div>
-                              <div className="text-xs opacity-75">Estudiantes</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 px-3 py-2 bg-pink-50 text-pink-700 rounded-lg">
-                            <span className="text-lg">⭐</span>
-                            <div>
-                              <div className="text-lg font-bold leading-tight">{stats.calificacionPromedio}%</div>
-                              <div className="text-xs opacity-75">Calificación</div>
-                            </div>
-                          </div>
-                        </>
-                      )
-                    })()}
+              <Card>
+                <CardContent className="p-0">
+                  {/* Tabs Header */}
+                  <div className="flex border-b border-gray-200">
+                    <button
+                      onClick={() => setFacTab("publicaciones")}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${facTab === "publicaciones" ? "text-luxor-primary border-b-2 border-luxor-primary" : "text-gray-500 hover:text-gray-700"}`}
+                    >
+                      Publicaciones
+                    </button>
+                    <button
+                      onClick={() => setFacTab("estadisticas")}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${facTab === "estadisticas" ? "text-luxor-primary border-b-2 border-luxor-primary" : "text-gray-500 hover:text-gray-700"}`}
+                    >
+                      Estadísticas
+                    </button>
+                    <button
+                      onClick={() => setFacTab("cursos")}
+                      className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${facTab === "cursos" ? "text-luxor-primary border-b-2 border-luxor-primary" : "text-gray-500 hover:text-gray-700"}`}
+                    >
+                      Cursos
+                    </button>
                   </div>
 
-                  {/* Gráfico de dona */}
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <div className="w-full sm:w-48 h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={[
-                              { name: "Aprobados", value: isDev && godMode ? simulatedFacStats.cursosAprobados : facStats!.cursosAprobados },
-                              { name: "Pendientes", value: isDev && godMode ? simulatedFacStats.cursosPendientes : facStats!.cursosPendientes },
-                              { name: "Rechazados", value: isDev && godMode ? simulatedFacStats.cursosRechazados : facStats!.cursosRechazados },
-                            ].filter(d => d.value > 0)}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={45}
-                            outerRadius={70}
-                            paddingAngle={2}
-                            dataKey="value"
-                          >
-                            <Cell fill="#10b981" />
-                            <Cell fill="#f59e0b" />
-                            <Cell fill="#ef4444" />
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="flex-1 w-full space-y-2">
-                      {(() => {
-                        const stats = isDev && godMode ? simulatedFacStats : facStats!
-                        return (
-                          <>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-luxor-primary" />
-                                <span className="text-gray-700">Total creados</span>
-                              </span>
-                              <span className="font-semibold text-gray-900">{stats.cursosCreados}</span>
+                  {/* Tab Content */}
+                  <div className="p-4">
+                    {/* Publicaciones Tab */}
+                    {facTab === "publicaciones" && (
+                      <div className="space-y-3">
+                        {loadingCursos ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-luxor-primary animate-spin" />
+                          </div>
+                        ) : facCursos.length === 0 ? (
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <BookOpen className="w-8 h-8 text-gray-400" />
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-green-500" />
-                                <span className="text-gray-700">Aprobados</span>
-                              </span>
-                              <span className="font-semibold text-green-600">{stats.cursosAprobados}</span>
+                            <p className="text-sm text-gray-500">No tienes publicaciones aún</p>
+                          </div>
+                        ) : (
+                          facCursos.map((curso) => (
+                            <div key={curso.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                              {curso.imagen_url ? (
+                                <img src={curso.imagen_url} alt={curso.titulo} className="w-16 h-16 rounded-lg object-cover shrink-0" />
+                              ) : (
+                                <div className="w-16 h-16 bg-luxor-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                                  <BookOpen className="w-6 h-6 text-luxor-primary" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-semibold text-gray-900 truncate">{curso.titulo}</h4>
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{curso.descripcion}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                                    curso.estado === "aprobado" ? "bg-green-100 text-green-700" :
+                                    curso.estado === "pendiente" ? "bg-amber-100 text-amber-700" :
+                                    "bg-red-100 text-red-700"
+                                  }`}>
+                                    {curso.estado}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400">{curso.nivel}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-amber-500" />
-                                <span className="text-gray-700">Pendientes</span>
-                              </span>
-                              <span className="font-semibold text-amber-600">{stats.cursosPendientes}</span>
+                          ))
+                        )}
+                      </div>
+                    )}
+
+                    {/* Estadísticas Tab */}
+                    {facTab === "estadisticas" && (
+                      <div className="space-y-4">
+                        {/* Tags de métricas */}
+                        <div className="flex flex-wrap gap-2">
+                          {(() => {
+                            const stats = isDev && godMode ? simulatedFacStats : facStats!
+                            return (
+                              <>
+                                <div className="flex items-center gap-2 px-3 py-2 bg-violet-50 text-violet-700 rounded-lg">
+                                  <span className="text-lg">👥</span>
+                                  <div>
+                                    <div className="text-lg font-bold leading-tight">{stats.estudiantesCapacitados}</div>
+                                    <div className="text-xs opacity-75">Estudiantes</div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-2 bg-pink-50 text-pink-700 rounded-lg">
+                                  <span className="text-lg">⭐</span>
+                                  <div>
+                                    <div className="text-lg font-bold leading-tight">{stats.calificacionPromedio}%</div>
+                                    <div className="text-xs opacity-75">Calificación</div>
+                                  </div>
+                                </div>
+                              </>
+                            )
+                          })()}
+                        </div>
+
+                        {/* Gráfico de dona */}
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                          <div className="w-full sm:w-48 h-48">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={[
+                                    { name: "Aprobados", value: isDev && godMode ? simulatedFacStats.cursosAprobados : facStats!.cursosAprobados },
+                                    { name: "Pendientes", value: isDev && godMode ? simulatedFacStats.cursosPendientes : facStats!.cursosPendientes },
+                                    { name: "Rechazados", value: isDev && godMode ? simulatedFacStats.cursosRechazados : facStats!.cursosRechazados },
+                                  ].filter(d => d.value > 0)}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={45}
+                                  outerRadius={70}
+                                  paddingAngle={2}
+                                  dataKey="value"
+                                >
+                                  <Cell fill="#10b981" />
+                                  <Cell fill="#f59e0b" />
+                                  <Cell fill="#ef4444" />
+                                </Pie>
+                                <Tooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                          <div className="flex-1 w-full space-y-2">
+                            {(() => {
+                              const stats = isDev && godMode ? simulatedFacStats : facStats!
+                              return (
+                                <>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="flex items-center gap-2">
+                                      <span className="w-3 h-3 rounded-full bg-luxor-primary" />
+                                      <span className="text-gray-700">Total creados</span>
+                                    </span>
+                                    <span className="font-semibold text-gray-900">{stats.cursosCreados}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="flex items-center gap-2">
+                                      <span className="w-3 h-3 rounded-full bg-green-500" />
+                                      <span className="text-gray-700">Aprobados</span>
+                                    </span>
+                                    <span className="font-semibold text-green-600">{stats.cursosAprobados}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="flex items-center gap-2">
+                                      <span className="w-3 h-3 rounded-full bg-amber-500" />
+                                      <span className="text-gray-700">Pendientes</span>
+                                    </span>
+                                    <span className="font-semibold text-amber-600">{stats.cursosPendientes}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="flex items-center gap-2">
+                                      <span className="w-3 h-3 rounded-full bg-red-500" />
+                                      <span className="text-gray-700">Rechazados</span>
+                                    </span>
+                                    <span className="font-semibold text-red-600">{stats.cursosRechazados}</span>
+                                  </div>
+                                </>
+                              )
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cursos Tab */}
+                    {facTab === "cursos" && (
+                      <div className="space-y-3">
+                        {loadingCursos ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 text-luxor-primary animate-spin" />
+                          </div>
+                        ) : facCursos.length === 0 ? (
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <BookOpen className="w-8 h-8 text-gray-400" />
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-red-500" />
-                                <span className="text-gray-700">Rechazados</span>
-                              </span>
-                              <span className="font-semibold text-red-600">{stats.cursosRechazados}</span>
-                            </div>
-                          </>
-                        )
-                      })()}
-                    </div>
+                            <p className="text-sm text-gray-500">No has creado cursos aún</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {facCursos.map((curso) => (
+                              <div key={curso.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                                {curso.imagen_url ? (
+                                  <img src={curso.imagen_url} alt={curso.titulo} className="w-full h-32 object-cover" />
+                                ) : (
+                                  <div className="w-full h-32 bg-luxor-primary/10 flex items-center justify-center">
+                                    <BookOpen className="w-10 h-10 text-luxor-primary" />
+                                  </div>
+                                )}
+                                <div className="p-3">
+                                  <h4 className="text-sm font-semibold text-gray-900 truncate">{curso.titulo}</h4>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                                      curso.estado === "aprobado" ? "bg-green-100 text-green-700" :
+                                      curso.estado === "pendiente" ? "bg-amber-100 text-amber-700" :
+                                      "bg-red-100 text-red-700"
+                                    }`}>
+                                      {curso.estado}
+                                    </span>
+                                    <span className="text-[10px] text-gray-400">{curso.nivel}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </Accordion>
+                </CardContent>
+              </Card>
             )
           )}
 
