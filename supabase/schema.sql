@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   nombre TEXT NOT NULL,
-  rol TEXT NOT NULL CHECK (rol IN ('decano', 'facilitador', 'estudiante')),
+  rol TEXT NOT NULL CHECK (rol IN ('decano', 'facilitador', 'estudiante', 'developer')),
   nivel TEXT CHECK (nivel IN ('gerentes', 'coordinadores', 'administrativos', 'operadores')),
   avatar_url TEXT,
   bio TEXT,
@@ -149,19 +149,19 @@ ALTER TABLE preguntas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE respuestas_preguntas ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "preguntas_select_authenticated" ON preguntas FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "preguntas_insert_facilitador" ON preguntas FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador'));
-CREATE POLICY "preguntas_update_facilitador" ON preguntas FOR UPDATE USING (public.get_my_role() IN ('decano', 'facilitador'));
-CREATE POLICY "preguntas_delete_facilitador" ON preguntas FOR DELETE USING (public.get_my_role() IN ('decano', 'facilitador'));
+CREATE POLICY "preguntas_insert_facilitador" ON preguntas FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+CREATE POLICY "preguntas_update_facilitador" ON preguntas FOR UPDATE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+CREATE POLICY "preguntas_delete_facilitador" ON preguntas FOR DELETE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
-CREATE POLICY "respuestas_select_authenticated" ON respuestas_preguntas FOR SELECT USING (auth.uid() = user_id OR public.get_my_role() IN ('decano', 'facilitador'));
+CREATE POLICY "respuestas_select_authenticated" ON respuestas_preguntas FOR SELECT USING (auth.uid() = user_id OR public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 CREATE POLICY "respuestas_insert_authenticated" ON respuestas_preguntas FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "respuestas_update_authenticated" ON respuestas_preguntas FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "respuestas_delete_authenticated" ON respuestas_preguntas FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "material_pdf_select_authenticated" ON material_pdf FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "material_pdf_insert_facilitador" ON material_pdf FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador'));
-CREATE POLICY "material_pdf_update_facilitador" ON material_pdf FOR UPDATE USING (public.get_my_role() IN ('decano', 'facilitador'));
-CREATE POLICY "material_pdf_delete_facilitador" ON material_pdf FOR DELETE USING (public.get_my_role() IN ('decano', 'facilitador'));
+CREATE POLICY "material_pdf_insert_facilitador" ON material_pdf FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+CREATE POLICY "material_pdf_update_facilitador" ON material_pdf FOR UPDATE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+CREATE POLICY "material_pdf_delete_facilitador" ON material_pdf FOR DELETE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 -- 1.10 RUTAS DE APRENDIZAJE
 CREATE TABLE IF NOT EXISTS rutas_aprendizaje (
@@ -520,7 +520,7 @@ CREATE POLICY "p_select_own" ON profiles
   FOR SELECT USING (auth.uid() = id);
 
 CREATE POLICY "p_select_decano" ON profiles
-  FOR SELECT USING (public.get_my_role() = 'decano');
+  FOR SELECT USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "p_select_facilitador" ON profiles
   FOR SELECT USING (public.get_my_role() = 'facilitador');
@@ -529,19 +529,19 @@ CREATE POLICY "p_insert_own" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "p_insert_admin" ON profiles
-  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador'));
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 CREATE POLICY "p_update_own" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "p_update_decano" ON profiles
-  FOR UPDATE USING (public.get_my_role() = 'decano');
+  FOR UPDATE USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "p_update_facilitador" ON profiles
   FOR UPDATE USING (public.get_my_role() = 'facilitador');
 
 CREATE POLICY "p_delete_decano" ON profiles
-  FOR DELETE USING (public.get_my_role() = 'decano');
+  FOR DELETE USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "p_delete_facilitador" ON profiles
   FOR DELETE USING (public.get_my_role() = 'facilitador');
@@ -561,7 +561,7 @@ CREATE POLICY "cursos_select_facilitador"
 
 CREATE POLICY "cursos_select_decano"
   ON cursos FOR SELECT
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "cursos_insert_facilitador"
   ON cursos FOR INSERT
@@ -573,7 +573,7 @@ CREATE POLICY "cursos_update_facilitador"
 
 CREATE POLICY "cursos_update_decano"
   ON cursos FOR UPDATE
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "cursos_delete_facilitador"
   ON cursos FOR DELETE
@@ -598,7 +598,7 @@ CREATE POLICY "modulos_select_facilitador"
 
 CREATE POLICY "modulos_select_decano"
   ON modulos FOR SELECT
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "modulos_all_facilitador"
   ON modulos FOR ALL
@@ -631,7 +631,7 @@ CREATE POLICY "preguntas_select_facilitador"
 
 CREATE POLICY "preguntas_select_decano"
   ON preguntas FOR SELECT
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "preguntas_all_facilitador"
   ON preguntas FOR ALL
@@ -659,7 +659,7 @@ CREATE POLICY "inscripciones_select_facilitador"
 
 CREATE POLICY "inscripciones_select_decano"
   ON inscripciones FOR SELECT
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "inscripciones_insert_own"
   ON inscripciones FOR INSERT
@@ -689,7 +689,7 @@ CREATE POLICY "progreso_select_facilitador"
 
 CREATE POLICY "progreso_select_decano"
   ON progreso_modulos FOR SELECT
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "progreso_insert_own"
   ON progreso_modulos FOR INSERT
@@ -710,7 +710,7 @@ CREATE POLICY "certificados_select_own"
 
 CREATE POLICY "certificados_select_decano"
   ON certificados FOR SELECT
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "certificados_select_facilitador"
   ON certificados FOR SELECT
@@ -737,7 +737,7 @@ CREATE POLICY "rutas_select_activas"
 
 CREATE POLICY "rutas_all_decano"
   ON rutas_aprendizaje FOR ALL
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 -- -------------------------------------------------
 -- 4.9 RUTA_CURSOS
@@ -752,7 +752,7 @@ CREATE POLICY "ruta_cursos_select_activas"
 
 CREATE POLICY "ruta_cursos_all_decano"
   ON ruta_cursos FOR ALL
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 -- -------------------------------------------------
 -- 4.10 PROGRESO DE RUTAS
@@ -765,7 +765,7 @@ CREATE POLICY "progreso_rutas_select_own"
 
 CREATE POLICY "progreso_rutas_select_decano"
   ON progreso_rutas FOR SELECT
-  USING (public.get_my_role() = 'decano');
+  USING (public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "progreso_rutas_insert_own"
   ON progreso_rutas FOR INSERT
@@ -786,7 +786,7 @@ CREATE POLICY "cargos_select_authenticated"
 
 CREATE POLICY "cargos_all_admin"
   ON cargos FOR ALL
-  USING (public.get_my_role() IN ('decano', 'facilitador'));
+  USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 -- -------------------------------------------------
 -- 4.12 CARGO_ELEMENTOS
@@ -799,7 +799,7 @@ CREATE POLICY "cargo_elementos_select_authenticated"
 
 CREATE POLICY "cargo_elementos_all_admin"
   ON cargo_elementos FOR ALL
-  USING (public.get_my_role() IN ('decano', 'facilitador'));
+  USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 
 -- 1.13 EVALUACIONES DE TALLERES
@@ -822,19 +822,19 @@ CREATE POLICY "eval_talleres_select_own"
 
 CREATE POLICY "eval_talleres_select_facilitador"
   ON evaluacion_talleres FOR SELECT
-  USING (public.get_my_role() IN ('decano', 'facilitador'));
+  USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 CREATE POLICY "eval_talleres_insert_facilitador"
   ON evaluacion_talleres FOR INSERT
-  WITH CHECK (public.get_my_role() IN ('decano', 'facilitador') AND facilitador_id = auth.uid());
+  WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer') AND facilitador_id = auth.uid());
 
 CREATE POLICY "eval_talleres_update_facilitador"
   ON evaluacion_talleres FOR UPDATE
-  USING (public.get_my_role() IN ('decano', 'facilitador') AND facilitador_id = auth.uid());
+  USING (public.get_my_role() IN ('decano', 'facilitador', 'developer') AND facilitador_id = auth.uid());
 
 CREATE POLICY "eval_talleres_delete_facilitador"
   ON evaluacion_talleres FOR DELETE
-  USING (public.get_my_role() IN ('decano', 'facilitador') AND facilitador_id = auth.uid());
+  USING (public.get_my_role() IN ('decano', 'facilitador', 'developer') AND facilitador_id = auth.uid());
 
 
 -- ============================================================
@@ -862,13 +862,13 @@ CREATE POLICY "publicaciones_select_auth" ON publicaciones
 
 CREATE POLICY "publicaciones_insert_facilitador" ON publicaciones
   FOR INSERT WITH CHECK (
-    public.get_my_role() IN ('decano', 'facilitador')
+    public.get_my_role() IN ('decano', 'facilitador', 'developer')
     AND autor_id = auth.uid()
   );
 
 CREATE POLICY "publicaciones_delete_own" ON publicaciones
   FOR DELETE USING (
-    autor_id = auth.uid() OR public.get_my_role() = 'decano'
+    autor_id = auth.uid() OR public.get_my_role() IN ('decano', 'developer')
   );
 
 -- 1.16 REACCIONES
@@ -914,7 +914,7 @@ CREATE POLICY "encuestas_select_auth" ON encuestas
   FOR SELECT USING (auth.role() = 'authenticated');
 
 CREATE POLICY "encuestas_insert_facilitador" ON encuestas
-  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador'));
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 -- 1.18 OPCIONES DE ENCUESTA
 CREATE TABLE IF NOT EXISTS encuesta_opciones (
@@ -933,7 +933,7 @@ CREATE POLICY "encuesta_opciones_select_auth" ON encuesta_opciones
   FOR SELECT USING (auth.role() = 'authenticated');
 
 CREATE POLICY "encuesta_opciones_insert_facilitador" ON encuesta_opciones
-  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador'));
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 -- 1.19 VOTOS DE ENCUESTA
 CREATE TABLE IF NOT EXISTS encuesta_votos (

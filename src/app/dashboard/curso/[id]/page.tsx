@@ -625,7 +625,7 @@ function TabContenido({
 
 function CursoContent({ id }: { id: string }) {
   const { user } = useAuth()
-  const isDecano = user?.rol === "decano"
+  const isDecano = user?.rol === "decano" || user?.rol === "developer"
   const isEstudiante = user?.rol === "estudiante"
   const supabase = createSupabaseClient()
   const searchParams = useSearchParams()

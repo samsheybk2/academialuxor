@@ -59,7 +59,7 @@ const emptyForm = { titulo: "", tipo: "curso" as TipoEtapa, descripcion: "", dur
 function CargoContent({ id }: { id: string }) {
   const { user } = useAuth()
   const supabase = createSupabaseClient()
-  const isDecano = user?.rol === "decano"
+  const isDecano = user?.rol === "decano" || user?.rol === "developer"
 
   const [cargoName, setCargoName] = useState("")
   const [cargoDesc, setCargoDesc] = useState("")
@@ -741,7 +741,7 @@ function CargoContent({ id }: { id: string }) {
 export default function CargoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   return (
-    <ProtectedRoute allowedRoles={["decano", "facilitador", "estudiante"]}>
+    <ProtectedRoute allowedRoles={["decano", "developer", "facilitador", "estudiante"]}>
       <CargoContent id={id} />
     </ProtectedRoute>
   )

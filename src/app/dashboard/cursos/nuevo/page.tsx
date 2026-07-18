@@ -87,7 +87,7 @@ function NuevoCursoContent() {
       const { data } = await supabase
         .from("profiles")
         .select("id, nombre, email")
-        .in("rol", ["facilitador", "decano"])
+        .in("rol", ["facilitador", "decano", "developer"])
       if (data) setFacilitadores(data)
     }
     fetchFacilitadores()
@@ -939,7 +939,7 @@ function NuevoCursoContent() {
 
 export default function NuevoCursoPage() {
   return (
-    <ProtectedRoute allowedRoles={["facilitador", "decano"]}>
+    <ProtectedRoute allowedRoles={["facilitador", "decano", "developer"]}>
       <NuevoCursoContent />
     </ProtectedRoute>
   )

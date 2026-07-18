@@ -59,7 +59,7 @@ const estadoConfig: Record<string, { label: string; color: string; icon: React.E
 
 function CursosContent() {
   const { user } = useAuth()
-  const isDecano = user?.rol === "decano"
+  const isDecano = user?.rol === "decano" || user?.rol === "developer"
   const isFacilitador = user?.rol === "facilitador"
   const supabase = createSupabaseClient()
 
@@ -565,7 +565,7 @@ function CursosContent() {
 
 export default function CursosPage() {
   return (
-    <ProtectedRoute allowedRoles={["decano", "facilitador"]}>
+    <ProtectedRoute allowedRoles={["decano", "developer", "facilitador"]}>
       <CursosContent />
     </ProtectedRoute>
   )

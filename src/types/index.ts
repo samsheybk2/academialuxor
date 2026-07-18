@@ -1,4 +1,4 @@
-export type Rol = "decano" | "facilitador" | "estudiante"
+export type Rol = "decano" | "facilitador" | "estudiante" | "developer"
 
 export type NivelContenido =
   | "gerentes"

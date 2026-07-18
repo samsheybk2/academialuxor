@@ -275,7 +275,7 @@ function PerfilContent() {
     setTimeout(() => { setShowModal(false); setSaved(false) }, 1200)
   }
 
-  const rolL: Record<string, string> = { decano: "Decano", facilitador: "Facilitador", estudiante: "Estudiante" }
+  const rolL: Record<string, string> = { decano: "Decano", developer: "Developer", facilitador: "Facilitador", estudiante: "Estudiante" }
   const isFac = user?.rol === "facilitador"
   const isStu = user?.rol === "estudiante"
   const facBadges = facStats ? getBadges(facStats) : []

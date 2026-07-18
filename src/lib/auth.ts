@@ -45,7 +45,7 @@ export async function signUp(
         rol,
         cedula,
         sucursal: sucursal || null,
-        aprobado: rol === "decano" || rol === "facilitador",
+        aprobado: rol === "decano" || rol === "facilitador" || rol === "developer",
       })
     } catch {}
   }

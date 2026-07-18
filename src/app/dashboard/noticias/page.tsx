@@ -258,7 +258,7 @@ function PublicacionContenido({ contenido }: { contenido: string }) {
 export default function NoticiasPage() {
   const { user } = useAuth()
   const supabase = createSupabaseClient()
-  const canPost = user?.rol === "decano" || user?.rol === "facilitador"
+  const canPost = user?.rol === "decano" || user?.rol === "facilitador" || user?.rol === "developer"
 
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([])
   const [loading, setLoading] = useState(true)
@@ -736,15 +736,15 @@ async function handleEliminar(pubId: string) {
                     <p className="text-sm font-semibold text-gray-900 truncate">{pub.autor?.nombre || "Usuario"}</p>
                     <p className="text-xs text-gray-400">
                       <span className={`font-medium ${
-                        pub.autor?.rol === "decano" ? "text-amber-600" : pub.autor?.rol === "facilitador" ? "text-luxor-primary" : "text-gray-500"
+                        pub.autor?.rol === "decano" || pub.autor?.rol === "developer" ? "text-amber-600" : pub.autor?.rol === "facilitador" ? "text-luxor-primary" : "text-gray-500"
                       }`}>
-                        {pub.autor?.rol === "decano" ? "Decano" : pub.autor?.rol === "facilitador" ? "Facilitador" : "Estudiante"}
+                        {pub.autor?.rol === "decano" || pub.autor?.rol === "developer" ? "Admin" : pub.autor?.rol === "facilitador" ? "Facilitador" : "Estudiante"}
                       </span>
                       <span className="mx-1.5 text-gray-300">·</span>
                       {timeAgo(pub.created_at)}
                     </p>
                   </div>
-                  {(user?.id === pub.autor_id || user?.rol === "decano") && (
+                  {(user?.id === pub.autor_id || user?.rol === "decano" || user?.rol === "developer") && (
                     <button onClick={() => handleEliminar(pub.id)} className="text-gray-300 hover:text-red-500 text-xs transition-colors px-2 py-1 rounded-lg hover:bg-red-50">
                       Eliminar
                     </button>

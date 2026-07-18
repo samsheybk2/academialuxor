@@ -31,7 +31,7 @@ interface Usuario {
   nombre: string
   email: string
   cedula: string
-  rol: "facilitador" | "estudiante"
+  rol: "facilitador" | "estudiante" | "decano" | "developer"
   cargo: string
   nivel: string
   activo: boolean
@@ -59,13 +59,13 @@ function UsuariosContent() {
     nombre: "",
     email: "",
     cedula: "",
-    rol: "estudiante" as "facilitador" | "estudiante",
+    rol: "estudiante" as "facilitador" | "estudiante" | "developer" | "decano",
     cargo: "",
     nivel: "operadores",
   })
 
   const canApprove = user?.rol === "facilitador"
-  const canManage = user?.rol === "decano"
+  const canManage = user?.rol === "decano" || user?.rol === "developer"
 
   useEffect(() => {
     fetchUsers()
@@ -106,7 +106,7 @@ function UsuariosContent() {
     const { data } = await supabase
       .from("profiles")
       .select("*")
-      .neq("rol", "decano")
+      .not("rol", "in", '("decano","developer")')
       .order("created_at", { ascending: false })
 
     if (data) {
@@ -162,7 +162,7 @@ function UsuariosContent() {
     const matchRol = filterRol === "todos" || u.rol === filterRol
     const matchMisEst = !filterMisEstudiantes || misEstudiantesIds.has(u.id)
     return matchSearch && matchRol && matchMisEst
-  })
+  }).slice(0, 200)
 
   const stats = {
     total: usuarios.length,
@@ -199,6 +199,7 @@ function UsuariosContent() {
         .from("profiles")
         .update({
           nombre: form.nombre,
+          rol: form.rol,
           cedula: form.cedula || null,
           cargo: form.cargo || null,
           nivel: form.nivel,
@@ -315,27 +316,27 @@ function UsuariosContent() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center pt-2.5">
+        <div className="relative w-full sm:w-56">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+            className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-xs"
           />
         </div>
         {canApprove && (
           <button
             onClick={() => { setFilterMisEstudiantes(!filterMisEstudiantes); setFilterRol("todos") }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${
               filterMisEstudiantes
                 ? "bg-luxor-primary text-white border-luxor-primary"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
             }`}
           >
-            <GraduationCap className="w-4 h-4" />
+            <GraduationCap className="w-3.5 h-3.5" />
             Mis estudiantes
             {misEstudiantesIds.size > 0 && (
               <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${filterMisEstudiantes ? "bg-white/20" : "bg-gray-100"}`}>
@@ -346,21 +347,22 @@ function UsuariosContent() {
         )}
         {canManage && (
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
             <select
               value={filterRol}
               onChange={(e) => { setFilterRol(e.target.value); setFilterMisEstudiantes(false) }}
-              className="pl-10 pr-8 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm appearance-none whitespace-nowrap"
+              className="pl-8 pr-7 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-xs appearance-none whitespace-nowrap"
             >
               <option value="todos">Todos los roles</option>
               <option value="facilitador">Facilitadores</option>
               <option value="estudiante">Estudiantes</option>
+              <option value="developer">Developer</option>
             </select>
           </div>
         )}
         {canManage && (
-          <Button onClick={openCreate} className="whitespace-nowrap">
-            <Plus className="w-4 h-4" />
+          <Button onClick={openCreate} className="whitespace-nowrap text-xs py-2">
+            <Plus className="w-3.5 h-3.5" />
             Nuevo Usuario
           </Button>
         )}
@@ -373,15 +375,15 @@ function UsuariosContent() {
               <Loader2 className="w-6 h-6 text-luxor-primary animate-spin" />
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Usuario</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500 hidden sm:table-cell">Estado</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500 hidden sm:table-cell">Rol</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500 hidden md:table-cell">Cédula</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500 hidden md:table-cell">Cargo</th>
-                  <th className="text-right px-6 py-3 font-medium text-gray-500">Acciones</th>
+                  <th className="text-left px-4 py-2 font-medium text-gray-500">Usuario</th>
+                  <th className="text-left px-4 py-2 font-medium text-gray-500 hidden sm:table-cell">Estado</th>
+                  <th className="text-left px-4 py-2 font-medium text-gray-500 hidden sm:table-cell">Rol</th>
+                  <th className="text-left px-4 py-2 font-medium text-gray-500 hidden md:table-cell">Cédula</th>
+                  <th className="text-left px-4 py-2 font-medium text-gray-500 hidden md:table-cell">Cargo</th>
+                  <th className="text-right px-4 py-2 font-medium text-gray-500">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -390,25 +392,25 @@ function UsuariosContent() {
                     key={u.id}
                     className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                   >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-luxor-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-luxor-primary font-semibold text-sm">
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-luxor-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-luxor-primary font-semibold text-xs">
                             {u.nombre.charAt(0)}
                           </span>
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{u.nombre}</p>
+                          <p className="font-medium text-gray-900 truncate text-xs">{u.nombre}</p>
                           <p className="text-xs text-gray-500 truncate flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
+                            <Mail className="w-2.5 h-2.5" />
                             {u.email}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 hidden sm:table-cell">
+                    <td className="px-4 py-2 hidden sm:table-cell">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
                           u.aprobado
                             ? "bg-green-100 text-green-700"
                             : "bg-amber-100 text-amber-700"
@@ -417,9 +419,9 @@ function UsuariosContent() {
                         {u.aprobado ? "Aprobado" : "Pendiente"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 hidden sm:table-cell">
+                    <td className="px-4 py-2 hidden sm:table-cell">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                        className={`px-1.5 py-0.5 rounded-full text-xs font-medium capitalize ${
                           u.rol === "facilitador"
                             ? "bg-blue-100 text-blue-700"
                             : "bg-violet-100 text-violet-700"
@@ -428,31 +430,31 @@ function UsuariosContent() {
                         {u.rol}
                       </span>
                     </td>
-                    <td className="px-6 py-4 hidden md:table-cell">
+                    <td className="px-4 py-2 hidden md:table-cell">
                       <span className="text-xs text-gray-500">{u.cedula || "-"}</span>
                     </td>
-                    <td className="px-6 py-4 hidden md:table-cell">
+                    <td className="px-4 py-2 hidden md:table-cell">
                       {u.cargo ? (
-                        <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
                           {getCargoLabel(u.cargo)}
                         </span>
                       ) : (
                         <span className="text-xs text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2">
                       <div className="flex items-center justify-end gap-1">
                         {!u.aprobado && canApprove && (
                           <button
                             onClick={() => handleApprove(u.id)}
                             disabled={approvingId === u.id}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
+                            className="p-1 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50 transition-colors"
                             title="Aprobar"
                           >
                             {approvingId === u.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : (
-                              <UserCheck className="w-4 h-4" />
+                              <UserCheck className="w-3.5 h-3.5" />
                             )}
                           </button>
                         )}
@@ -460,15 +462,15 @@ function UsuariosContent() {
                           <>
                             <button
                               onClick={() => openEdit(u)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              className="p-1 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                             >
-                              <Edit3 className="w-4 h-4" />
+                              <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDelete(u.id)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </>
                         )}
@@ -481,9 +483,9 @@ function UsuariosContent() {
           )}
         </div>
         {!loading && filtered.length === 0 && (
-          <div className="text-center py-12">
-            <UserX className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No se encontraron usuarios</p>
+          <div className="text-center py-8">
+            <UserX className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500 text-sm">No se encontraron usuarios</p>
           </div>
         )}
       </Card>
@@ -530,11 +532,12 @@ function UsuariosContent() {
               <label className="block text-sm font-medium text-gray-700">Rol</label>
               <select
                 value={form.rol}
-                onChange={(e) => setForm({ ...form, rol: e.target.value as "facilitador" | "estudiante" })}
+                onChange={(e) => setForm({ ...form, rol: e.target.value as "facilitador" | "estudiante" | "developer" | "decano" })}
                 className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
               >
                 <option value="facilitador">Facilitador</option>
                 <option value="estudiante">Estudiante</option>
+                <option value="developer">Developer</option>
               </select>
             </div>
             <div className="space-y-1.5">
@@ -588,7 +591,7 @@ function UsuariosContent() {
 
 export default function UsuariosPage() {
   return (
-    <ProtectedRoute allowedRoles={["decano", "facilitador"]}>
+    <ProtectedRoute allowedRoles={["decano", "developer", "facilitador"]}>
       <UsuariosContent />
     </ProtectedRoute>
   )

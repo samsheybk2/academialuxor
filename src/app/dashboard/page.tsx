@@ -76,7 +76,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <ProtectedRoute allowedRoles={["decano", "facilitador"]}>
+    <ProtectedRoute allowedRoles={["decano", "developer", "facilitador"]}>
       <DashboardContent />
     </ProtectedRoute>
   )

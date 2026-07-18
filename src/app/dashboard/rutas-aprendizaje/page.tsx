@@ -47,7 +47,7 @@ interface EstudianteCargoInfo {
 function RutasContent() {
   const { user } = useAuth()
   const supabase = createSupabaseClient()
-  const isDecano = user?.rol === "decano"
+  const isDecano = user?.rol === "decano" || user?.rol === "developer"
   const isFacilitador = user?.rol === "facilitador"
   const isEstudiante = user?.rol === "estudiante"
 
@@ -59,6 +59,7 @@ function RutasContent() {
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ nombre: "", descripcion: "", nivel: "operadores" })
+  const [filtroNivel, setFiltroNivel] = useState<string>("todos")
 
   const [pestaña, setPestaña] = useState<"obligatoria" | "selectiva">("obligatoria")
   const [studentCargo, setStudentCargo] = useState<EstudianteCargoInfo | null>(null)
@@ -205,9 +206,11 @@ function RutasContent() {
     setLoading(false)
   }
 
-  const filtered = cargos.filter((c) =>
-    c.nombre.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = cargos.filter((c) => {
+    const matchSearch = c.nombre.toLowerCase().includes(search.toLowerCase())
+    const matchNivel = filtroNivel === "todos" || c.nivel === filtroNivel
+    return matchSearch && matchNivel
+  })
 
   async function handleDeleteCargo(cargo: CargoData, e: React.MouseEvent) {
     e.preventDefault()
@@ -567,7 +570,7 @@ function RutasContent() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -587,6 +590,33 @@ function RutasContent() {
             Crear Cargo
           </button>
         )}
+      </div>
+
+      <div className="flex gap-2 border-b border-gray-200">
+        {[
+          { id: "todos", label: "Todos" },
+          { id: "gerentes", label: "Gerentes" },
+          { id: "coordinadores", label: "Coordinadores" },
+          { id: "administrativos", label: "Administrativos" },
+          { id: "operadores", label: "Operadores" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setFiltroNivel(tab.id)}
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              filtroNivel === tab.id
+                ? "border-luxor-primary text-luxor-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {tab.label}
+            {tab.id !== "todos" && (
+              <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-100 rounded-full">
+                {cargos.filter((c) => c.nivel === tab.id).length}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {showCreateForm && (
@@ -772,7 +802,7 @@ function RutasContent() {
 
 export default function RutasAprendizajePage() {
   return (
-    <ProtectedRoute allowedRoles={["decano", "facilitador", "estudiante"]}>
+    <ProtectedRoute allowedRoles={["decano", "developer", "facilitador", "estudiante"]}>
       <RutasContent />
     </ProtectedRoute>
   )

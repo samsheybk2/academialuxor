@@ -79,15 +79,11 @@ export default function LoginPage() {
           <div className="max-w-lg">
             {/* Logo */}
             <div className="mb-10">
-              <div className="inline-flex items-center gap-3">
-                <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
-                  <GraduationCap className="w-7 h-7 text-yellow-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">ACADEMIA</h2>
-                  <p className="text-[11px] text-white/60 tracking-[0.25em] uppercase">Supermercados Luxor</p>
-                </div>
-              </div>
+              <img
+                src="/logo_academia_luxor.jpeg"
+                alt="Academia Luxor"
+                className="h-20 w-auto"
+              />
             </div>
 
             {/* Texto principal */}
@@ -130,15 +126,11 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col">
         {/* Header móvil */}
         <div className="lg:hidden flex items-center justify-center py-8 bg-gradient-to-r from-luxor-primary to-luxor-secondary">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center border border-white/20">
-              <GraduationCap className="w-5 h-5 text-yellow-400" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">ACADEMIA</h2>
-              <p className="text-[10px] text-white/60 tracking-wider uppercase">Plataforma de Formación</p>
-            </div>
-          </div>
+          <img
+            src="/logo_academia_luxor.jpeg"
+            alt="Academia Luxor"
+            className="h-14 w-auto"
+          />
         </div>
 
         {/* Área del formulario */}

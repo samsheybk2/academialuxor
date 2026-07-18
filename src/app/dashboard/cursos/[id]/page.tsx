@@ -322,7 +322,7 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { user } = useAuth()
   const router = useRouter()
-  const isDecano = user?.rol === "decano"
+  const isDecano = user?.rol === "decano" || user?.rol === "developer"
   const isFacilitador = user?.rol === "facilitador"
   const isEstudiante = user?.rol === "estudiante"
   const supabase = createSupabaseClient()
@@ -588,7 +588,7 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
 
 export default function CursoDetallePage({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <ProtectedRoute allowedRoles={["decano", "facilitador", "estudiante"]}>
+    <ProtectedRoute allowedRoles={["decano", "developer", "facilitador", "estudiante"]}>
       <CursoDetalleContent params={params} />
     </ProtectedRoute>
   )

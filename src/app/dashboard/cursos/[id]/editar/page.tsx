@@ -169,7 +169,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
       const { data } = await supabase
         .from("profiles")
         .select("id, nombre, email")
-        .in("rol", ["facilitador", "decano"])
+        .in("rol", ["facilitador", "decano", "developer"])
         .order("nombre")
       if (data) setFacilitadores(data as Facilitador[])
     }
@@ -1074,7 +1074,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
 
 export default function CursoEditarPage({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <ProtectedRoute allowedRoles={["decano", "facilitador"]}>
+    <ProtectedRoute allowedRoles={["decano", "developer", "facilitador"]}>
       <CursoEditarContent params={params} />
     </ProtectedRoute>
   )

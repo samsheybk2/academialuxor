@@ -264,7 +264,7 @@ function TallerContent({ id }: { id: string }) {
   }
 
   return (
-    <ProtectedRoute allowedRoles={["decano", "facilitador"]}>
+    <ProtectedRoute allowedRoles={["decano", "developer", "facilitador"]}>
       <div className="space-y-6">
         <Link
           href="/dashboard/rutas-aprendizaje"

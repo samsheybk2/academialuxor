@@ -1,5 +1,12 @@
 import { Providers } from "@/components/Providers"
 import "./globals.css"
+import type { Metadata } from "next"
+
+export const metadata: Metadata = {
+  icons: {
+    icon: "/logo_academia_luxor.jpeg",
+  },
+}
 
 export default function RootLayout({
   children,
