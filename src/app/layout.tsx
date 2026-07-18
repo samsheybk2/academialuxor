@@ -1,38 +1,5 @@
 import type { Metadata } from "next"
-import localFont from "next/font/local"
-import { Providers } from "@/components/Providers"
 import "./globals.css"
-
-const plusJakarta = localFont({
-  src: [
-    {
-      path: "../../public/fonts/PlusJakartaSans-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/PlusJakartaSans-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/PlusJakartaSans-SemiBold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/PlusJakartaSans-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/PlusJakartaSans-ExtraBold.woff2",
-      weight: "800",
-      style: "normal",
-    },
-  ],
-  variable: "--font-plus-jakarta",
-})
 
 export const metadata: Metadata = {
   title: "Academia LUXOR - Plataforma de Formación",
@@ -49,12 +16,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="es"
-      className={`${plusJakarta.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-gray-50">
-        <Providers>{children}</Providers>
+    <html lang="es" className="h-full antialiased">
+      <body className="min-h-full flex flex-col bg-gray-50 font-sans">
+        {children}
       </body>
     </html>
   )
