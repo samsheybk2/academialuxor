@@ -781,7 +781,7 @@ function PerfilContent() {
         <div className="lg:col-span-1 space-y-4">
         </div>
 
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 lg:col-start-2 space-y-4">
           {/* Estudiante - Stats */}
           {(isStu || (isDev && godMode && simulatedRole === "estudiante")) && (
             loadingStats && !isDev ? (
