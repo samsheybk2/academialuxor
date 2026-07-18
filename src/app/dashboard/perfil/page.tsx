@@ -169,6 +169,8 @@ function PerfilContent() {
   const [facTab, setFacTab] = useState<"publicaciones" | "estadisticas" | "cursos">("estadisticas")
   const [facCursos, setFacCursos] = useState<any[]>([])
   const [loadingCursos, setLoadingCursos] = useState(false)
+  const [opiniones, setOpiniones] = useState<{ calificacion: number }[]>([])
+  const [loadingOpiniones, setLoadingOpiniones] = useState(false)
   const [simulatedStudentStats, setSimulatedStudentStats] = useState({
     rachaActual: 0,
     mejorRacha: 0,
@@ -203,6 +205,7 @@ function PerfilContent() {
       if (user.rol === "facilitador") {
         fetchFacilitadorStats()
         fetchFacilitadorCursos()
+        fetchOpiniones()
       }
       else if (user.rol === "estudiante") fetchStudentStats()
       else setLoadingStats(false)
@@ -254,6 +257,19 @@ function PerfilContent() {
       .order("fecha_creacion", { ascending: false })
     setFacCursos(cursos || [])
     setLoadingCursos(false)
+  }
+
+  async function fetchOpiniones() {
+    setLoadingOpiniones(true)
+    const { data: cursos } = await supabase.from("cursos").select("id").eq("facilitador_id", user!.id)
+    const cursoIds = (cursos || []).map((c: { id: string }) => c.id)
+    if (cursoIds.length > 0) {
+      const { data: ops } = await supabase.from("opiniones").select("calificacion").in("curso_id", cursoIds)
+      setOpiniones(ops || [])
+    } else {
+      setOpiniones([])
+    }
+    setLoadingOpiniones(false)
   }
 
   async function fetchStudentStats() {
@@ -758,6 +774,67 @@ function PerfilContent() {
                 ))}
               </div>
             </Accordion>
+          )}
+
+          {/* Opiniones - Solo para facilitador */}
+          {(isFac || (isDev && godMode && simulatedRole === "facilitador")) && (
+            <Card>
+              <CardContent className="p-4">
+                {loadingOpiniones ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 text-luxor-primary animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    {(() => {
+                      const totalOpiniones = opiniones.length
+                      const promedio = totalOpiniones > 0 
+                        ? Math.round((opiniones.reduce((sum, o) => sum + o.calificacion, 0) / totalOpiniones) * 10) / 10 
+                        : 0
+                      const distribucion = [5, 4, 3, 2, 1].map(estrella => ({
+                        estrella,
+                        count: opiniones.filter(o => o.calificacion === estrella).length
+                      }))
+                      const maxCount = Math.max(...distribucion.map(d => d.count), 1)
+
+                      return (
+                        <>
+                          {/* Promedio y estrellas */}
+                          <div className="text-center mb-4">
+                            <div className="text-4xl font-bold text-gray-900">{promedio.toFixed(1)}</div>
+                            <div className="flex items-center justify-center gap-1 mt-2">
+                              {[1, 2, 3, 4, 5].map(estrella => (
+                                <Star
+                                  key={estrella}
+                                  className={`w-5 h-5 ${estrella <= Math.round(promedio) ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                                />
+                              ))}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">{totalOpiniones} {totalOpiniones === 1 ? "opinión" : "opiniones"}</p>
+                          </div>
+
+                          {/* Distribución de estrellas */}
+                          <div className="space-y-2">
+                            {distribucion.map(({ estrella, count }) => (
+                              <div key={estrella} className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500 w-3">{estrella}</span>
+                                <div className="flex-1 bg-gray-100 rounded-full h-2">
+                                  <div
+                                    className="h-2 rounded-full bg-amber-400 transition-all duration-500"
+                                    style={{ width: `${(count / maxCount) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-gray-500 w-3">{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
 
