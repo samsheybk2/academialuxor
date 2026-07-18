@@ -198,12 +198,26 @@ CREATE TABLE IF NOT EXISTS progreso_rutas (
   UNIQUE(user_id, ruta_id)
 );
 
+-- 1.10B UNIDADES ORGANIZACIONALES (Direcciones, Gerencias, Departamentos)
+CREATE TABLE IF NOT EXISTS unidades_organizacionales (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  codigo TEXT UNIQUE,
+  nombre TEXT NOT NULL,
+  tipo TEXT NOT NULL DEFAULT 'departamento' CHECK (tipo IN ('direccion', 'gerencia', 'departamento')),
+  parent_id UUID REFERENCES unidades_organizacionales(id) ON DELETE CASCADE,
+  color TEXT DEFAULT '#6366f1',
+  descripcion TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 1.11 CARGOS
 CREATE TABLE IF NOT EXISTS cargos (
   id TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
   descripcion TEXT,
   nivel TEXT DEFAULT 'operadores',
+  unidad_id UUID REFERENCES unidades_organizacionales(id) ON DELETE SET NULL,
+  jefe_id TEXT REFERENCES cargos(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -776,6 +790,19 @@ CREATE POLICY "progreso_rutas_update_own"
   USING (user_id = auth.uid());
 
 -- -------------------------------------------------
+-- 4.10B UNIDADES ORGANIZACIONALES
+-- -------------------------------------------------
+ALTER TABLE unidades_organizacionales ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "unidades_select_authenticated"
+  ON unidades_organizacionales FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+CREATE POLICY "unidades_all_admin"
+  ON unidades_organizacionales FOR ALL
+  USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+-- -------------------------------------------------
 -- 4.11 CARGOS
 -- -------------------------------------------------
 ALTER TABLE cargos ENABLE ROW LEVEL SECURITY;
@@ -973,4 +1000,7 @@ CREATE INDEX idx_certificados_user ON certificados(user_id);
 CREATE INDEX idx_certificados_cert_id ON certificados(cert_id);
 CREATE INDEX idx_ruta_cursos_ruta ON ruta_cursos(ruta_id);
 CREATE INDEX idx_cargos_nombre ON cargos(nombre);
+CREATE INDEX idx_cargos_unidad ON cargos(unidad_id);
+CREATE INDEX idx_cargos_jefe ON cargos(jefe_id);
+CREATE INDEX idx_unidades_parent ON unidades_organizacionales(parent_id);
 CREATE INDEX idx_cargo_elementos_cargo ON cargo_elementos(cargo_id);

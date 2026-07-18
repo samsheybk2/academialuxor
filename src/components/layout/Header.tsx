@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
-import { LogOut, LayoutDashboard, GraduationCap, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper } from "lucide-react"
+import { LogOut, LayoutDashboard, GraduationCap, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network } from "lucide-react"
 import Link from "next/link"
 
 const navByRole = {
@@ -13,6 +13,7 @@ const navByRole = {
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Gestionar Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
+    { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   developer: [
@@ -21,6 +22,7 @@ const navByRole = {
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Gestionar Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
+    { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   facilitador: [
@@ -29,12 +31,14 @@ const navByRole = {
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Mis Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
+    { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   estudiante: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/rutas-aprendizaje", label: "Mi Ruta", icon: Route },
+    { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
 }

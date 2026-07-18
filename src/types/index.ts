@@ -106,3 +106,16 @@ export interface EncuestaOpcion {
   created_at: string
   votos?: number
 }
+
+export type TipoUnidad = "direccion" | "gerencia" | "departamento"
+
+export interface UnidadOrganizacional {
+  id: string
+  codigo?: string
+  nombre: string
+  tipo: TipoUnidad
+  parent_id: string | null
+  color: string
+  descripcion?: string
+  created_at?: string
+}

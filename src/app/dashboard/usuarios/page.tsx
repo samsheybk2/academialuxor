@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/Modal"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
+import type { UnidadOrganizacional } from "@/types"
 import {
   Users,
   Plus,
@@ -44,7 +45,8 @@ function UsuariosContent() {
   const supabase = createSupabaseClient()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [pendingUsers, setPendingUsers] = useState<Usuario[]>([])
-  const [cargosList, setCargosList] = useState<{ id: string; nombre: string }[]>([])
+  const [cargosList, setCargosList] = useState<{ id: string; nombre: string; unidad_id: string | null }[]>([])
+  const [unidades, setUnidades] = useState<UnidadOrganizacional[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [filterRol, setFilterRol] = useState("todos")
@@ -73,6 +75,7 @@ function UsuariosContent() {
   useEffect(() => {
     fetchUsers()
     fetchCargos()
+    fetchUnidades()
     if (canApprove) fetchMisEstudiantes()
   }, [])
 
@@ -109,9 +112,18 @@ function UsuariosContent() {
   async function fetchCargos() {
     const { data } = await supabase
       .from("cargos")
-      .select("id, nombre")
+      .select("id, nombre, unidad_id")
       .order("created_at", { ascending: true })
     setCargosList(data || [])
+  }
+
+  async function fetchUnidades() {
+    const { data } = await supabase
+      .from("unidades_organizacionales")
+      .select("*")
+      .order("tipo", { ascending: true })
+      .order("nombre")
+    setUnidades(data || [])
   }
 
   async function fetchUsers() {
@@ -257,8 +269,14 @@ function UsuariosContent() {
   }
 
   function getCargoLabel(cargoId: string): string {
-    const cargo = cargosList.find((c) => c.id === cargoId)
+    const cargo = cargosList.find((c) => c.id === cargoId || c.nombre === cargoId)
     return cargo?.nombre || cargoId || "-"
+  }
+
+  function getCargoUnidad(cargoNombre: string): UnidadOrganizacional | undefined {
+    const cargo = cargosList.find((c) => c.nombre === cargoNombre)
+    if (!cargo?.unidad_id) return undefined
+    return unidades.find((d) => d.id === cargo.unidad_id)
   }
 
   return (
@@ -298,9 +316,14 @@ function UsuariosContent() {
                     className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
                   >
                     <option value="">Sin cargo</option>
-                    {cargosList.map((c) => (
-                      <option key={c.id} value={c.nombre}>{c.nombre}</option>
-                    ))}
+                    {cargosList.map((c) => {
+                      const unidad = unidades.find((d) => d.id === c.unidad_id)
+                      return (
+                        <option key={c.id} value={c.nombre}>
+                          {c.nombre}{unidad ? ` — ${unidad.nombre}` : ""}
+                        </option>
+                      )
+                    })}
                   </select>
                   <div className="flex items-center gap-2">
                     <button
@@ -450,9 +473,22 @@ function UsuariosContent() {
                     </td>
                     <td className="px-4 py-2 hidden md:table-cell">
                       {u.cargo ? (
-                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
-                          {getCargoLabel(u.cargo)}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                            {getCargoLabel(u.cargo)}
+                          </span>
+                          {(() => {
+                            const unidad = getCargoUnidad(u.cargo)
+                            return unidad ? (
+                              <span
+                                className="px-1.5 py-0.5 rounded-full text-xs font-medium text-white"
+                                style={{ backgroundColor: unidad.color }}
+                              >
+                                {unidad.nombre}
+                              </span>
+                            ) : null
+                          })()}
+                        </div>
                       ) : (
                         <span className="text-xs text-gray-400">-</span>
                       )}
@@ -602,15 +638,26 @@ function UsuariosContent() {
                   </button>
                   {cargosList
                     .filter((c) => c.nombre.toLowerCase().includes((form.cargo || cargoSearch).toLowerCase()))
-                    .map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => { setForm({ ...form, cargo: c.nombre }); setCargoSearch(""); setShowCargoDropdown(false) }}
-                        className="w-full text-left px-3.5 py-2 text-sm text-gray-900 hover:bg-gray-50"
-                      >
-                        {c.nombre}
-                      </button>
-                    ))}
+                    .map((c) => {
+                      const unidad = unidades.find((d) => d.id === c.unidad_id)
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => { setForm({ ...form, cargo: c.nombre }); setCargoSearch(""); setShowCargoDropdown(false) }}
+                          className="w-full text-left px-3.5 py-2 text-sm text-gray-900 hover:bg-gray-50 flex items-center justify-between gap-2"
+                        >
+                          <span>{c.nombre}</span>
+                          {unidad && (
+                            <span
+                              className="px-1.5 py-0.5 rounded-full text-xs font-medium text-white flex-shrink-0"
+                              style={{ backgroundColor: unidad.color }}
+                            >
+                              {unidad.nombre}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
                   {cargosList.filter((c) => c.nombre.toLowerCase().includes((form.cargo || cargoSearch).toLowerCase())).length === 0 && (
                     <div className="px-3.5 py-2 text-sm text-gray-400">No se encontraron cargos</div>
                   )}

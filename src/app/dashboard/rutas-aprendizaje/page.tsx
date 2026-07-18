@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
 import { tipoEtapaConfig } from "@/types/ruta-aprendizaje"
 import type { RutaAprendizaje, TipoEtapa, ElementoRuta } from "@/types/ruta-aprendizaje"
+import type { UnidadOrganizacional } from "@/types"
 import {
   Plus,
   Trash2,
@@ -27,6 +28,7 @@ import {
   CheckCircle2,
   XCircle,
   Award,
+  UserCog,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -35,6 +37,8 @@ interface CargoData {
   nombre: string
   descripcion: string
   nivel: string
+  unidad_id: string | null
+  jefe_id: string | null
   created_at: string
 }
 
@@ -52,14 +56,16 @@ function RutasContent() {
   const isEstudiante = user?.rol === "estudiante"
 
   const [cargos, setCargos] = useState<CargoData[]>([])
+  const [unidades, setUnidades] = useState<UnidadOrganizacional[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [showCreateForm, setShowCreateForm] = useState(false)
-  const [newCargo, setNewCargo] = useState({ nombre: "", descripcion: "", nivel: "operadores" })
+  const [newCargo, setNewCargo] = useState({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" })
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ nombre: "", descripcion: "", nivel: "operadores" })
+  const [editForm, setEditForm] = useState({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" })
   const [filtroNivel, setFiltroNivel] = useState<string>("todos")
+  const [filtroUnidad, setFiltroUnidad] = useState<string>("todos")
 
   const [pestaña, setPestaña] = useState<"obligatoria" | "selectiva">("obligatoria")
   const [studentCargo, setStudentCargo] = useState<EstudianteCargoInfo | null>(null)
@@ -73,6 +79,7 @@ function RutasContent() {
       fetchStudentData()
     } else {
       fetchCargos()
+      fetchUnidades()
     }
   }, [user?.id])
 
@@ -206,11 +213,50 @@ function RutasContent() {
     setLoading(false)
   }
 
+  async function fetchUnidades() {
+    const { data } = await supabase
+      .from("unidades_organizacionales")
+      .select("*")
+      .order("tipo", { ascending: true })
+      .order("nombre")
+    setUnidades(data || [])
+  }
+
   const filtered = cargos.filter((c) => {
     const matchSearch = c.nombre.toLowerCase().includes(search.toLowerCase())
     const matchNivel = filtroNivel === "todos" || c.nivel === filtroNivel
-    return matchSearch && matchNivel
+    const matchUnidad = filtroUnidad === "todos" || c.unidad_id === filtroUnidad
+    return matchSearch && matchNivel && matchUnidad
   })
+
+  function ordenarUnidadesJerarquicamente(lista: UnidadOrganizacional[]): UnidadOrganizacional[] {
+    const direcciones = lista.filter((u) => u.tipo === "direccion").sort((a, b) => a.nombre.localeCompare(b.nombre))
+    const resultado: UnidadOrganizacional[] = []
+
+    for (const dir of direcciones) {
+      resultado.push(dir)
+      const gerencias = lista.filter((u) => u.parent_id === dir.id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+      for (const ger of gerencias) {
+        resultado.push(ger)
+        const deps = lista.filter((u) => u.parent_id === ger.id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+        resultado.push(...deps)
+      }
+    }
+
+    const gerenciasSinPadre = lista.filter((u) => u.tipo === "gerencia" && !u.parent_id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+    for (const ger of gerenciasSinPadre) {
+      resultado.push(ger)
+      const deps = lista.filter((u) => u.parent_id === ger.id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+      resultado.push(...deps)
+    }
+
+    const depsSinPadre = lista.filter((u) => u.tipo === "departamento" && !u.parent_id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+    resultado.push(...depsSinPadre)
+
+    return resultado
+  }
+
+  const unidadesOrdenadas = ordenarUnidadesJerarquicamente(unidades)
 
   async function handleDeleteCargo(cargo: CargoData, e: React.MouseEvent) {
     e.preventDefault()
@@ -223,7 +269,7 @@ function RutasContent() {
     e.preventDefault()
     e.stopPropagation()
     setEditingId(cargo.id)
-    setEditForm({ nombre: cargo.nombre, descripcion: cargo.descripcion, nivel: cargo.nivel || "operadores" })
+    setEditForm({ nombre: cargo.nombre, descripcion: cargo.descripcion, nivel: cargo.nivel || "operadores", unidad_id: cargo.unidad_id || "", jefe_id: cargo.jefe_id || "" })
   }
 
   async function handleSaveEdit() {
@@ -231,7 +277,7 @@ function RutasContent() {
     setSaving(true)
     await supabase
       .from("cargos")
-      .update({ nombre: editForm.nombre.trim(), descripcion: editForm.descripcion.trim(), nivel: editForm.nivel })
+      .update({ nombre: editForm.nombre.trim(), descripcion: editForm.descripcion.trim(), nivel: editForm.nivel, unidad_id: editForm.unidad_id || null, jefe_id: editForm.jefe_id || null })
       .eq("id", editingId)
     setEditingId(null)
     setSaving(false)
@@ -247,8 +293,10 @@ function RutasContent() {
       nombre: newCargo.nombre.trim(),
       descripcion: newCargo.descripcion.trim() || "Cargo personalizado",
       nivel: newCargo.nivel,
+      unidad_id: newCargo.unidad_id || null,
+      jefe_id: newCargo.jefe_id || null,
     })
-    setNewCargo({ nombre: "", descripcion: "", nivel: "operadores" })
+    setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" })
     setShowCreateForm(false)
     setSaving(false)
     fetchCargos()
@@ -549,12 +597,9 @@ function RutasContent() {
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-2xl font-bold text-blue-600">
-            {cargos.reduce((sum, c) => {
-              const elemCount = 0
-              return sum + elemCount
-            }, 0)}
+            {unidades.length}
           </p>
-          <p className="text-xs text-gray-500">Cursos asignados</p>
+          <p className="text-xs text-gray-500">Unidades organizacionales</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-2xl font-bold text-violet-600">
@@ -619,18 +664,36 @@ function RutasContent() {
         ))}
       </div>
 
+      {unidades.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <select
+            value={filtroUnidad}
+            onChange={(e) => setFiltroUnidad(e.target.value)}
+            className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+          >
+            <option value="todos">Todas las unidades</option>
+            {unidadesOrdenadas.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.tipo === "direccion" ? "🏢 " : u.tipo === "gerencia" ? "🏬 " : " "}
+                {u.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {showCreateForm && (
         <div className="bg-white rounded-xl border border-luxor-primary/30 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Nuevo Cargo</h3>
             <button
-              onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores" }) }}
+              onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" }) }}
               className="p-1 text-gray-400 hover:text-gray-600 rounded-lg"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">Nombre del cargo *</label>
               <input
@@ -655,9 +718,34 @@ function RutasContent() {
                 <option value="operadores">Operadores</option>
               </select>
             </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Unidad Organizacional *</label>
+              <select
+                value={newCargo.unidad_id}
+                onChange={(e) => setNewCargo({ ...newCargo, unidad_id: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+              >
+                <option value="">Seleccionar...</option>
+                {unidadesOrdenadas
+                  .filter((u) => {
+                    if (newCargo.nivel === "gerentes") return u.tipo === "gerencia"
+                    return u.tipo === "departamento"
+                  })
+                  .map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.tipo === "direccion" ? " " : u.tipo === "gerencia" ? " " : "📋 "}
+                      {u.nombre}
+                    </option>
+                  ))}
+              </select>
+              <p className="text-xs text-gray-400">
+                {newCargo.nivel === "gerentes" && "Los gerentes se asignan a una Gerencia"}
+                {newCargo.nivel !== "gerentes" && "Se asigna a un Departamento"}
+              </p>
+            </div>
           </div>
           <div className="space-y-1.5 mt-4">
-            <label className="block text-sm font-medium text-gray-700">Descripcion</label>
+            <label className="block text-sm font-medium text-gray-700">Descripción</label>
             <input
               type="text"
               value={newCargo.descripcion}
@@ -666,16 +754,32 @@ function RutasContent() {
               className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
             />
           </div>
+          <div className="space-y-1.5 mt-4">
+            <label className="block text-sm font-medium text-gray-700">Jefe Inmediato</label>
+            <select
+              value={newCargo.jefe_id}
+              onChange={(e) => setNewCargo({ ...newCargo, jefe_id: e.target.value })}
+              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+            >
+              <option value="">Sin jefe inmediato</option>
+              {cargos
+                .filter((c) => c.id !== newCargo.nombre && c.unidad_id === newCargo.unidad_id)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+            </select>
+            <p className="text-xs text-gray-400">Selecciona el cargo que es jefe inmediato de este cargo</p>
+          </div>
           <div className="flex gap-3 mt-4">
             <button
-              onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores" }) }}
+              onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" }) }}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
             >
               Cancelar
             </button>
             <button
               onClick={handleCreateCustomCargo}
-              disabled={!newCargo.nombre.trim() || saving}
+              disabled={!newCargo.nombre.trim() || !newCargo.unidad_id || saving}
               className="px-4 py-2 bg-luxor-primary text-white rounded-lg font-medium hover:bg-luxor-secondary transition-colors text-sm disabled:opacity-50 flex items-center gap-2"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -717,16 +821,33 @@ function RutasContent() {
                       onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
                     />
-                    <select
-                      value={editForm.nivel}
-                      onChange={(e) => setEditForm({ ...editForm, nivel: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                    >
-                      <option value="gerentes">Gerentes</option>
-                      <option value="coordinadores">Coordinadores</option>
-                      <option value="administrativos">Administrativos</option>
-                      <option value="operadores">Operadores</option>
-                    </select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={editForm.nivel}
+                        onChange={(e) => setEditForm({ ...editForm, nivel: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                      >
+                        <option value="gerentes">Gerentes</option>
+                        <option value="coordinadores">Coordinadores</option>
+                        <option value="administrativos">Administrativos</option>
+                        <option value="operadores">Operadores</option>
+                      </select>
+                      <select
+                        value={editForm.unidad_id}
+                        onChange={(e) => setEditForm({ ...editForm, unidad_id: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                      >
+                        <option value="">Sin unidad</option>
+                        {unidadesOrdenadas
+                          .filter((u) => {
+                            if (editForm.nivel === "gerentes") return u.tipo === "gerencia"
+                            return u.tipo === "departamento"
+                          })
+                          .map((u) => (
+                            <option key={u.id} value={u.id}>{u.nombre}</option>
+                          ))}
+                      </select>
+                    </div>
                     <input
                       type="text"
                       value={editForm.descripcion}
@@ -734,6 +855,18 @@ function RutasContent() {
                       className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
                       placeholder="Descripcion"
                     />
+                    <select
+                      value={editForm.jefe_id}
+                      onChange={(e) => setEditForm({ ...editForm, jefe_id: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                    >
+                      <option value="">Sin jefe inmediato</option>
+                      {cargos
+                        .filter((c) => c.id !== editingId && c.unidad_id === editForm.unidad_id)
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>{c.nombre}</option>
+                        ))}
+                    </select>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setEditingId(null)}
@@ -758,9 +891,22 @@ function RutasContent() {
                         <h3 className="font-semibold text-gray-900 group-hover:text-luxor-primary transition-colors">
                           {cargo.nombre}
                         </h3>
-                        <p className="text-xs text-luxor-primary font-medium mt-0.5 capitalize">
-                          {cargo.nivel || "operadores"}
-                        </p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <p className="text-xs text-luxor-primary font-medium capitalize">
+                            {cargo.nivel || "operadores"}
+                          </p>
+                          {cargo.unidad_id && (() => {
+                            const u = unidades.find((d) => d.id === cargo.unidad_id)
+                            return u ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                                style={{ backgroundColor: u.color }}
+                              >
+                                {u.nombre}
+                              </span>
+                            ) : null
+                          })()}
+                        </div>
                         <p className="text-sm text-gray-500 mt-1 line-clamp-2">{cargo.descripcion}</p>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
