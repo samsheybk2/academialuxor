@@ -21,8 +21,8 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: "/logo_academia_luxor.jpeg",
-    apple: "/logo_academia_luxor.jpeg",
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 }
 

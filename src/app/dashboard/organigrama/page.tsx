@@ -19,7 +19,9 @@ import {
   Users,
   Network,
   UserCog,
+  Download,
 } from "lucide-react"
+import * as XLSX from "xlsx"
 
 const coloresBase = [
   "#3b82f6",
@@ -566,6 +568,92 @@ function OrganigramaContent() {
     setExpandedIds(new Set())
   }
 
+  function descargarExcel() {
+    const datos: any[] = []
+    
+    datos.push(["ORGANIGRAMA - ACADEMIA LUXOR"])
+    datos.push(["Generado:", new Date().toLocaleString("es-VE")])
+    datos.push([])
+    datos.push(["Tipo", "Código", "Nombre", "Unidad Padre", "Color", "Descripción", "Cantidad de Cargos"])
+    
+    const unidadesOrdenadas = ordenarUnidades(unidades)
+    
+    for (const unidad of unidadesOrdenadas) {
+      const padre = unidad.parent_id ? unidades.find((u) => u.id === unidad.parent_id) : null
+      const cantidadCargos = cargos.filter((c) => c.unidad_id === unidad.id).length
+      
+      datos.push([
+        unidad.tipo.toUpperCase(),
+        unidad.codigo || "",
+        unidad.nombre,
+        padre?.nombre || "",
+        unidad.color || "#6366f1",
+        unidad.descripcion || "",
+        cantidadCargos
+      ])
+    }
+    
+    datos.push([])
+    datos.push(["CARGOS DETALLADOS"])
+    datos.push(["Cargo", "Nivel", "Unidad", "Jefe Inmediato"])
+    
+    for (const unidad of unidadesOrdenadas) {
+      const cargosDeUnidad = cargos.filter((c) => c.unidad_id === unidad.id)
+      for (const cargo of cargosDeUnidad) {
+        const jefe = cargo.jefe_id ? cargos.find((c) => c.id === cargo.jefe_id) : null
+        datos.push([
+          cargo.nombre,
+          cargo.nivel || "operadores",
+          unidad.nombre,
+          jefe?.nombre || ""
+        ])
+      }
+    }
+    
+    const ws = XLSX.utils.aoa_to_sheet(datos)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Organigrama")
+    
+    ws["!cols"] = [
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 35 },
+      { wch: 35 },
+      { wch: 10 },
+      { wch: 40 },
+      { wch: 15 }
+    ]
+    
+    XLSX.writeFile(wb, `organigrama_luxor_${new Date().toISOString().split("T")[0]}.xlsx`)
+  }
+
+  function ordenarUnidades(lista: UnidadOrganizacional[]): UnidadOrganizacional[] {
+    const direcciones = lista.filter((u) => u.tipo === "direccion").sort((a, b) => a.nombre.localeCompare(b.nombre))
+    const resultado: UnidadOrganizacional[] = []
+
+    for (const dir of direcciones) {
+      resultado.push(dir)
+      const gerencias = lista.filter((u) => u.parent_id === dir.id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+      for (const ger of gerencias) {
+        resultado.push(ger)
+        const deps = lista.filter((u) => u.parent_id === ger.id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+        resultado.push(...deps)
+      }
+    }
+
+    const gerenciasSinPadre = lista.filter((u) => u.tipo === "gerencia" && !u.parent_id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+    for (const ger of gerenciasSinPadre) {
+      resultado.push(ger)
+      const deps = lista.filter((u) => u.parent_id === ger.id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+      resultado.push(...deps)
+    }
+
+    const depsSinPadre = lista.filter((u) => u.tipo === "departamento" && !u.parent_id).sort((a, b) => a.nombre.localeCompare(b.nombre))
+    resultado.push(...depsSinPadre)
+
+    return resultado
+  }
+
   const rootUnidades = unidades.filter((u) => !u.parent_id)
 
   return (
@@ -642,6 +730,13 @@ function OrganigramaContent() {
               className="px-3 py-2 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Colapsar todo
+            </button>
+            <button
+              onClick={descargarExcel}
+              className="px-3 py-2 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Descargar Excel
             </button>
           </div>
         </div>

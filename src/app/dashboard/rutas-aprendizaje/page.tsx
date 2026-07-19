@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Fragment } from "react"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
@@ -29,6 +29,11 @@ import {
   XCircle,
   Award,
   UserCog,
+  Building2,
+  Building,
+  FolderOpen,
+  Network,
+  Users,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -590,29 +595,23 @@ function RutasContent() {
   // Vista admin (decano/facilitador)
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-2xl font-bold text-luxor-primary">{cargos.length}</p>
-          <p className="text-xs text-gray-500">Cargos definidos</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-2xl font-bold text-blue-600">
-            {unidades.length}
-          </p>
-          <p className="text-xs text-gray-500">Unidades organizacionales</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-2xl font-bold text-violet-600">
-            {cargos.filter((c) => c.nivel === "gerentes" || c.nivel === "coordinadores").length}
-          </p>
-          <p className="text-xs text-gray-500">Nivel gerencial</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-2xl font-bold text-amber-600">
-            {cargos.filter((c) => c.nivel === "operadores" || c.nivel === "administrativos").length}
-          </p>
-          <p className="text-xs text-gray-500">Nivel operativo</p>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-luxor-primary/10 text-luxor-primary text-xs font-semibold">
+          <BookOpen className="w-3.5 h-3.5" />
+          {cargos.length} cargos
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
+          <Network className="w-3.5 h-3.5" />
+          {unidades.length} unidades
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-600 text-xs font-semibold">
+          <Users className="w-3.5 h-3.5" />
+          {cargos.filter((c) => c.nivel === "gerentes" || c.nivel === "coordinadores").length} nivel gerencial
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold">
+          <Users className="w-3.5 h-3.5" />
+          {cargos.filter((c) => c.nivel === "operadores" || c.nivel === "administrativos").length} nivel operativo
+        </span>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -763,7 +762,16 @@ function RutasContent() {
             >
               <option value="">Sin jefe inmediato</option>
               {cargos
-                .filter((c) => c.id !== newCargo.nombre && c.unidad_id === newCargo.unidad_id)
+                .filter((c) => {
+                  if (!newCargo.unidad_id) return false
+                  const unidadActual = unidades.find((u) => u.id === newCargo.unidad_id)
+                  if (!unidadActual) return false
+                  
+                  if (unidadActual.tipo === "departamento" && unidadActual.parent_id) {
+                    return c.unidad_id === newCargo.unidad_id || c.unidad_id === unidadActual.parent_id
+                  }
+                  return c.unidad_id === newCargo.unidad_id
+                })
                 .map((c) => (
                   <option key={c.id} value={c.id}>{c.nombre}</option>
                 ))}
@@ -800,146 +808,400 @@ function RutasContent() {
           <p className="text-sm text-gray-400 mt-1">Crea el primer cargo para definir su ruta de aprendizaje</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((cargo) => {
-            const isEditing = editingId === cargo.id
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs">Cargo</th>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs hidden sm:table-cell">Nivel</th>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs hidden md:table-cell">Unidad</th>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs hidden lg:table-cell">Jefe Inmediato</th>
+                <th className="text-right px-4 py-2.5 font-medium text-gray-500 text-xs">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unidadesOrdenadas
+                .filter((u) => {
+                  if (filtroUnidad !== "todos" && u.id !== filtroUnidad) return false
+                  return true
+                })
+                .filter((u) => filtered.some((c) => c.unidad_id === u.id))
+                .map((unidad) => {
+                  const cargosDeUnidad = filtered.filter((c) => c.unidad_id === unidad.id)
+                  if (cargosDeUnidad.length === 0) return null
 
-            return (
-              <Link
-                key={cargo.id}
-                href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
-                prefetch={true}
-                className={`group bg-white rounded-xl border p-5 transition-all ${
-                  isEditing ? "border-luxor-primary/40 shadow-md" : "border-gray-200 hover:border-luxor-primary/40 hover:shadow-md"
-                }`}
-              >
-                {isEditing ? (
-                  <div className="space-y-3" onClick={(e) => e.preventDefault()}>
-                    <input
-                      type="text"
-                      value={editForm.nombre}
-                      onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <select
-                        value={editForm.nivel}
-                        onChange={(e) => setEditForm({ ...editForm, nivel: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                      >
-                        <option value="gerentes">Gerentes</option>
-                        <option value="coordinadores">Coordinadores</option>
-                        <option value="administrativos">Administrativos</option>
-                        <option value="operadores">Operadores</option>
-                      </select>
-                      <select
-                        value={editForm.unidad_id}
-                        onChange={(e) => setEditForm({ ...editForm, unidad_id: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                      >
-                        <option value="">Sin unidad</option>
-                        {unidadesOrdenadas
-                          .filter((u) => {
-                            if (editForm.nivel === "gerentes") return u.tipo === "gerencia"
-                            return u.tipo === "departamento"
-                          })
-                          .map((u) => (
-                            <option key={u.id} value={u.id}>{u.nombre}</option>
-                          ))}
-                      </select>
-                    </div>
-                    <input
-                      type="text"
-                      value={editForm.descripcion}
-                      onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                      placeholder="Descripcion"
-                    />
-                    <select
-                      value={editForm.jefe_id}
-                      onChange={(e) => setEditForm({ ...editForm, jefe_id: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                    >
-                      <option value="">Sin jefe inmediato</option>
-                      {cargos
-                        .filter((c) => c.id !== editingId && c.unidad_id === editForm.unidad_id)
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>{c.nombre}</option>
-                        ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={handleSaveEdit}
-                        disabled={saving}
-                        className="flex-1 px-3 py-1.5 bg-luxor-primary text-white rounded-lg text-xs font-medium hover:bg-luxor-secondary disabled:opacity-50 flex items-center justify-center gap-1"
-                      >
-                        {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-                        Guardar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-gray-900 group-hover:text-luxor-primary transition-colors">
-                          {cargo.nombre}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <p className="text-xs text-luxor-primary font-medium capitalize">
-                            {cargo.nivel || "operadores"}
-                          </p>
-                          {cargo.unidad_id && (() => {
-                            const u = unidades.find((d) => d.id === cargo.unidad_id)
-                            return u ? (
-                              <span
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                                style={{ backgroundColor: u.color }}
-                              >
-                                {u.nombre}
-                              </span>
-                            ) : null
-                          })()}
+                  return (
+                    <Fragment key={unidad.id}>
+                      <tr className="bg-gray-50/80">
+                        <td colSpan={5} className="px-4 py-2">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded flex items-center justify-center border"
+                              style={{ backgroundColor: `${unidad.color}15`, borderColor: unidad.color }}
+                            >
+                              {unidad.tipo === "direccion" ? (
+                                <Building2 className="w-3.5 h-3.5" style={{ color: unidad.color }} />
+                              ) : unidad.tipo === "gerencia" ? (
+                                <Building className="w-3.5 h-3.5" style={{ color: unidad.color }} />
+                              ) : (
+                                <FolderOpen className="w-3.5 h-3.5" style={{ color: unidad.color }} />
+                              )}
+                            </div>
+                            <span className="font-semibold text-gray-900 text-xs">{unidad.nombre}</span>
+                            <span className="text-xs text-gray-400">({cargosDeUnidad.length})</span>
+                          </div>
+                        </td>
+                      </tr>
+                      {cargosDeUnidad.map((cargo) => {
+                        const isEditing = editingId === cargo.id
+                        const jefe = cargo.jefe_id ? cargos.find((c) => c.id === cargo.jefe_id) : null
+
+                        return (
+                          <tr
+                            key={cargo.id}
+                            className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                          >
+                            {isEditing ? (
+                              <td colSpan={5} className="px-4 py-3">
+                                <div className="space-y-2">
+                                  <div className="grid sm:grid-cols-2 gap-2">
+                                    <input
+                                      type="text"
+                                      value={editForm.nombre}
+                                      onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                      autoFocus
+                                    />
+                                    <select
+                                      value={editForm.nivel}
+                                      onChange={(e) => setEditForm({ ...editForm, nivel: e.target.value })}
+                                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                    >
+                                      <option value="gerentes">Gerentes</option>
+                                      <option value="coordinadores">Coordinadores</option>
+                                      <option value="administrativos">Administrativos</option>
+                                      <option value="operadores">Operadores</option>
+                                    </select>
+                                  </div>
+                                  <div className="grid sm:grid-cols-2 gap-2">
+                                    <select
+                                      value={editForm.unidad_id}
+                                      onChange={(e) => setEditForm({ ...editForm, unidad_id: e.target.value })}
+                                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                    >
+                                      <option value="">Sin unidad</option>
+                                      {unidadesOrdenadas
+                                        .filter((u) => {
+                                          if (editForm.nivel === "gerentes") return u.tipo === "gerencia"
+                                          return u.tipo === "departamento"
+                                        })
+                                        .map((u) => (
+                                          <option key={u.id} value={u.id}>{u.nombre}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                      value={editForm.jefe_id}
+                                      onChange={(e) => setEditForm({ ...editForm, jefe_id: e.target.value })}
+                                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                    >
+                                      <option value="">Sin jefe inmediato</option>
+                                      {cargos
+                                        .filter((c) => {
+                                          if (c.id === editingId) return false
+                                          if (!editForm.unidad_id) return false
+                                          const unidadActual = unidades.find((u) => u.id === editForm.unidad_id)
+                                          if (!unidadActual) return false
+                                          if (unidadActual.tipo === "departamento" && unidadActual.parent_id) {
+                                            return c.unidad_id === editForm.unidad_id || c.unidad_id === unidadActual.parent_id
+                                          }
+                                          return c.unidad_id === editForm.unidad_id
+                                        })
+                                        .map((c) => (
+                                          <option key={c.id} value={c.id}>{c.nombre}</option>
+                                        ))}
+                                    </select>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={editForm.descripcion}
+                                    onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
+                                    className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                    placeholder="Descripcion"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setEditingId(null)}
+                                      className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200"
+                                    >
+                                      Cancelar
+                                    </button>
+                                    <button
+                                      onClick={handleSaveEdit}
+                                      disabled={saving}
+                                      className="px-3 py-1.5 bg-luxor-primary text-white rounded-lg text-xs font-medium hover:bg-luxor-secondary disabled:opacity-50 flex items-center gap-1"
+                                    >
+                                      {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+                                      Guardar
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+                            ) : (
+                              <>
+                                <td className="px-4 py-2.5">
+                                  <Link
+                                    href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
+                                    prefetch={true}
+                                    className="font-medium text-gray-900 hover:text-luxor-primary transition-colors"
+                                  >
+                                    {cargo.nombre}
+                                  </Link>
+                                  {cargo.descripcion && (
+                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{cargo.descripcion}</p>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2.5 hidden sm:table-cell">
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-luxor-primary/10 text-luxor-primary">
+                                    {cargo.nivel || "operadores"}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-2.5 hidden md:table-cell">
+                                  {(() => {
+                                    const u = unidades.find((d) => d.id === cargo.unidad_id)
+                                    return u ? (
+                                      <span
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                                        style={{ backgroundColor: u.color }}
+                                      >
+                                        {u.nombre}
+                                      </span>
+                                    ) : <span className="text-xs text-gray-400">-</span>
+                                  })()}
+                                </td>
+                                <td className="px-4 py-2.5 hidden lg:table-cell">
+                                  {jefe ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                      <UserCog className="w-3 h-3" />
+                                      {jefe.nombre}
+                                    </span>
+                                  ) : <span className="text-xs text-gray-400">-</span>}
+                                </td>
+                                <td className="px-4 py-2.5 text-right">
+                                  {isDecano && (
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button
+                                        onClick={(e) => { e.preventDefault(); startEdit(cargo, e) }}
+                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Editar cargo"
+                                      >
+                                        <Edit3 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => { e.preventDefault(); handleDeleteCargo(cargo, e) }}
+                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Eliminar cargo"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                      <Link
+                                        href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
+                                        prefetch={true}
+                                        className="p-1.5 text-gray-400 hover:text-luxor-primary hover:bg-luxor-primary/5 rounded-lg transition-colors"
+                                        title="Ver ruta"
+                                      >
+                                        <ChevronRight className="w-4 h-4" />
+                                      </Link>
+                                    </div>
+                                  )}
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        )
+                      })}
+                    </Fragment>
+                  )
+                })}
+              {filtered.some((c) => !c.unidad_id) && (
+                <>
+                  <tr className="bg-amber-50/80">
+                    <td colSpan={5} className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded flex items-center justify-center border border-amber-300 bg-amber-100">
+                          <FolderOpen className="w-3.5 h-3.5 text-amber-600" />
                         </div>
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{cargo.descripcion}</p>
+                        <span className="font-semibold text-amber-900 text-xs">Sin unidad asignada</span>
+                        <span className="text-xs text-amber-600">({filtered.filter((c) => !c.unidad_id).length})</span>
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        {isDecano && (
+                    </td>
+                  </tr>
+                  {filtered.filter((c) => !c.unidad_id).map((cargo) => {
+                    const isEditing = editingId === cargo.id
+                    const jefe = cargo.jefe_id ? cargos.find((c) => c.id === cargo.jefe_id) : null
+
+                    return (
+                      <tr
+                        key={cargo.id}
+                        className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                      >
+                        {isEditing ? (
+                          <td colSpan={5} className="px-4 py-3">
+                            <div className="space-y-2">
+                              <div className="grid sm:grid-cols-2 gap-2">
+                                <input
+                                  type="text"
+                                  value={editForm.nombre}
+                                  onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                  autoFocus
+                                />
+                                <select
+                                  value={editForm.nivel}
+                                  onChange={(e) => setEditForm({ ...editForm, nivel: e.target.value })}
+                                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                >
+                                  <option value="gerentes">Gerentes</option>
+                                  <option value="coordinadores">Coordinadores</option>
+                                  <option value="administrativos">Administrativos</option>
+                                  <option value="operadores">Operadores</option>
+                                </select>
+                              </div>
+                              <div className="grid sm:grid-cols-2 gap-2">
+                                <select
+                                  value={editForm.unidad_id}
+                                  onChange={(e) => setEditForm({ ...editForm, unidad_id: e.target.value })}
+                                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                >
+                                  <option value="">Sin unidad</option>
+                                  {unidadesOrdenadas
+                                    .filter((u) => {
+                                      if (editForm.nivel === "gerentes") return u.tipo === "gerencia"
+                                      return u.tipo === "departamento"
+                                    })
+                                    .map((u) => (
+                                      <option key={u.id} value={u.id}>{u.nombre}</option>
+                                    ))}
+                                </select>
+                                <select
+                                  value={editForm.jefe_id}
+                                  onChange={(e) => setEditForm({ ...editForm, jefe_id: e.target.value })}
+                                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                >
+                                  <option value="">Sin jefe inmediato</option>
+                                  {cargos
+                                    .filter((c) => {
+                                      if (c.id === editingId) return false
+                                      if (!editForm.unidad_id) return false
+                                      const unidadActual = unidades.find((u) => u.id === editForm.unidad_id)
+                                      if (!unidadActual) return false
+                                      if (unidadActual.tipo === "departamento" && unidadActual.parent_id) {
+                                        return c.unidad_id === editForm.unidad_id || c.unidad_id === unidadActual.parent_id
+                                      }
+                                      return c.unidad_id === editForm.unidad_id
+                                    })
+                                    .map((c) => (
+                                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                                    ))}
+                                </select>
+                              </div>
+                              <input
+                                type="text"
+                                value={editForm.descripcion}
+                                onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
+                                className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                                placeholder="Descripcion"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setEditingId(null)}
+                                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200"
+                                >
+                                  Cancelar
+                                </button>
+                                <button
+                                  onClick={handleSaveEdit}
+                                  disabled={saving}
+                                  className="px-3 py-1.5 bg-luxor-primary text-white rounded-lg text-xs font-medium hover:bg-luxor-secondary disabled:opacity-50 flex items-center gap-1"
+                                >
+                                  {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+                                  Guardar
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        ) : (
                           <>
-                            <button
-                              onClick={(e) => startEdit(cargo, e)}
-                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                              title="Editar cargo"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => handleDeleteCargo(cargo, e)}
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                              title="Eliminar cargo"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <td className="px-4 py-2.5">
+                              <Link
+                                href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
+                                prefetch={true}
+                                className="font-medium text-gray-900 hover:text-luxor-primary transition-colors"
+                              >
+                                {cargo.nombre}
+                              </Link>
+                              {cargo.descripcion && (
+                                <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{cargo.descripcion}</p>
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 hidden sm:table-cell">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-luxor-primary/10 text-luxor-primary">
+                                {cargo.nivel || "operadores"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 hidden md:table-cell">
+                              <span className="text-xs text-amber-600 font-medium">Sin asignar</span>
+                            </td>
+                            <td className="px-4 py-2.5 hidden lg:table-cell">
+                              {jefe ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                  <UserCog className="w-3 h-3" />
+                                  {jefe.nombre}
+                                </span>
+                              ) : <span className="text-xs text-gray-400">-</span>}
+                            </td>
+                            <td className="px-4 py-2.5 text-right">
+                              {isDecano && (
+                                <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); startEdit(cargo, e) }}
+                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    title="Editar cargo"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); handleDeleteCargo(cargo, e) }}
+                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Eliminar cargo"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                  <Link
+                                    href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
+                                    prefetch={true}
+                                    className="p-1.5 text-gray-400 hover:text-luxor-primary hover:bg-luxor-primary/5 rounded-lg transition-colors"
+                                    title="Ver ruta"
+                                  >
+                                    <ChevronRight className="w-4 h-4" />
+                                  </Link>
+                                </div>
+                              )}
+                            </td>
                           </>
                         )}
-                        <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-luxor-primary transition-colors" />
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-xs text-gray-400 text-center">Haz clic para ver y gestionar</p>
-                    </div>
-                  </>
-                )}
-              </Link>
-            )
-          })}
+                      </tr>
+                    )
+                  })}
+                </>
+              )}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div className="text-center py-8">
+              <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-500 text-sm">No se encontraron cargos</p>
+            </div>
+          )}
         </div>
       )}
     </div>

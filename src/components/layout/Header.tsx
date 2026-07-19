@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
-import { LogOut, LayoutDashboard, GraduationCap, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network } from "lucide-react"
+import { LogOut, LayoutDashboard, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network } from "lucide-react"
 import Link from "next/link"
 
 const navByRole = {
@@ -276,9 +276,11 @@ export function Header({ onMenuClick }: HeaderProps) {
     <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200 flex items-center px-4">
       <div className="flex items-center gap-2 shrink-0">
         <Link href="/dashboard" prefetch={true} className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-luxor-primary rounded-lg flex items-center justify-center">
-            <GraduationCap className="w-5 h-5 text-white" />
-          </div>
+          <img
+            src="/Academia Luxor.webp"
+            alt="Academia Luxor"
+            className="w-9 h-9 object-contain"
+          />
         </Link>
         {pathname.match(/^\/dashboard\/cursos\/[^/]+$/) && (
           <Link

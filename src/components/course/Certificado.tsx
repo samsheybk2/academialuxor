@@ -54,17 +54,9 @@ async function buildPdf(origin: string, nombre: string, curso: string, fecha: st
   const tipoCompleto = tipo === "taller" ? "ha completado exitosamente el taller" : "ha completado exitosamente el curso"
   const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [W, H] })
 
-  try {
-    const bgUrl = await loadImage(`${origin}/fondo.png`)
-    const tmpCanvas = document.createElement("canvas")
-    tmpCanvas.width = H; tmpCanvas.height = W
-    const ctx = tmpCanvas.getContext("2d")!
-    ctx.globalAlpha = 0.15
-    ctx.translate(0, H); ctx.rotate(-Math.PI / 2)
-    const tmpImg = new Image(); tmpImg.src = bgUrl
-    await new Promise<void>(r => { tmpImg.onload = () => { ctx.drawImage(tmpImg, 0, 0, W, H); r() } })
-    pdf.addImage(tmpCanvas.toDataURL("image/png"), "PNG", 0, 0, W, H)
-  } catch {}
+  // Fondo blanco
+  pdf.setFillColor(255, 255, 255)
+  pdf.rect(0, 0, W, H, "F")
 
   pdf.setDrawColor(40, 49, 95); pdf.setLineWidth(2.5); pdf.roundedRect(10, 10, W - 20, H - 20, 10, 10)
   pdf.setDrawColor(139, 156, 199); pdf.setLineWidth(0.8); pdf.roundedRect(16, 16, W - 32, H - 32, 6, 6)
@@ -77,7 +69,10 @@ async function buildPdf(origin: string, nombre: string, curso: string, fecha: st
   pdf.setFontSize(5.5); pdf.setTextColor(40, 49, 95)
   pdf.text("VALIDAR", W - 88, 92, { align: "center" })
 
-  try { const l = await loadImage(`${origin}/logo_academia_luxor.jpeg`); pdf.addImage(l, "JPEG", cx - 75, 30, 150, 150) } catch {}
+  try {
+    const l = await loadImage(`${origin}/logo.webp`)
+    pdf.addImage(l, "PNG", cx - 168.75, 55, 337.5, 0)
+  } catch {}
 
   pdf.setFontSize(65); pdf.setTextColor(40, 49, 95)
   pdf.text(tipoLabel, cx, 200, { align: "center" })

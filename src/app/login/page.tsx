@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { LoginForm } from "@/components/auth/LoginForm"
-import { GraduationCap, BookOpen, Award, Users, Shield } from "lucide-react"
+import { GraduationCap, BookOpen, Award, Users } from "lucide-react"
 
 export default function LoginPage() {
   const { user, loading } = useAuth()
@@ -36,9 +36,9 @@ export default function LoginPage() {
   if (user) return null
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex overflow-hidden">
       {/* Panel izquierdo - Branding */}
-      <div className="hidden lg:flex lg:w-[58%] h-screen sticky top-0 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-[58%] h-screen sticky top-0 relative overflow-hidden flex-shrink-0">
         {/* Slideshow de fondos */}
         <div className="absolute inset-0">
           <img src="/fondo (1).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow1_12s_infinite]" />
@@ -55,44 +55,16 @@ export default function LoginPage() {
           <div className="absolute bottom-40 right-40 w-64 h-64 border border-white rounded-full" />
         </div>
 
-        {/* Elementos académicos flotantes */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[15%] left-[10%] text-white/[0.06] animate-float-slow">
-            <BookOpen className="w-24 h-24" />
-          </div>
-          <div className="absolute top-[60%] left-[5%] text-white/[0.05] animate-float-medium">
-            <Award className="w-20 h-20" />
-          </div>
-          <div className="absolute top-[25%] right-[15%] text-white/[0.05] animate-float-fast">
-            <Users className="w-16 h-16" />
-          </div>
-          <div className="absolute bottom-[20%] right-[8%] text-white/[0.06] animate-float-slow" style={{ animationDelay: "2s" }}>
-            <Shield className="w-28 h-28" />
-          </div>
-          <div className="absolute bottom-[35%] left-[25%] text-white/[0.04] animate-float-medium" style={{ animationDelay: "1s" }}>
-            <GraduationCap className="w-32 h-32" />
-          </div>
-        </div>
-
         {/* Contenido principal */}
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 w-full">
           <div className="max-w-lg">
-            {/* Logo */}
-            <div className="mb-10">
-              <img
-                src="/logo_academia_luxor.jpeg"
-                alt="Academia Luxor"
-                className="h-20 w-auto"
-              />
-            </div>
-
             {/* Texto principal */}
             <div className="space-y-6">
               <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight">
                 Tu plataforma de
                 <span className="block text-yellow-400 mt-1">formación profesional</span>
               </h1>
-              <p className="text-lg text-white/70 leading-relaxed max-w-md">
+              <p className="text-lg text-white leading-relaxed max-w-md font-medium">
                 Desarrolla tus habilidades, obtén certificaciones y crece profesionalmente dentro de Luxor.
               </p>
             </div>
@@ -106,12 +78,12 @@ export default function LoginPage() {
               ].map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 text-white/60"
+                  className="flex items-center gap-3 text-white"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/10">
-                    <item.icon className="w-4 h-4 text-yellow-400/80" />
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center border border-white/20">
+                    <item.icon className="w-4 h-4 text-yellow-400" />
                   </div>
-                  <span className="text-sm">{item.text}</span>
+                  <span className="text-sm font-medium">{item.text}</span>
                 </div>
               ))}
             </div>
@@ -123,30 +95,35 @@ export default function LoginPage() {
       </div>
 
       {/* Panel derecho - Formulario */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-screen">
         {/* Header móvil */}
-        <div className="lg:hidden flex items-center justify-center py-8 bg-gradient-to-r from-luxor-primary to-luxor-secondary">
+        <div className="lg:hidden flex items-center justify-center py-8 bg-gradient-to-r from-luxor-primary to-luxor-secondary flex-shrink-0">
           <img
-            src="/logo_academia_luxor.jpeg"
+            src="/logo.webp"
             alt="Academia Luxor"
-            className="h-14 w-auto"
+            className="h-24 w-auto"
           />
         </div>
 
-        {/* Área del formulario */}
-        <div className="flex-1 flex items-center justify-center px-6 py-12 bg-gray-50 overflow-y-auto">
-          <div className="w-full max-w-md">
-            {/* Título del formulario - solo visible en desktop */}
-            <div className="hidden lg:block mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">Bienvenido</h2>
-              <p className="text-gray-500 mt-1">Ingresa tus credenciales para acceder</p>
+        {/* Área del formulario con scroll */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-full px-6 py-12 bg-gray-50">
+            <div className="w-full max-w-md">
+              {/* Logo - solo visible en desktop */}
+              <div className="hidden lg:flex lg:justify-center mb-8">
+                <img
+                  src="/logo.webp"
+                  alt="Academia Luxor"
+                  className="max-h-32 w-auto object-contain"
+                />
+              </div>
+
+              <LoginForm />
+
+              <p className="text-center text-xs text-gray-400 mt-8">
+                Supermercados Luxor © {new Date().getFullYear()} — Todos los derechos reservados
+              </p>
             </div>
-
-            <LoginForm />
-
-            <p className="text-center text-xs text-gray-400 mt-8">
-              Supermercados Luxor © {new Date().getFullYear()} — Todos los derechos reservados
-            </p>
           </div>
         </div>
       </div>
