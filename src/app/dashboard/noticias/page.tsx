@@ -806,7 +806,7 @@ async function handleEliminar(pubId: string) {
                 )}
               </div>
 
-              <div className="px-5 pb-3 pt-2 flex items-center gap-2 flex-wrap border-t border-white/30 mt-2">
+              <div className="px-5 pb-3 pt-2 flex items-center gap-1.5 border-t border-white/30 mt-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {REACCION_KEYS.map((tipo) => {
                   const config = REACCIONES_CONFIG[tipo]
                   const Icon = config.icon
@@ -816,7 +816,7 @@ async function handleEliminar(pubId: string) {
                     <button
                       key={tipo}
                       onClick={() => toggleReaccion(pub.id, tipo)}
-                      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border flex-shrink-0 ${
                         isActive
                           ? `${config.bg} ${config.color} shadow-md scale-110`
                           : `border-white/30 bg-white/30 ${config.color} opacity-50 hover:opacity-100 hover:bg-white/60 hover:shadow-sm`
