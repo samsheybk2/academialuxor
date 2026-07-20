@@ -12,7 +12,7 @@ export default function PendienteAprobacionPage() {
   useEffect(() => {
     if (!loading && user) {
       if (user.aprobado !== false || user.rol !== "estudiante") {
-        router.push("/dashboard")
+        router.push("/dashboard/noticias")
       }
     }
     if (!loading && !user) {

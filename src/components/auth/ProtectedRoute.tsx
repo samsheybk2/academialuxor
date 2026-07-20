@@ -19,7 +19,7 @@ export function ProtectedRoute({
       router.push("/login")
     }
     if (!loading && user && allowedRoles && !allowedRoles.includes(user.rol)) {
-      router.push("/dashboard")
+      router.push("/dashboard/noticias")
     }
   }, [user, loading, router, allowedRoles])
 

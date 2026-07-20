@@ -15,7 +15,7 @@ export default function LoginPage() {
       if (user.aprobado === false && user.rol === "estudiante") {
         router.push("/pendiente-aprobacion")
       } else {
-        router.push("/dashboard")
+        router.push("/dashboard/noticias")
       }
     }
   }, [user, loading, router])

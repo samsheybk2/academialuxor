@@ -102,7 +102,7 @@ export function LoginForm() {
     setError("")
     try {
       await signIn(email, password)
-      router.push("/dashboard")
+      router.push("/dashboard/noticias")
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Credenciales incorrectas")
     } finally {
