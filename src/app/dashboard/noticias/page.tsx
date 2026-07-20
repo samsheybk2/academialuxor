@@ -30,8 +30,13 @@ import {
   Frown,
   Smile,
   CircleHelp,
+  Pencil,
+  MapPin,
+  Tag,
+  MoreHorizontal,
 } from "lucide-react"
 import { CalendarioSidebar } from "@/components/ui/CalendarioSidebar"
+import { Modal } from "@/components/ui/Modal"
 
 const REACCIONES_CONFIG: Record<TipoReaccion, { icon: typeof ThumbsUp; color: string; bg: string; hoverBg: string; label: string }> = {
   me_gusta: { icon: ThumbsUp, color: "text-blue-600", bg: "bg-blue-50 border-blue-200", hoverBg: "hover:bg-blue-50", label: "Me gusta" },
@@ -276,6 +281,8 @@ export default function NoticiasPage() {
   const [pollOpciones, setPollOpciones] = useState<string[]>(["", ""])
   const [pollMultiple, setPollMultiple] = useState(false)
 
+  const [showCreateModal, setShowCreateModal] = useState(false)
+
   const fileRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
@@ -447,6 +454,7 @@ export default function NoticiasPage() {
       setPollPregunta("")
       setPollOpciones(["", ""])
       setPollMultiple(false)
+      setShowCreateModal(false)
       fetchPublicaciones()
     }
 
@@ -521,198 +529,213 @@ async function handleEliminar(pubId: string) {
 
   return (
     <>
-       <div className="relative z-[2] w-full min-h-[calc(100vh-56px)] lg:h-[calc(100vh-56px)] flex flex-col">
-       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 w-full items-stretch">
+       <div className="relative z-[2] w-full h-full flex flex-col -m-4 sm:-m-6">
+       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 w-full h-full">
          {/* Sidebar izquierdo — Calendario */}
-         <div className="hidden lg:block h-full w-full overflow-hidden rounded-none bg-[#F0F2F5] p-0">
+         <div className="hidden lg:block h-full w-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] p-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
            <CalendarioSidebar />
          </div>
 
          {/* Feed principal — siempre centrado */}
-         <div className="h-full overflow-y-auto custom-scrollbar flex justify-center rounded-none bg-[#F0F2F5] p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-         <div className="w-full max-w-xl h-full space-y-6 px-0 pb-0">
+         <div className="h-full overflow-y-auto custom-scrollbar flex justify-center bg-[#F0F2F5] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+         <div className="w-full max-w-xl space-y-6 px-4 py-6">
 
-        {canPost && (
-          <div className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 p-5">
-            <div className="flex items-start gap-3">
+         {/* Modal Crear Publicación */}
+         {canPost && (
+           <Modal
+             show={showCreateModal}
+             onClose={() => setShowCreateModal(false)}
+             title=""
+           >
+          <div className="px-0 py-0">
+            {/* Header con usuario */}
+            <div className="flex items-center gap-3 px-6 pb-4">
               <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">
                 {user?.nombre?.charAt(0) || "?"}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="border border-white/40 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-luxor-primary/20 focus-within:border-luxor-primary/30 transition-all bg-white/60 backdrop-blur-sm">
-                  <div className="flex items-center gap-0.5 px-2 py-1 border-b border-gray-100/60 bg-white/40">
-                    <button
-                      onClick={() => editor?.chain().focus().toggleBold().run()}
-                      className={`p-1.5 rounded transition-colors ${
-                        editor?.isActive("bold") ? "bg-luxor-primary/10 text-luxor-primary" : "text-gray-400 hover:text-gray-600"
-                      }`}
-                      title="Negrita"
-                    >
-                      <Bold className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => editor?.chain().focus().toggleItalic().run()}
-                      className={`p-1.5 rounded transition-colors ${
-                        editor?.isActive("italic") ? "bg-luxor-primary/10 text-luxor-primary" : "text-gray-400 hover:text-gray-600"
-                      }`}
-                      title="Cursiva"
-                    >
-                      <Italic className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => editor?.chain().focus().toggleBulletList().run()}
-                      className={`p-1.5 rounded transition-colors ${
-                        editor?.isActive("bulletList") ? "bg-luxor-primary/10 text-luxor-primary" : "text-gray-400 hover:text-gray-600"
-                      }`}
-                      title="Lista con viñetas"
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-                      className={`p-1.5 rounded transition-colors ${
-                        editor?.isActive("orderedList") ? "bg-luxor-primary/10 text-luxor-primary" : "text-gray-400 hover:text-gray-600"
-                      }`}
-                      title="Lista numerada"
-                    >
-                      <ListOrdered className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <EditorContent
-                    editor={editor}
-                    className="prose prose-sm max-w-none px-4 py-3 min-h-[80px] text-gray-900 [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-gray-400 [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:text-gray-900 [&_.tiptap_strong]:font-bold [&_.tiptap_u]:underline"
-                  />
+                <p className="text-sm font-semibold text-gray-900 truncate">{user?.nombre || "Usuario"}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-xs font-medium text-gray-600">
+                    <span className="w-3 h-3 rounded-full bg-green-500 inline-block" />
+                    Público
+                  </span>
                 </div>
+              </div>
+            </div>
 
-                {imagenPreview && (
-                  <div className="relative mt-2 rounded-xl overflow-hidden border border-white/40 shadow-md">
-                    <img src={imagenPreview} alt="Preview" className="w-full max-h-60 object-cover" />
-                    <button
-                      onClick={removeImagen}
-                      className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 backdrop-blur-sm"
-                    >
+            {/* Editor */}
+            <div className="px-6 pb-4">
+              <div className="border-b border-gray-100 pb-4">
+                <EditorContent
+                  editor={editor}
+                  className="prose prose-sm max-w-none min-h-[120px] text-gray-900 text-base [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-gray-400 [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:text-gray-900 [&_.tiptap_strong]:font-bold [&_.tiptap_u]:underline"
+                />
+              </div>
+            </div>
+
+            {/* Preview imagen */}
+            {imagenPreview && (
+              <div className="px-6 pb-4">
+                <div className="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                  <img src={imagenPreview} alt="Preview" className="w-full max-h-60 object-cover" />
+                  <button
+                    onClick={removeImagen}
+                    className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 backdrop-blur-sm"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Enlace */}
+            {showEnlace && (
+              <div className="px-6 pb-4 space-y-2">
+                <input
+                  type="url"
+                  value={enlaceUrl}
+                  onChange={(e) => setEnlaceUrl(e.target.value)}
+                  placeholder="https://ejemplo.com"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
+                />
+                <input
+                  type="text"
+                  value={enlaceTitulo}
+                  onChange={(e) => setEnlaceTitulo(e.target.value)}
+                  placeholder="Título del enlace (opcional)"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
+                />
+              </div>
+            )}
+
+            {/* Encuesta */}
+            {showPoll && (
+              <div className="px-6 pb-4">
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-luxor-primary" />
+                      <span className="text-sm font-medium text-gray-700">Encuesta</span>
+                    </div>
+                    <button onClick={() => setShowPoll(false)} className="text-gray-400 hover:text-red-500">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                )}
-
-                {showEnlace && (
-                  <div className="mt-2 space-y-2">
-                    <input
-                      type="url"
-                      value={enlaceUrl}
-                      onChange={(e) => setEnlaceUrl(e.target.value)}
-                      placeholder="https://ejemplo.com"
-                      className="w-full border border-white/40 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20 bg-white/60 backdrop-blur-sm"
-                    />
-                    <input
-                      type="text"
-                      value={enlaceTitulo}
-                      onChange={(e) => setEnlaceTitulo(e.target.value)}
-                      placeholder="Título del enlace (opcional)"
-                      className="w-full border border-white/40 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20 bg-white/60 backdrop-blur-sm"
-                    />
-                  </div>
-                )}
-
-                {showPoll && (
-                  <div className="mt-3 p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-white/40 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-luxor-primary" />
-                        <span className="text-sm font-medium text-gray-700">Encuesta</span>
-                      </div>
-                      <button onClick={() => setShowPoll(false)} className="text-gray-400 hover:text-red-500">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={pollPregunta}
-                      onChange={(e) => setPollPregunta(e.target.value)}
-                      placeholder="¿Qué pregunta quieres hacer?"
-                      className="w-full border border-white/40 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20 bg-white/80"
-                    />
-                    {pollOpciones.map((opt, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 w-4 text-center">{i + 1}</span>
-                        <input
-                          type="text"
-                          value={opt}
-                          onChange={(e) => updatePollOption(i, e.target.value)}
-                          placeholder={`Opción ${i + 1}`}
-                          className="flex-1 border border-white/40 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20 bg-white/80"
-                        />
-                        {pollOpciones.length > 2 && (
-                          <button onClick={() => removePollOption(i)} className="text-gray-300 hover:text-red-500">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    {pollOpciones.length < 6 && (
-                      <button
-                        onClick={addPollOption}
-                        className="flex items-center gap-1 text-xs text-luxor-primary hover:text-luxor-secondary font-medium"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        Agregar opción
-                      </button>
-                    )}
-                    <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                  <input
+                    type="text"
+                    value={pollPregunta}
+                    onChange={(e) => setPollPregunta(e.target.value)}
+                    placeholder="¿Qué pregunta quieres hacer?"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
+                  />
+                  {pollOpciones.map((opt, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 w-4 text-center">{i + 1}</span>
                       <input
-                        type="checkbox"
-                        checked={pollMultiple}
-                        onChange={(e) => setPollMultiple(e.target.checked)}
-                        className="rounded border-gray-300 text-luxor-primary focus:ring-luxor-primary"
+                        type="text"
+                        value={opt}
+                        onChange={(e) => updatePollOption(i, e.target.value)}
+                        placeholder={`Opción ${i + 1}`}
+                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
                       />
-                      Permitir selección múltiple
-                    </label>
-                  </div>
-                )}
+                      {pollOpciones.length > 2 && (
+                        <button onClick={() => removePollOption(i)} className="text-gray-300 hover:text-red-500">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {pollOpciones.length < 6 && (
+                    <button
+                      onClick={addPollOption}
+                      className="flex items-center gap-1 text-xs text-luxor-primary hover:text-luxor-secondary font-medium"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Agregar opción
+                    </button>
+                  )}
+                  <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={pollMultiple}
+                      onChange={(e) => setPollMultiple(e.target.checked)}
+                      className="rounded border-gray-300 text-luxor-primary focus:ring-luxor-primary"
+                    />
+                    Permitir selección múltiple
+                  </label>
+                </div>
+              </div>
+            )}
 
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100/60">
-                  <div className="flex items-center gap-1">
-                    <input ref={fileRef} type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
-                    <button
-                      onClick={() => fileRef.current?.click()}
-                      className="p-2 rounded-lg text-gray-400 hover:text-green-600 hover:bg-green-50/80 transition-colors"
-                      title="Agregar imagen"
-                    >
-                      <ImageIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setShowEnlace(!showEnlace)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        showEnlace ? "text-blue-600 bg-blue-50" : "text-gray-400 hover:text-blue-600 hover:bg-blue-50/80"
-                      }`}
-                      title="Agregar enlace"
-                    >
-                      <Link2 className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setShowPoll(!showPoll)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        showPoll ? "text-purple-600 bg-purple-50" : "text-gray-400 hover:text-purple-600 hover:bg-purple-50/80"
-                      }`}
-                      title="Agregar encuesta"
-                    >
-                      <BarChart3 className="w-5 h-5" />
-                    </button>
-                  </div>
+            {/* Toolbar inferior */}
+            <div className="px-6 pb-4">
+              <div className="border border-gray-200 rounded-xl p-3">
+                <p className="text-sm font-medium text-gray-700 mb-2">Agregar a tu publicación</p>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <input ref={fileRef} type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
                   <button
-                    onClick={handlePublicar}
-                    disabled={submitting || uploading || !(editor?.getText().trim())}
-                    className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-luxor-primary to-luxor-secondary text-white text-sm font-semibold rounded-xl hover:shadow-lg hover:shadow-luxor-primary/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={() => fileRef.current?.click()}
+                    className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                    title="Agregar imagen"
                   >
-                    {submitting || uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    Publicar
+                    <ImageIcon className="w-6 h-6 text-green-500" />
+                  </button>
+                  <button
+                    onClick={() => setShowEnlace(!showEnlace)}
+                    className={`p-2 rounded-lg transition-colors ${showEnlace ? "bg-blue-50" : "hover:bg-gray-100"}`}
+                    title="Agregar enlace"
+                  >
+                    <Link2 className="w-6 h-6 text-blue-500" />
+                  </button>
+                  <button
+                    onClick={() => setShowPoll(!showPoll)}
+                    className={`p-2 rounded-lg transition-colors ${showPoll ? "bg-purple-50" : "hover:bg-gray-100"}`}
+                    title="Agregar encuesta"
+                  >
+                    <BarChart3 className="w-6 h-6 text-purple-500" />
+                  </button>
+                  <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Etiquetar personas">
+                    <Tag className="w-6 h-6 text-blue-500" />
+                  </button>
+                  <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Ubicación">
+                    <MapPin className="w-6 h-6 text-red-500" />
+                  </button>
+                  <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Más opciones">
+                    <MoreHorizontal className="w-6 h-6 text-gray-500" />
                   </button>
                 </div>
               </div>
             </div>
+
+            {/* Botón Publicar */}
+            <div className="px-6 pb-6">
+              <button
+                onClick={handlePublicar}
+                disabled={submitting || uploading || !(editor?.getText().trim())}
+                className="w-full py-2.5 bg-luxor-primary text-white text-sm font-semibold rounded-lg hover:bg-luxor-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {submitting || uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Publicar
+              </button>
+            </div>
           </div>
+        </Modal>
         )}
+
+        <div className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">
+              {user?.nombre?.charAt(0) || "?"}
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex-1 text-left px-4 py-2.5 bg-gray-100 rounded-full text-gray-500 text-sm hover:bg-gray-200 transition-colors"
+            >
+              ¿Qué quieres compartir con la comunidad?
+            </button>
+          </div>
+        </div>
 
         {publicaciones.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
@@ -813,8 +836,8 @@ async function handleEliminar(pubId: string) {
         </div>
 
         {/* Sidebar derecha — cursos de formación selectiva */}
-        <div className="hidden lg:block w-[340px] shrink-0 h-full overflow-y-auto rounded-none bg-[#F0F2F5] p-4">
-          <div className="space-y-3">
+        <div className="hidden lg:block w-[340px] shrink-0 h-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="p-4 space-y-3">
             <div className="px-1 py-2">
               <h3 className="text-sm font-semibold text-gray-800">Cursos de formación selectiva</h3>
               <p className="text-xs text-gray-500 mt-1">Explora capacitaciones recomendadas para tu crecimiento.</p>
