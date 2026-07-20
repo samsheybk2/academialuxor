@@ -529,7 +529,7 @@ async function handleEliminar(pubId: string) {
 
   return (
     <>
-       <div className="relative z-[2] w-full h-full flex flex-col -m-4 sm:-m-6">
+       <div className="relative z-[2] w-full h-full flex flex-col -mx-4 sm:-mx-6 -mb-4 sm:-mb-6">
        <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 w-full h-full">
          {/* Sidebar izquierdo — Calendario */}
          <div className="hidden lg:block h-full w-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] p-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
@@ -538,7 +538,7 @@ async function handleEliminar(pubId: string) {
 
          {/* Feed principal — siempre centrado */}
          <div className="h-full overflow-y-auto flex justify-center bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-         <div className="w-full max-w-xl space-y-6 px-4 py-6">
+         <div className="w-full max-w-xl space-y-6 sm:px-4 sm:py-6">
 
          {/* Modal Crear Publicación */}
          {canPost && (
