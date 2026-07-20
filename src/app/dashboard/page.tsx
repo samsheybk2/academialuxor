@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { Clock } from "lucide-react"
 
-const TARGET = new Date("2026-07-20T00:00:00-04:00").getTime()
+const TARGET = new Date("2026-07-20T10:00:00-04:00").getTime()
 
 function getTimeLeft() {
   const now = Date.now()

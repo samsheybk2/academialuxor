@@ -96,19 +96,28 @@ export default function LoginPage() {
 
       {/* Panel derecho - Formulario */}
       <div className="flex-1 flex flex-col h-screen">
-        {/* Header móvil */}
-        <div className="lg:hidden flex items-center justify-center py-8 bg-gradient-to-r from-luxor-primary to-luxor-secondary flex-shrink-0">
+        {/* Header móvil - Fondo blanco con logo */}
+        <div className="lg:hidden flex items-center justify-center py-6 bg-white flex-shrink-0 border-b border-gray-200">
           <img
             src="/logo.webp"
             alt="Academia Luxor"
-            className="h-24 w-auto"
+            className="h-20 w-auto"
           />
         </div>
 
-        {/* Área del formulario con scroll */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-full px-6 py-12 bg-gray-50">
-            <div className="w-full max-w-md">
+        {/* Área del formulario */}
+        <div className="flex-1 overflow-y-auto relative bg-white lg:bg-white">
+          {/* Slideshow de fondos - solo móvil */}
+          <div className="absolute inset-0 lg:hidden">
+            <img src="/fondo (1).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow1_12s_infinite]" />
+            <img src="/fondo (2).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow2_12s_infinite]" />
+            <img src="/fondo (3).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow3_12s_infinite]" />
+          </div>
+          {/* Overlay oscuro para legibilidad - solo móvil */}
+          <div className="absolute inset-0 bg-luxor-primary/60 lg:hidden" />
+          
+          <div className="relative z-10 flex items-center justify-center min-h-full px-6 py-12">
+            <div className="w-full max-w-lg">
               {/* Logo - solo visible en desktop */}
               <div className="hidden lg:flex lg:justify-center mb-8">
                 <img
@@ -120,7 +129,7 @@ export default function LoginPage() {
 
               <LoginForm />
 
-              <p className="text-center text-xs text-gray-400 mt-8">
+              <p className="text-center text-xs text-gray-400 lg:text-gray-400 text-white/60 mt-8">
                 Supermercados Luxor © {new Date().getFullYear()} — Todos los derechos reservados
               </p>
             </div>

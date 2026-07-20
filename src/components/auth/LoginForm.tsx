@@ -172,8 +172,8 @@ export function LoginForm() {
 
   if (emailSent) {
     return (
-      <div className="w-full max-w-md mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+    <div className="w-full max-w-lg mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
@@ -204,7 +204,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-lg mx-auto">
       <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
         <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
           <button
