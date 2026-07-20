@@ -537,8 +537,8 @@ async function handleEliminar(pubId: string) {
          </div>
 
          {/* Feed principal — siempre centrado */}
-         <div className="h-full overflow-y-auto flex justify-center bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-         <div className="w-full max-w-xl space-y-6 sm:px-4 sm:py-6">
+         <div className="h-full overflow-y-auto bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+         <div className="w-full space-y-6 sm:max-w-xl sm:mx-auto sm:px-4 sm:py-6">
 
          {/* Modal Crear Publicación */}
          {canPost && (
@@ -723,7 +723,7 @@ async function handleEliminar(pubId: string) {
         </Modal>
         )}
 
-        <div className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 p-5">
+        <div className="mt-8 bg-white/80 backdrop-blur-xl sm:rounded-2xl shadow-xl shadow-black/5 border border-white/50 p-5">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">
               {user?.nombre?.charAt(0) || "?"}
@@ -745,7 +745,7 @@ async function handleEliminar(pubId: string) {
           </div>
         ) : (
           publicaciones.map((pub) => (
-            <div key={pub.id} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8">
+            <div key={pub.id} className="bg-white/70 backdrop-blur-xl sm:rounded-2xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8">
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">
