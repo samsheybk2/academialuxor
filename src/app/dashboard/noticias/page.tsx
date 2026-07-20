@@ -537,7 +537,7 @@ async function handleEliminar(pubId: string) {
          </div>
 
          {/* Feed principal — siempre centrado */}
-         <div className="h-full overflow-y-auto custom-scrollbar flex justify-center bg-[#F0F2F5] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+         <div className="h-full overflow-y-auto flex justify-center bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
          <div className="w-full max-w-xl space-y-6 px-4 py-6">
 
          {/* Modal Crear Publicación */}

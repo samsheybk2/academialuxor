@@ -8,7 +8,6 @@ import Link from "next/link"
 
 const navByRole = {
   decano: [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Gestionar Cursos", icon: BookOpen },
@@ -27,7 +26,6 @@ const navByRole = {
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   facilitador: [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Mis Cursos", icon: BookOpen },
@@ -36,7 +34,6 @@ const navByRole = {
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   estudiante: [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/rutas-aprendizaje", label: "Mi Ruta", icon: Route },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
