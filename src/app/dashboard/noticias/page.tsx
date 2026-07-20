@@ -529,7 +529,7 @@ async function handleEliminar(pubId: string) {
 
   return (
     <>
-       <div className="relative z-[2] w-full h-full flex flex-col -mx-4 sm:-mx-6 -mb-4 sm:-mb-6">
+       <div className="relative z-[2] w-full h-full flex flex-col -mb-4 sm:-mb-6">
        <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 w-full h-full">
          {/* Sidebar izquierdo — Calendario */}
          <div className="hidden lg:block h-full w-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] p-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
@@ -538,7 +538,7 @@ async function handleEliminar(pubId: string) {
 
          {/* Feed principal — siempre centrado */}
          <div className="h-full overflow-y-auto bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-         <div className="w-full space-y-6 sm:max-w-xl sm:mx-auto sm:px-4 sm:py-6">
+         <div className="max-w-xl mx-auto space-y-6 px-4 py-6">
 
          {/* Modal Crear Publicación */}
          {canPost && (
@@ -723,7 +723,7 @@ async function handleEliminar(pubId: string) {
         </Modal>
         )}
 
-        <div className="mt-8 bg-white/80 backdrop-blur-xl sm:rounded-2xl shadow-xl shadow-black/5 border border-white/50 p-5">
+        <div className="mt-8 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 p-5">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">
               {user?.nombre?.charAt(0) || "?"}
@@ -745,7 +745,7 @@ async function handleEliminar(pubId: string) {
           </div>
         ) : (
           publicaciones.map((pub) => (
-            <div key={pub.id} className="bg-white/70 backdrop-blur-xl sm:rounded-2xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8">
+            <div key={pub.id} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8">
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">
