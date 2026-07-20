@@ -91,7 +91,7 @@ function TallerCertContent({ id }: { id: string }) {
           <Certificado
             nombre={user?.nombre || "Estudiante"}
             curso={evalData.tallerTitulo}
-            fecha={new Date(evalData.created_at).toLocaleDateString("es-MX", {
+            fecha={new Date(evalData.created_at).toLocaleDateString("es-VE", {
               day: "numeric",
               month: "long",
               year: "numeric",

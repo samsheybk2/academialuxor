@@ -94,7 +94,7 @@ function ValidarCertificadoContent() {
     )
   }
 
-  const fecha = new Date(certificado.fecha_emision).toLocaleDateString("es-MX", {
+  const fecha = new Date(certificado.fecha_emision).toLocaleDateString("es-VE", {
     day: "numeric",
     month: "long",
     year: "numeric",

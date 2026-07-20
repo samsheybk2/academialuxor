@@ -928,7 +928,7 @@ function CursoContent({ id }: { id: string }) {
           <Certificado
             nombre={user?.nombre || "Estudiante"}
             curso={curso.titulo}
-            fecha={new Date().toLocaleDateString("es-MX", {
+            fecha={new Date().toLocaleDateString("es-VE", {
               day: "numeric",
               month: "long",
               year: "numeric",

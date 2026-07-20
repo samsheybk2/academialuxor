@@ -39,7 +39,7 @@ export default function CertificadoPreview({ params }: { params: Promise<{ id: s
       <Certificado
         nombre={user?.nombre || "Nombre del Estudiante"}
         curso={curso.titulo}
-        fecha={new Date().toLocaleDateString("es-MX", {
+        fecha={new Date().toLocaleDateString("es-VE", {
           day: "numeric",
           month: "long",
           year: "numeric",

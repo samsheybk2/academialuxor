@@ -3,6 +3,16 @@
 -- Ejecutar TODO este script en Supabase SQL Editor una sola vez
 -- ============================================================
 
+-- IMPORTANTE: Configurar zona horaria permanente en Supabase
+-- Ejecutar este comando en Supabase SQL Editor para establecer la zona horaria de la base de datos:
+-- ALTER DATABASE postgres SET timezone = 'America/Caracas';
+--
+-- O desde el Dashboard de Supabase:
+-- Settings > Database > Timezone > America/Caracas
+
+-- Configurar zona horaria para esta sesión
+SET timezone = 'America/Caracas';
+
 -- ============================================================
 -- 1. TABLAS
 -- ============================================================
