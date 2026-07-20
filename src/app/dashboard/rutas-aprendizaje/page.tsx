@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
 import { tipoEtapaConfig } from "@/types/ruta-aprendizaje"
 import type { RutaAprendizaje, TipoEtapa, ElementoRuta } from "@/types/ruta-aprendizaje"
-import type { UnidadOrganizacional } from "@/types"
+import type { UnidadOrganizacional, Competencia } from "@/types"
 import {
   Plus,
   Trash2,
@@ -34,6 +34,8 @@ import {
   FolderOpen,
   Network,
   Users,
+  Zap,
+  Star,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -44,6 +46,10 @@ interface CargoData {
   nivel: string
   unidad_id: string | null
   jefe_id: string | null
+  competencias?: Array<{
+    competencia: Competencia
+    nivel_requerido: number
+  }>
   created_at: string
 }
 
@@ -62,13 +68,16 @@ function RutasContent() {
 
   const [cargos, setCargos] = useState<CargoData[]>([])
   const [unidades, setUnidades] = useState<UnidadOrganizacional[]>([])
+  const [competencias, setCompetencias] = useState<Competencia[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newCargo, setNewCargo] = useState({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" })
+  const [newCargoCompetencias, setNewCargoCompetencias] = useState<Array<{ competencia_id: string; nivel_requerido: number }>>([])
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" })
+  const [editCargoCompetencias, setEditCargoCompetencias] = useState<Array<{ competencia_id: string; nivel_requerido: number }>>([])
   const [filtroNivel, setFiltroNivel] = useState<string>("todos")
   const [filtroUnidad, setFiltroUnidad] = useState<string>("todos")
 
@@ -85,6 +94,7 @@ function RutasContent() {
     } else {
       fetchCargos()
       fetchUnidades()
+      fetchCompetencias()
     }
   }, [user?.id])
 
@@ -214,8 +224,35 @@ function RutasContent() {
       .select("*")
       .order("created_at", { ascending: true })
 
-    setCargos(data || [])
+    const cargoIds = (data || []).map((c: CargoData) => c.id)
+
+    const { data: competenciasData } = cargoIds.length > 0
+      ? await supabase
+          .from("cargo_competencias")
+          .select("*, competencia:competencias(*)")
+          .in("cargo_id", cargoIds)
+      : { data: [] as Array<{ cargo_id: string; competencia_id: string; nivel_requerido: number; competencia: Competencia }> }
+
+    const cargosConCompetencias = (data || []).map((cargo: CargoData) => ({
+      ...cargo,
+      competencias: (competenciasData || [])
+        .filter((cc: { cargo_id: string }) => cc.cargo_id === cargo.id)
+        .map((cc: { competencia: Competencia; nivel_requerido: number }) => ({
+          competencia: cc.competencia,
+          nivel_requerido: cc.nivel_requerido
+        }))
+    }))
+
+    setCargos(cargosConCompetencias)
     setLoading(false)
+  }
+
+  async function fetchCompetencias() {
+    const { data } = await supabase
+      .from("competencias")
+      .select("*")
+      .order("nombre")
+    setCompetencias(data || [])
   }
 
   async function fetchUnidades() {
@@ -275,6 +312,12 @@ function RutasContent() {
     e.stopPropagation()
     setEditingId(cargo.id)
     setEditForm({ nombre: cargo.nombre, descripcion: cargo.descripcion, nivel: cargo.nivel || "operadores", unidad_id: cargo.unidad_id || "", jefe_id: cargo.jefe_id || "" })
+    setEditCargoCompetencias(
+      (cargo.competencias || []).map((cc) => ({
+        competencia_id: cc.competencia.id,
+        nivel_requerido: cc.nivel_requerido
+      }))
+    )
   }
 
   async function handleSaveEdit() {
@@ -284,7 +327,19 @@ function RutasContent() {
       .from("cargos")
       .update({ nombre: editForm.nombre.trim(), descripcion: editForm.descripcion.trim(), nivel: editForm.nivel, unidad_id: editForm.unidad_id || null, jefe_id: editForm.jefe_id || null })
       .eq("id", editingId)
+
+    await supabase.from("cargo_competencias").delete().eq("cargo_id", editingId)
+    if (editCargoCompetencias.length > 0) {
+      const competenciasInsert = editCargoCompetencias.map((cc) => ({
+        cargo_id: editingId,
+        competencia_id: cc.competencia_id,
+        nivel_requerido: cc.nivel_requerido
+      }))
+      await supabase.from("cargo_competencias").insert(competenciasInsert)
+    }
+
     setEditingId(null)
+    setEditCargoCompetencias([])
     setSaving(false)
     fetchCargos()
   }
@@ -301,7 +356,18 @@ function RutasContent() {
       unidad_id: newCargo.unidad_id || null,
       jefe_id: newCargo.jefe_id || null,
     })
+
+    if (newCargoCompetencias.length > 0) {
+      const competenciasInsert = newCargoCompetencias.map((cc) => ({
+        cargo_id: id,
+        competencia_id: cc.competencia_id,
+        nivel_requerido: cc.nivel_requerido
+      }))
+      await supabase.from("cargo_competencias").insert(competenciasInsert)
+    }
+
     setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" })
+    setNewCargoCompetencias([])
     setShowCreateForm(false)
     setSaving(false)
     fetchCargos()
@@ -682,117 +748,189 @@ function RutasContent() {
       )}
 
       {showCreateForm && (
-        <div className="bg-white rounded-xl border border-luxor-primary/30 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Nuevo Cargo</h3>
-            <button
-              onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" }) }}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded-lg"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Nombre del cargo *</label>
-              <input
-                type="text"
-                value={newCargo.nombre}
-                onChange={(e) => setNewCargo({ ...newCargo, nombre: e.target.value })}
-                placeholder="Ej: Auxiliar de Almacen"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Nivel *</label>
-              <select
-                value={newCargo.nivel}
-                onChange={(e) => setNewCargo({ ...newCargo, nivel: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" }); setNewCargoCompetencias([]) }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">Nuevo Cargo</h3>
+              <button
+                onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" }); setNewCargoCompetencias([]) }}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
               >
-                <option value="gerentes">Gerentes</option>
-                <option value="coordinadores">Coordinadores</option>
-                <option value="administrativos">Administrativos</option>
-                <option value="operadores">Operadores</option>
-              </select>
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Unidad Organizacional *</label>
-              <select
-                value={newCargo.unidad_id}
-                onChange={(e) => setNewCargo({ ...newCargo, unidad_id: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+            <div className="px-6 py-5 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Nombre del cargo *</label>
+                  <input
+                    type="text"
+                    value={newCargo.nombre}
+                    onChange={(e) => setNewCargo({ ...newCargo, nombre: e.target.value })}
+                    placeholder="Ej: Auxiliar de Almacen"
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Nivel *</label>
+                  <select
+                    value={newCargo.nivel}
+                    onChange={(e) => setNewCargo({ ...newCargo, nivel: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    <option value="gerentes">Gerentes</option>
+                    <option value="coordinadores">Coordinadores</option>
+                    <option value="administrativos">Administrativos</option>
+                    <option value="operadores">Operadores</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Unidad Organizacional *</label>
+                  <select
+                    value={newCargo.unidad_id}
+                    onChange={(e) => setNewCargo({ ...newCargo, unidad_id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {unidadesOrdenadas
+                      .filter((u) => {
+                        if (newCargo.nivel === "gerentes") return u.tipo === "gerencia"
+                        return u.tipo === "departamento"
+                      })
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.tipo === "direccion" ? "\uD83C\uDFE2 " : u.tipo === "gerencia" ? "\uD83C\uDFE2 " : "\uD83D\uDCCB "}
+                          {u.nombre}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-gray-400">
+                    {newCargo.nivel === "gerentes" && "Los gerentes se asignan a una Gerencia"}
+                    {newCargo.nivel !== "gerentes" && "Se asigna a un Departamento"}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Jefe Inmediato</label>
+                  <select
+                    value={newCargo.jefe_id}
+                    onChange={(e) => setNewCargo({ ...newCargo, jefe_id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    <option value="">Sin jefe inmediato</option>
+                    {cargos
+                      .filter((c) => {
+                        if (!newCargo.unidad_id) return false
+                        const unidadActual = unidades.find((u) => u.id === newCargo.unidad_id)
+                        if (!unidadActual) return false
+                        if (unidadActual.tipo === "departamento" && unidadActual.parent_id) {
+                          return c.unidad_id === newCargo.unidad_id || c.unidad_id === unidadActual.parent_id
+                        }
+                        return c.unidad_id === newCargo.unidad_id
+                      })
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-gray-400">Selecciona el cargo que es jefe inmediato de este cargo</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700">Descripción</label>
+                <input
+                  type="text"
+                  value={newCargo.descripcion}
+                  onChange={(e) => setNewCargo({ ...newCargo, descripcion: e.target.value })}
+                  placeholder="Funciones principales del cargo"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700">Competencias del Cargo</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                  {newCargoCompetencias.length === 0 && (
+                    <span className="text-xs text-gray-400">No hay competencias seleccionadas</span>
+                  )}
+                  {newCargoCompetencias.map((cc, idx) => {
+                    const competencia = competencias.find((c) => c.id === cc.competencia_id)
+                    return (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white"
+                        style={{ backgroundColor: competencia?.color || '#6366f1' }}
+                      >
+                        {competencia?.nombre}
+                        <span className="bg-white/20 px-1 rounded-full text-[10px]">{cc.nivel_requerido}/5</span>
+                        <button
+                          onClick={() => setNewCargoCompetencias(newCargoCompetencias.filter((_, i) => i !== idx))}
+                          className="ml-0.5 hover:bg-white/30 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )
+                  })}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <select
+                    id="new-competencia-select"
+                    className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    <option value="">Agregar competencia...</option>
+                    {competencias
+                      .filter((c) => !newCargoCompetencias.some((cc) => cc.competencia_id === c.id))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                  </select>
+                  <select
+                    id="new-competencia-nivel"
+                    defaultValue="3"
+                    className="w-20 px-2 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    {[1,2,3,4,5].map((n) => (
+                      <option key={n} value={n}>{n}/5</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const select = document.getElementById('new-competencia-select') as HTMLSelectElement
+                      const nivelSelect = document.getElementById('new-competencia-nivel') as HTMLSelectElement
+                      if (select?.value) {
+                        setNewCargoCompetencias([
+                          ...newCargoCompetencias,
+                          { competencia_id: select.value, nivel_requerido: parseInt(nivelSelect.value) }
+                        ])
+                        select.value = ''
+                        nivelSelect.value = '3'
+                      }
+                    }}
+                    className="px-3 py-2 bg-luxor-primary text-white rounded-lg text-sm font-medium hover:bg-luxor-secondary transition-colors flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+              <button
+                onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" }); setNewCargoCompetencias([]) }}
+                className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
               >
-                <option value="">Seleccionar...</option>
-                {unidadesOrdenadas
-                  .filter((u) => {
-                    if (newCargo.nivel === "gerentes") return u.tipo === "gerencia"
-                    return u.tipo === "departamento"
-                  })
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.tipo === "direccion" ? " " : u.tipo === "gerencia" ? " " : "📋 "}
-                      {u.nombre}
-                    </option>
-                  ))}
-              </select>
-              <p className="text-xs text-gray-400">
-                {newCargo.nivel === "gerentes" && "Los gerentes se asignan a una Gerencia"}
-                {newCargo.nivel !== "gerentes" && "Se asigna a un Departamento"}
-              </p>
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateCustomCargo}
+                disabled={!newCargo.nombre.trim() || !newCargo.unidad_id || saving}
+                className="px-5 py-2.5 bg-luxor-primary text-white rounded-lg font-medium hover:bg-luxor-secondary transition-colors text-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                Crear Cargo
+              </button>
             </div>
-          </div>
-          <div className="space-y-1.5 mt-4">
-            <label className="block text-sm font-medium text-gray-700">Descripción</label>
-            <input
-              type="text"
-              value={newCargo.descripcion}
-              onChange={(e) => setNewCargo({ ...newCargo, descripcion: e.target.value })}
-              placeholder="Funciones principales del cargo"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-            />
-          </div>
-          <div className="space-y-1.5 mt-4">
-            <label className="block text-sm font-medium text-gray-700">Jefe Inmediato</label>
-            <select
-              value={newCargo.jefe_id}
-              onChange={(e) => setNewCargo({ ...newCargo, jefe_id: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
-            >
-              <option value="">Sin jefe inmediato</option>
-              {cargos
-                .filter((c) => {
-                  if (!newCargo.unidad_id) return false
-                  const unidadActual = unidades.find((u) => u.id === newCargo.unidad_id)
-                  if (!unidadActual) return false
-                  
-                  if (unidadActual.tipo === "departamento" && unidadActual.parent_id) {
-                    return c.unidad_id === newCargo.unidad_id || c.unidad_id === unidadActual.parent_id
-                  }
-                  return c.unidad_id === newCargo.unidad_id
-                })
-                .map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}</option>
-                ))}
-            </select>
-            <p className="text-xs text-gray-400">Selecciona el cargo que es jefe inmediato de este cargo</p>
-          </div>
-          <div className="flex gap-3 mt-4">
-            <button
-              onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" }) }}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleCreateCustomCargo}
-              disabled={!newCargo.nombre.trim() || !newCargo.unidad_id || saving}
-              className="px-4 py-2 bg-luxor-primary text-white rounded-lg font-medium hover:bg-luxor-secondary transition-colors text-sm disabled:opacity-50 flex items-center gap-2"
-            >
-              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Crear Cargo
-            </button>
           </div>
         </div>
       )}
@@ -853,7 +991,6 @@ function RutasContent() {
                         </td>
                       </tr>
                       {cargosDeUnidad.map((cargo) => {
-                        const isEditing = editingId === cargo.id
                         const jefe = cargo.jefe_id ? cargos.find((c) => c.id === cargo.jefe_id) : null
 
                         return (
@@ -861,161 +998,87 @@ function RutasContent() {
                             key={cargo.id}
                             className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                           >
-                            {isEditing ? (
-                              <td colSpan={5} className="px-4 py-3">
-                                <div className="space-y-2">
-                                  <div className="grid sm:grid-cols-2 gap-2">
-                                    <input
-                                      type="text"
-                                      value={editForm.nombre}
-                                      onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
-                                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                                      autoFocus
-                                    />
-                                    <select
-                                      value={editForm.nivel}
-                                      onChange={(e) => setEditForm({ ...editForm, nivel: e.target.value })}
-                                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                            <td className="px-4 py-2.5">
+                              <Link
+                                href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
+                                prefetch={true}
+                                className="font-medium text-gray-900 hover:text-luxor-primary transition-colors"
+                              >
+                                {cargo.nombre}
+                              </Link>
+                              {cargo.descripcion && (
+                                <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{cargo.descripcion}</p>
+                              )}
+                              {cargo.competencias && cargo.competencias.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {cargo.competencias.slice(0, 3).map((cc, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium text-white"
+                                      style={{ backgroundColor: cc.competencia.color }}
                                     >
-                                      <option value="gerentes">Gerentes</option>
-                                      <option value="coordinadores">Coordinadores</option>
-                                      <option value="administrativos">Administrativos</option>
-                                      <option value="operadores">Operadores</option>
-                                    </select>
-                                  </div>
-                                  <div className="grid sm:grid-cols-2 gap-2">
-                                    <select
-                                      value={editForm.unidad_id}
-                                      onChange={(e) => setEditForm({ ...editForm, unidad_id: e.target.value })}
-                                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                                    >
-                                      <option value="">Sin unidad</option>
-                                      {unidadesOrdenadas
-                                        .filter((u) => {
-                                          if (editForm.nivel === "gerentes") return u.tipo === "gerencia"
-                                          return u.tipo === "departamento"
-                                        })
-                                        .map((u) => (
-                                          <option key={u.id} value={u.id}>{u.nombre}</option>
-                                        ))}
-                                    </select>
-                                    <select
-                                      value={editForm.jefe_id}
-                                      onChange={(e) => setEditForm({ ...editForm, jefe_id: e.target.value })}
-                                      className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                                    >
-                                      <option value="">Sin jefe inmediato</option>
-                                      {cargos
-                                        .filter((c) => {
-                                          if (c.id === editingId) return false
-                                          if (!editForm.unidad_id) return false
-                                          const unidadActual = unidades.find((u) => u.id === editForm.unidad_id)
-                                          if (!unidadActual) return false
-                                          if (unidadActual.tipo === "departamento" && unidadActual.parent_id) {
-                                            return c.unidad_id === editForm.unidad_id || c.unidad_id === unidadActual.parent_id
-                                          }
-                                          return c.unidad_id === editForm.unidad_id
-                                        })
-                                        .map((c) => (
-                                          <option key={c.id} value={c.id}>{c.nombre}</option>
-                                        ))}
-                                    </select>
-                                  </div>
-                                  <input
-                                    type="text"
-                                    value={editForm.descripcion}
-                                    onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
-                                    className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                                    placeholder="Descripcion"
-                                  />
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => setEditingId(null)}
-                                      className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200"
-                                    >
-                                      Cancelar
-                                    </button>
-                                    <button
-                                      onClick={handleSaveEdit}
-                                      disabled={saving}
-                                      className="px-3 py-1.5 bg-luxor-primary text-white rounded-lg text-xs font-medium hover:bg-luxor-secondary disabled:opacity-50 flex items-center gap-1"
-                                    >
-                                      {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-                                      Guardar
-                                    </button>
-                                  </div>
+                                      {cc.competencia.nombre}
+                                    </span>
+                                  ))}
+                                  {cargo.competencias.length > 3 && (
+                                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-200 text-gray-600">
+                                      +{cargo.competencias.length - 3}
+                                    </span>
+                                  )}
                                 </div>
-                              </td>
-                            ) : (
-                              <>
-                                <td className="px-4 py-2.5">
+                              )}
+                            </td>
+                            <td className="px-4 py-2.5 hidden sm:table-cell">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-luxor-primary/10 text-luxor-primary">
+                                {cargo.nivel || "operadores"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 hidden md:table-cell">
+                              {(() => {
+                                const u = unidades.find((d) => d.id === cargo.unidad_id)
+                                return u ? (
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                                    style={{ backgroundColor: u.color }}
+                                  >
+                                    {u.nombre}
+                                  </span>
+                                ) : <span className="text-xs text-gray-400">-</span>
+                              })()}
+                            </td>
+                            <td className="px-4 py-2.5 hidden lg:table-cell">
+                              {jefe ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                  <UserCog className="w-3 h-3" />
+                                  {jefe.nombre}
+                                </span>
+                              ) : <span className="text-xs text-gray-400">-</span>}
+                            </td>
+                            <td className="px-4 py-2.5 text-right">
+                              {isDecano && (
+                                <div className="flex items-center justify-end gap-1.5">
                                   <Link
                                     href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
                                     prefetch={true}
-                                    className="font-medium text-gray-900 hover:text-luxor-primary transition-colors"
+                                    className="px-3 py-1.5 text-luxor-primary bg-luxor-primary/10 hover:bg-luxor-primary/20 rounded-lg text-xs font-medium transition-colors"
                                   >
-                                    {cargo.nombre}
+                                    Ver
                                   </Link>
-                                  {cargo.descripcion && (
-                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{cargo.descripcion}</p>
-                                  )}
-                                </td>
-                                <td className="px-4 py-2.5 hidden sm:table-cell">
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-luxor-primary/10 text-luxor-primary">
-                                    {cargo.nivel || "operadores"}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-2.5 hidden md:table-cell">
-                                  {(() => {
-                                    const u = unidades.find((d) => d.id === cargo.unidad_id)
-                                    return u ? (
-                                      <span
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                                        style={{ backgroundColor: u.color }}
-                                      >
-                                        {u.nombre}
-                                      </span>
-                                    ) : <span className="text-xs text-gray-400">-</span>
-                                  })()}
-                                </td>
-                                <td className="px-4 py-2.5 hidden lg:table-cell">
-                                  {jefe ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                                      <UserCog className="w-3 h-3" />
-                                      {jefe.nombre}
-                                    </span>
-                                  ) : <span className="text-xs text-gray-400">-</span>}
-                                </td>
-                                <td className="px-4 py-2.5 text-right">
-                                  {isDecano && (
-                                    <div className="flex items-center justify-end gap-1">
-                                      <button
-                                        onClick={(e) => { e.preventDefault(); startEdit(cargo, e) }}
-                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                        title="Editar cargo"
-                                      >
-                                        <Edit3 className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={(e) => { e.preventDefault(); handleDeleteCargo(cargo, e) }}
-                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Eliminar cargo"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                      <Link
-                                        href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
-                                        prefetch={true}
-                                        className="p-1.5 text-gray-400 hover:text-luxor-primary hover:bg-luxor-primary/5 rounded-lg transition-colors"
-                                        title="Ver ruta"
-                                      >
-                                        <ChevronRight className="w-4 h-4" />
-                                      </Link>
-                                    </div>
-                                  )}
-                                </td>
-                              </>
-                            )}
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); startEdit(cargo, e) }}
+                                    className="px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); handleDeleteCargo(cargo, e) }}
+                                    className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
+                              )}
+                            </td>
                           </tr>
                         )
                       })}
@@ -1036,7 +1099,6 @@ function RutasContent() {
                     </td>
                   </tr>
                   {filtered.filter((c) => !c.unidad_id).map((cargo) => {
-                    const isEditing = editingId === cargo.id
                     const jefe = cargo.jefe_id ? cargos.find((c) => c.id === cargo.jefe_id) : null
 
                     return (
@@ -1044,151 +1106,77 @@ function RutasContent() {
                         key={cargo.id}
                         className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                       >
-                        {isEditing ? (
-                          <td colSpan={5} className="px-4 py-3">
-                            <div className="space-y-2">
-                              <div className="grid sm:grid-cols-2 gap-2">
-                                <input
-                                  type="text"
-                                  value={editForm.nombre}
-                                  onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
-                                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                                  autoFocus
-                                />
-                                <select
-                                  value={editForm.nivel}
-                                  onChange={(e) => setEditForm({ ...editForm, nivel: e.target.value })}
-                                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                        <td className="px-4 py-2.5">
+                          <Link
+                            href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
+                            prefetch={true}
+                            className="font-medium text-gray-900 hover:text-luxor-primary transition-colors"
+                          >
+                            {cargo.nombre}
+                          </Link>
+                          {cargo.descripcion && (
+                            <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{cargo.descripcion}</p>
+                          )}
+                          {cargo.competencias && cargo.competencias.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {cargo.competencias.slice(0, 3).map((cc, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium text-white"
+                                  style={{ backgroundColor: cc.competencia.color }}
                                 >
-                                  <option value="gerentes">Gerentes</option>
-                                  <option value="coordinadores">Coordinadores</option>
-                                  <option value="administrativos">Administrativos</option>
-                                  <option value="operadores">Operadores</option>
-                                </select>
-                              </div>
-                              <div className="grid sm:grid-cols-2 gap-2">
-                                <select
-                                  value={editForm.unidad_id}
-                                  onChange={(e) => setEditForm({ ...editForm, unidad_id: e.target.value })}
-                                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                                >
-                                  <option value="">Sin unidad</option>
-                                  {unidadesOrdenadas
-                                    .filter((u) => {
-                                      if (editForm.nivel === "gerentes") return u.tipo === "gerencia"
-                                      return u.tipo === "departamento"
-                                    })
-                                    .map((u) => (
-                                      <option key={u.id} value={u.id}>{u.nombre}</option>
-                                    ))}
-                                </select>
-                                <select
-                                  value={editForm.jefe_id}
-                                  onChange={(e) => setEditForm({ ...editForm, jefe_id: e.target.value })}
-                                  className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                                >
-                                  <option value="">Sin jefe inmediato</option>
-                                  {cargos
-                                    .filter((c) => {
-                                      if (c.id === editingId) return false
-                                      if (!editForm.unidad_id) return false
-                                      const unidadActual = unidades.find((u) => u.id === editForm.unidad_id)
-                                      if (!unidadActual) return false
-                                      if (unidadActual.tipo === "departamento" && unidadActual.parent_id) {
-                                        return c.unidad_id === editForm.unidad_id || c.unidad_id === unidadActual.parent_id
-                                      }
-                                      return c.unidad_id === editForm.unidad_id
-                                    })
-                                    .map((c) => (
-                                      <option key={c.id} value={c.id}>{c.nombre}</option>
-                                    ))}
-                                </select>
-                              </div>
-                              <input
-                                type="text"
-                                value={editForm.descripcion}
-                                onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
-                                className="w-full px-3 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                                placeholder="Descripcion"
-                              />
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => setEditingId(null)}
-                                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200"
-                                >
-                                  Cancelar
-                                </button>
-                                <button
-                                  onClick={handleSaveEdit}
-                                  disabled={saving}
-                                  className="px-3 py-1.5 bg-luxor-primary text-white rounded-lg text-xs font-medium hover:bg-luxor-secondary disabled:opacity-50 flex items-center gap-1"
-                                >
-                                  {saving && <Loader2 className="w-3 h-3 animate-spin" />}
-                                  Guardar
-                                </button>
-                              </div>
+                                  {cc.competencia.nombre}
+                                </span>
+                              ))}
+                              {cargo.competencias.length > 3 && (
+                                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-200 text-gray-600">
+                                  +{cargo.competencias.length - 3}
+                                </span>
+                              )}
                             </div>
-                          </td>
-                        ) : (
-                          <>
-                            <td className="px-4 py-2.5">
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 hidden sm:table-cell">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-luxor-primary/10 text-luxor-primary">
+                            {cargo.nivel || "operadores"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 hidden md:table-cell">
+                          <span className="text-xs text-amber-600 font-medium">Sin asignar</span>
+                        </td>
+                        <td className="px-4 py-2.5 hidden lg:table-cell">
+                          {jefe ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                              <UserCog className="w-3 h-3" />
+                              {jefe.nombre}
+                            </span>
+                          ) : <span className="text-xs text-gray-400">-</span>}
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          {isDecano && (
+                            <div className="flex items-center justify-end gap-1.5">
                               <Link
                                 href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
                                 prefetch={true}
-                                className="font-medium text-gray-900 hover:text-luxor-primary transition-colors"
+                                className="px-3 py-1.5 text-luxor-primary bg-luxor-primary/10 hover:bg-luxor-primary/20 rounded-lg text-xs font-medium transition-colors"
                               >
-                                {cargo.nombre}
+                                Ver
                               </Link>
-                              {cargo.descripcion && (
-                                <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{cargo.descripcion}</p>
-                              )}
-                            </td>
-                            <td className="px-4 py-2.5 hidden sm:table-cell">
-                              <span className="px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-luxor-primary/10 text-luxor-primary">
-                                {cargo.nivel || "operadores"}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2.5 hidden md:table-cell">
-                              <span className="text-xs text-amber-600 font-medium">Sin asignar</span>
-                            </td>
-                            <td className="px-4 py-2.5 hidden lg:table-cell">
-                              {jefe ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                                  <UserCog className="w-3 h-3" />
-                                  {jefe.nombre}
-                                </span>
-                              ) : <span className="text-xs text-gray-400">-</span>}
-                            </td>
-                            <td className="px-4 py-2.5 text-right">
-                              {isDecano && (
-                                <div className="flex items-center justify-end gap-1">
-                                  <button
-                                    onClick={(e) => { e.preventDefault(); startEdit(cargo, e) }}
-                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                    title="Editar cargo"
-                                  >
-                                    <Edit3 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={(e) => { e.preventDefault(); handleDeleteCargo(cargo, e) }}
-                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Eliminar cargo"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                  <Link
-                                    href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
-                                    prefetch={true}
-                                    className="p-1.5 text-gray-400 hover:text-luxor-primary hover:bg-luxor-primary/5 rounded-lg transition-colors"
-                                    title="Ver ruta"
-                                  >
-                                    <ChevronRight className="w-4 h-4" />
-                                  </Link>
-                                </div>
-                              )}
-                            </td>
-                          </>
-                        )}
+                              <button
+                                onClick={(e) => { e.preventDefault(); startEdit(cargo, e) }}
+                                className="px-3 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg text-xs font-medium transition-colors"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={(e) => { e.preventDefault(); handleDeleteCargo(cargo, e) }}
+                                className="px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-medium transition-colors"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          )}
+                        </td>
                       </tr>
                     )
                   })}
@@ -1202,6 +1190,186 @@ function RutasContent() {
               <p className="text-gray-500 text-sm">No se encontraron cargos</p>
             </div>
           )}
+        </div>
+      )}
+
+      {editingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setEditingId(null); setEditCargoCompetencias([]) }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">Editar Cargo</h3>
+              <button
+                onClick={() => { setEditingId(null); setEditCargoCompetencias([]) }}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Nombre del cargo *</label>
+                  <input
+                    type="text"
+                    value={editForm.nombre}
+                    onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Nivel *</label>
+                  <select
+                    value={editForm.nivel}
+                    onChange={(e) => setEditForm({ ...editForm, nivel: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    <option value="gerentes">Gerentes</option>
+                    <option value="coordinadores">Coordinadores</option>
+                    <option value="administrativos">Administrativos</option>
+                    <option value="operadores">Operadores</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Unidad Organizacional *</label>
+                  <select
+                    value={editForm.unidad_id}
+                    onChange={(e) => setEditForm({ ...editForm, unidad_id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    <option value="">Sin unidad</option>
+                    {unidadesOrdenadas
+                      .filter((u) => {
+                        if (editForm.nivel === "gerentes") return u.tipo === "gerencia"
+                        return u.tipo === "departamento"
+                      })
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>{u.nombre}</option>
+                      ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Jefe Inmediato</label>
+                  <select
+                    value={editForm.jefe_id}
+                    onChange={(e) => setEditForm({ ...editForm, jefe_id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    <option value="">Sin jefe inmediato</option>
+                    {cargos
+                      .filter((c) => {
+                        if (c.id === editingId) return false
+                        if (!editForm.unidad_id) return false
+                        const unidadActual = unidades.find((u) => u.id === editForm.unidad_id)
+                        if (!unidadActual) return false
+                        if (unidadActual.tipo === "departamento" && unidadActual.parent_id) {
+                          return c.unidad_id === editForm.unidad_id || c.unidad_id === unidadActual.parent_id
+                        }
+                        return c.unidad_id === editForm.unidad_id
+                      })
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700">Descripción</label>
+                <input
+                  type="text"
+                  value={editForm.descripcion}
+                  onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
+                  placeholder="Funciones principales del cargo"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-sm font-medium text-gray-700">Competencias del Cargo</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                  {editCargoCompetencias.length === 0 && (
+                    <span className="text-xs text-gray-400">No hay competencias asignadas</span>
+                  )}
+                  {editCargoCompetencias.map((cc, idx) => {
+                    const competencia = competencias.find((c) => c.id === cc.competencia_id)
+                    return (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white"
+                        style={{ backgroundColor: competencia?.color || '#6366f1' }}
+                      >
+                        {competencia?.nombre}
+                        <span className="bg-white/20 px-1 rounded-full text-[10px]">{cc.nivel_requerido}/5</span>
+                        <button
+                          onClick={() => setEditCargoCompetencias(editCargoCompetencias.filter((_, i) => i !== idx))}
+                          className="ml-0.5 hover:bg-white/30 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )
+                  })}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <select
+                    id="edit-competencia-select"
+                    className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    <option value="">Agregar competencia...</option>
+                    {competencias
+                      .filter((c) => !editCargoCompetencias.some((cc) => cc.competencia_id === c.id))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                  </select>
+                  <select
+                    id="edit-competencia-nivel"
+                    defaultValue="3"
+                    className="w-20 px-2 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                  >
+                    {[1,2,3,4,5].map((n) => (
+                      <option key={n} value={n}>{n}/5</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const select = document.getElementById('edit-competencia-select') as HTMLSelectElement
+                      const nivelSelect = document.getElementById('edit-competencia-nivel') as HTMLSelectElement
+                      if (select?.value) {
+                        setEditCargoCompetencias([
+                          ...editCargoCompetencias,
+                          { competencia_id: select.value, nivel_requerido: parseInt(nivelSelect.value) }
+                        ])
+                        select.value = ''
+                        nivelSelect.value = '3'
+                      }
+                    }}
+                    className="px-3 py-2 bg-luxor-primary text-white rounded-lg text-sm font-medium hover:bg-luxor-secondary transition-colors flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+              <button
+                onClick={() => { setEditingId(null); setEditCargoCompetencias([]) }}
+                className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editForm.nombre.trim() || saving}
+                className="px-5 py-2.5 bg-luxor-primary text-white rounded-lg font-medium hover:bg-luxor-secondary transition-colors text-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                Guardar Cambios
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

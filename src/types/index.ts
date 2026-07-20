@@ -119,3 +119,19 @@ export interface UnidadOrganizacional {
   descripcion?: string
   created_at?: string
 }
+
+export interface Competencia {
+  id: string
+  nombre: string
+  descripcion?: string
+  color: string
+  created_at?: string
+}
+
+export interface CargoCompetencia {
+  id: string
+  cargo_id: string
+  competencia_id: string
+  nivel_requerido: number
+  competencia?: Competencia
+}
