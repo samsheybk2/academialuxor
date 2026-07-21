@@ -271,8 +271,9 @@ function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Pub
       const { data } = await supabase
         .from("publicaciones")
         .select("*")
-        .eq("anclado", true)
-        .order("created_at", { ascending: false })
+        .not("anclado_hasta", "is", null)
+        .gt("anclado_hasta", new Date().toISOString())
+        .order("anclado_hasta", { ascending: false })
         .limit(10)
       if (data) setAncladas(data)
     }
@@ -306,6 +307,7 @@ function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Pub
 
   const pub = ancladas[current]
   const textoLimpio = pub.contenido?.replace(/<[^>]*>/g, "").slice(0, 80)
+  const diasRestantes = pub.anclado_hasta ? Math.max(0, Math.ceil((new Date(pub.anclado_hasta).getTime() - Date.now()) / 86400000)) : 0
 
   return (
     <div className="mt-4 rounded-2xl overflow-hidden relative group">
@@ -315,7 +317,7 @@ function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Pub
             <img src={pub.imagen_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
           )}
           <div className="relative z-10">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">Anclado</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">Anclado · {diasRestantes}d</span>
             <p className="text-xs text-white/80 mt-2 line-clamp-3 leading-relaxed">{textoLimpio}</p>
           </div>
           <div className="relative z-10 flex items-center gap-2 mt-2">
@@ -372,7 +374,7 @@ export default function NoticiasPage() {
   const [pollPregunta, setPollPregunta] = useState("")
   const [pollOpciones, setPollOpciones] = useState<string[]>(["", ""])
   const [pollMultiple, setPollMultiple] = useState(false)
-  const [anclarCarrusel, setAnclarCarrusel] = useState(false)
+  const [anclarDias, setAnclarDias] = useState(0)
 
   const [showCreateModal, setShowCreateModal] = useState(false)
 
@@ -512,7 +514,7 @@ export default function NoticiasPage() {
         imagen_url: imagenUrl,
         enlace_url: enlaceUrl.trim() || null,
         enlace_titulo: enlaceTitulo.trim() || null,
-        anclado: anclarCarrusel,
+        anclado_hasta: anclarDias > 0 ? new Date(Date.now() + anclarDias * 86400000).toISOString() : null,
       })
       .select("id")
       .single()
@@ -549,7 +551,7 @@ export default function NoticiasPage() {
       setPollOpciones(["", ""])
       setPollMultiple(false)
       setShowCreateModal(false)
-      setAnclarCarrusel(false)
+      setAnclarDias(0)
       fetchPublicaciones()
     }
 
@@ -760,15 +762,18 @@ async function handleEliminar(pubId: string) {
 
             {canPost && (
               <div className="px-6 pb-2">
-                <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-500">Anclar al carrusel por</label>
                   <input
-                    type="checkbox"
-                    checked={anclarCarrusel}
-                    onChange={(e) => setAnclarCarrusel(e.target.checked)}
-                    className="rounded border-gray-300 text-luxor-primary focus:ring-luxor-primary"
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={anclarDias}
+                    onChange={(e) => setAnclarDias(parseInt(e.target.value) || 0)}
+                    className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
                   />
-                  Anclar esta publicación en el carrusel
-                </label>
+                  <label className="text-xs text-gray-500">días (0 = sin anclar)</label>
+                </div>
               </div>
             )}
 
