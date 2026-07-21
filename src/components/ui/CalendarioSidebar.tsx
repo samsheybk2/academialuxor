@@ -63,7 +63,7 @@ export function CalendarioSidebar() {
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(anio + 1) } else setMes(mes + 1) }
 
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-4 sticky top-8 w-full flex flex-col items-center">
+    <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/50 p-4 w-full flex flex-col items-center">
       <div className="flex items-center gap-2 mb-4 text-gray-900 w-full justify-center">
         <Calendar className="w-5 h-5 text-luxor-primary" />
         <span className="font-bold text-sm">Calendario de Eventos</span>
@@ -110,9 +110,9 @@ export function CalendarioSidebar() {
         })}
       </div>
 
-      <div className="space-y-3 border-t border-gray-100 pt-4">
+      <div className="space-y-3 border-t border-gray-100 pt-3">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Próximos Eventos</p>
-        <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+        <div className="space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
           {eventos.filter(e => e.fecha >= hoyStr).slice(0, 5).map((ev) => (
             <div key={ev.id} className="flex items-center gap-3 p-2 rounded-xl bg-gray-50/50 hover:bg-gray-100 transition-all group">
               <div className={`w-2 h-2 rounded-full shrink-0 ${CAT_COLORS[ev.categoria] || "bg-gray-400"}`} />

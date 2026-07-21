@@ -585,7 +585,9 @@ async function handleEliminar(pubId: string) {
           {/* Sidebar izquierdo — Calendario */}
           <div className="hidden lg:block h-full w-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] p-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
             <CalendarioSidebar />
-            <CarruselBanners banners={banners} />
+            <div className="mt-3">
+              <CarruselBanners banners={banners} />
+            </div>
           </div>
 
          {/* Feed principal — siempre centrado */}
