@@ -321,21 +321,23 @@ function CursosContent() {
                 className="block"
               >
               <Card className="hover:shadow-md transition-shadow h-full cursor-pointer overflow-hidden">
-                {curso.imagen_portada && (
-                  <div className="w-full overflow-hidden border-b border-gray-100">
-                    <img
-                      src={curso.imagen_portada}
-                      alt={`Portada de ${curso.titulo}`}
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
-                )}
                 <CardContent className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    {curso.imagen_portada && (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                        <img
+                          src={curso.imagen_portada}
+                          alt={`Portada de ${curso.titulo}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 truncate">
-                        {curso.titulo}
-                      </h3>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {curso.titulo}
+                          </h3>
                       <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
                         {curso.descripcion || curso.introduccion || "Sin descripción"}
                       </p>
@@ -357,6 +359,8 @@ function CursosContent() {
                           Electivo
                         </span>
                       )}
+                    </div>
+                  </div>
                     </div>
                   </div>
 
