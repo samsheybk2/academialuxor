@@ -261,52 +261,93 @@ function PublicacionContenido({ contenido }: { contenido: string }) {
   )
 }
 
-function CarruselBanners({ banners }: { banners: Array<{ titulo: string; sub: string; grad: string; emoji: string }> }) {
+function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Publicacion[]; supabase: ReturnType<typeof createSupabaseClient> }) {
   const [current, setCurrent] = useState(0)
+  const [ancladas, setAncladas] = useState<Publicacion[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    async function fetch() {
+      const { data } = await supabase
+        .from("publicaciones")
+        .select("*")
+        .eq("anclado", true)
+        .order("created_at", { ascending: false })
+        .limit(10)
+      if (data) setAncladas(data)
+    }
+    fetch()
+  }, [supabase, publicaciones])
+
+  useEffect(() => {
+    if (ancladas.length <= 1) return
     timerRef.current = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % banners.length)
+      setCurrent((prev) => (prev + 1) % ancladas.length)
     }, 4000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [banners.length])
+  }, [ancladas.length])
 
   function goTo(index: number) {
     setCurrent(index)
     if (timerRef.current) clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % banners.length)
-    }, 4000)
+    if (ancladas.length > 1) {
+      timerRef.current = setInterval(() => {
+        setCurrent((prev) => (prev + 1) % ancladas.length)
+      }, 4000)
+    }
   }
 
-  function prev() { goTo((current - 1 + banners.length) % banners.length) }
-  function next() { goTo((current + 1) % banners.length) }
+  function scrollToPub(pubId: string) {
+    const el = document.getElementById(`pub-${pubId}`)
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  if (ancladas.length === 0) return null
+
+  const pub = ancladas[current]
+  const textoLimpio = pub.contenido?.replace(/<[^>]*>/g, "").slice(0, 80)
 
   return (
-    <div className="mt-4 rounded-2xl overflow-hidden relative">
-      <div className={`bg-gradient-to-br ${banners[current].grad} p-5 text-white min-h-[140px] flex flex-col justify-between transition-all duration-500`}>
-        <div>
-          <span className="text-3xl">{banners[current].emoji}</span>
-          <h4 className="text-base font-bold mt-2 leading-snug">{banners[current].titulo}</h4>
-          <p className="text-xs text-white/80 mt-1">{banners[current].sub}</p>
+    <div className="mt-4 rounded-2xl overflow-hidden relative group">
+      <button onClick={() => scrollToPub(pub.id)} className="w-full text-left">
+        <div className="bg-gradient-to-br from-luxor-primary to-luxor-secondary p-5 text-white min-h-[140px] flex flex-col justify-between transition-all duration-500 cursor-pointer relative overflow-hidden">
+          {pub.imagen_url && (
+            <img src={pub.imagen_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+          )}
+          <div className="relative z-10">
+            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">Anclado</span>
+            <p className="text-xs text-white/80 mt-2 line-clamp-3 leading-relaxed">{textoLimpio}</p>
+          </div>
+          <div className="relative z-10 flex items-center gap-2 mt-2">
+            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-bold">
+              {pub.autor?.nombre?.charAt(0) || "?"}
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold">{pub.autor?.nombre || "Usuario"}</p>
+              <p className="text-[9px] text-white/60">{new Date(pub.created_at).toLocaleDateString("es-VE", { day: "numeric", month: "short" })}</p>
+            </div>
+          </div>
         </div>
-      </div>
-      <button onClick={prev} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-colors">
-        <ChevronLeft className="w-3.5 h-3.5" />
       </button>
-      <button onClick={next} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-colors">
-        <ChevronRight className="w-3.5 h-3.5" />
-      </button>
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-        {banners.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => goTo(i)}
-            className={`w-1.5 h-1.5 rounded-full transition-all ${i === current ? "bg-white w-4" : "bg-white/50"}`}
-          />
-        ))}
-      </div>
+      {ancladas.length > 1 && (
+        <>
+          <button onClick={() => goTo((current - 1 + ancladas.length) % ancladas.length)} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100">
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={() => goTo((current + 1) % ancladas.length)} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100">
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+            {ancladas.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                className={`w-1.5 h-1.5 rounded-full transition-all ${i === current ? "bg-white w-4" : "bg-white/50"}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -331,6 +372,7 @@ export default function NoticiasPage() {
   const [pollPregunta, setPollPregunta] = useState("")
   const [pollOpciones, setPollOpciones] = useState<string[]>(["", ""])
   const [pollMultiple, setPollMultiple] = useState(false)
+  const [anclarCarrusel, setAnclarCarrusel] = useState(false)
 
   const [showCreateModal, setShowCreateModal] = useState(false)
 
@@ -470,6 +512,7 @@ export default function NoticiasPage() {
         imagen_url: imagenUrl,
         enlace_url: enlaceUrl.trim() || null,
         enlace_titulo: enlaceTitulo.trim() || null,
+        anclado: anclarCarrusel,
       })
       .select("id")
       .single()
@@ -506,6 +549,7 @@ export default function NoticiasPage() {
       setPollOpciones(["", ""])
       setPollMultiple(false)
       setShowCreateModal(false)
+      setAnclarCarrusel(false)
       fetchPublicaciones()
     }
 
@@ -570,14 +614,6 @@ async function handleEliminar(pubId: string) {
     )
   }
 
-  const banners = [
-    { titulo: "Academia LUXOR", sub: "Plataforma de formación profesional", grad: "from-luxor-primary to-luxor-secondary", emoji: "🎓" },
-    { titulo: "Cursos Destacados", sub: "Explora nuestro catálogo completo", grad: "from-amber-500 to-orange-600", emoji: "📚" },
-    { titulo: "Certifícate", sub: "Obtén tus certificados avalados", grad: "from-emerald-500 to-teal-600", emoji: "🏆" },
-    { titulo: "Nuevos Talleres", sub: "Capacitación práctica presencial", grad: "from-violet-500 to-purple-600", emoji: "🛠️" },
-    { titulo: "Rutas de Aprendizaje", sub: "Sigue tu camino de formación", grad: "from-rose-500 to-pink-600", emoji: "🗺️" },
-  ]
-
   return (
     <>
        <div className="relative z-[2] w-full h-full flex flex-col -mb-4 sm:-mb-6">
@@ -586,7 +622,7 @@ async function handleEliminar(pubId: string) {
           <div className="hidden lg:block h-full w-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] p-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
             <CalendarioSidebar />
             <div className="mt-3">
-              <CarruselBanners banners={banners} />
+              <CarruselPublicaciones publicaciones={publicaciones} supabase={supabase} />
             </div>
           </div>
 
@@ -722,6 +758,20 @@ async function handleEliminar(pubId: string) {
               </div>
             )}
 
+            {canPost && (
+              <div className="px-6 pb-2">
+                <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={anclarCarrusel}
+                    onChange={(e) => setAnclarCarrusel(e.target.checked)}
+                    className="rounded border-gray-300 text-luxor-primary focus:ring-luxor-primary"
+                  />
+                  Anclar esta publicación en el carrusel
+                </label>
+              </div>
+            )}
+
             {/* Toolbar inferior */}
             <div className="px-6 pb-4">
               <div className="border border-gray-200 rounded-xl p-3">
@@ -799,7 +849,7 @@ async function handleEliminar(pubId: string) {
           </div>
         ) : (
           publicaciones.map((pub) => (
-            <div key={pub.id} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8">
+            <div key={pub.id} id={`pub-${pub.id}`} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8 scroll-mt-20">
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">

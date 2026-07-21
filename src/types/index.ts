@@ -71,6 +71,7 @@ export interface Publicacion {
   imagen_url?: string
   enlace_url?: string
   enlace_titulo?: string
+  anclado?: boolean
   created_at: string
   autor?: UserProfile
   mis_reacciones?: string
