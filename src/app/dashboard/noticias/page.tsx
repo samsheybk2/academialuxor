@@ -307,7 +307,6 @@ function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Pub
 
   const pub = ancladas[current]
   const textoLimpio = pub.contenido?.replace(/<[^>]*>/g, "").slice(0, 80)
-  const diasRestantes = pub.anclado_hasta ? Math.max(0, Math.ceil((new Date(pub.anclado_hasta).getTime() - Date.now()) / 86400000)) : 0
 
   return (
     <div className="mt-4 rounded-2xl overflow-hidden relative group">
@@ -317,7 +316,6 @@ function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Pub
             <img src={pub.imagen_url} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
           )}
           <div className="relative z-10">
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">Anclado · {diasRestantes}d</span>
             <p className="text-xs text-white/80 mt-2 line-clamp-3 leading-relaxed">{textoLimpio}</p>
           </div>
           <div className="relative z-10 flex items-center gap-2 mt-2">
