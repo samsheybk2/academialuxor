@@ -354,7 +354,7 @@ function CursosContent() {
                         {curso.estudiantes_count}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
                       <span
                         className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-1 ${estadoInfo.color}`}
                       >
@@ -371,65 +371,64 @@ function CursosContent() {
                           {n}
                         </span>
                       ))}
+                      {(isDecano || isFacilitador) && (
+                        <div className="flex items-center gap-0.5 ml-auto">
+                          {isDecano && curso.estado === "pendiente" && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setCursoToAprobar(curso)
+                                  setShowAprobarModal(true)
+                                }}
+                                className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                title="Aprobar"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setCursoToAprobar(curso)
+                                  setShowAprobarModal(true)
+                                }}
+                                className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                title="Rechazar"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                          {isFacilitador && curso.estado === "borrador" && (
+                            <button
+                              onClick={() => handleEnviarRevision(curso.id)}
+                              className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              title="Enviar a revisión"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {(isFacilitador || isDecano) && (
+                            <>
+                              <button
+                                onClick={() => openEdit(curso)}
+                                className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setCursoToDelete(curso)
+                                  setShowDeleteModal(true)
+                                }}
+                                className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  {(isDecano || isFacilitador) && (
-                    <div className="flex items-center justify-end gap-1 p-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                      {isDecano && curso.estado === "pendiente" && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setCursoToAprobar(curso)
-                              setShowAprobarModal(true)
-                            }}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="Aprobar"
-                          >
-                            <CheckCircle2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setCursoToAprobar(curso)
-                              setShowAprobarModal(true)
-                            }}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Rechazar"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                      {isFacilitador && curso.estado === "borrador" && (
-                        <button
-                          onClick={() => handleEnviarRevision(curso.id)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="Enviar a revisión"
-                        >
-                          <Send className="w-4 h-4" />
-                        </button>
-                      )}
-                      {(isFacilitador || isDecano) && (
-                        <>
-                          <button
-                            onClick={() => openEdit(curso)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setCursoToDelete(curso)
-                              setShowDeleteModal(true)
-                            }}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
               </Link>
