@@ -322,64 +322,55 @@ function CursosContent() {
               >
               <Card className="hover:shadow-md transition-shadow h-full cursor-pointer overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="flex">
-                    {curso.imagen_portada && (
-                      <div className="w-36 h-36 flex-shrink-0 overflow-hidden bg-gray-100">
-                        <img
-                          src={curso.imagen_portada}
-                          alt={`Portada de ${curso.titulo}`}
-                          className="w-full h-full object-cover"
-                        />
+                  {curso.imagen_portada && (
+                    <div className="w-full overflow-hidden bg-gray-100">
+                      <img
+                        src={curso.imagen_portada}
+                        alt={`Portada de ${curso.titulo}`}
+                        className="w-full h-auto object-cover max-h-48"
+                      />
+                    </div>
+                  )}
+                  <div className="p-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-luxor-primary/10 flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="w-4 h-4 text-luxor-primary" />
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 truncate">
-                          {curso.titulo}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                          <span
-                            className={`text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${estadoInfo.color}`}
-                          >
-                            <EstadoIcon className="w-3 h-3" />
-                            {estadoInfo.label}
-                          </span>
-                          {(Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]).map((n) => (
-                            <span
-                              key={n}
-                              className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                                nivelColors[n] || "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {n}
-                            </span>
-                          ))}
-                          {curso.tipo === "electivo" && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 flex items-center gap-1">
-                              <Star className="w-2.5 h-2.5" />
-                              Electivo
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-2">
-                        <span className="flex items-center gap-1">
-                          <GraduationCap className="w-3 h-3" />
-                          {curso.facilitador_nombre}
+                      <h3 className="font-semibold text-gray-900 truncate text-sm">
+                        {curso.titulo}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {curso.duracion}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="w-3 h-3" />
+                        {curso.modulos_count} modulos
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {curso.estudiantes_count}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-1 ${estadoInfo.color}`}
+                      >
+                        <EstadoIcon className="w-2.5 h-2.5" />
+                        {estadoInfo.label}
+                      </span>
+                      {(Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]).map((n) => (
+                        <span
+                          key={n}
+                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium capitalize ${
+                            nivelColors[n] || "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {n}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          {curso.modulos_count} modulos
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {curso.estudiantes_count}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {curso.duracion}
-                        </span>
-                      </div>
+                      ))}
                     </div>
                   </div>
 
