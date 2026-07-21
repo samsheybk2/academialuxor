@@ -1,8 +1,126 @@
 -- ============================================================
--- TESTS PSICOLÓGICOS - Schema y Datos Completos
+-- ACADEMIA LUXOR - Migración Unificada
+-- Fecha: 2026-07-21
+-- Contiene: Unidades organizacionales, Competencias,
+--           Tests psicológicos, Imagen portada cursos,
+--           Anclado publicaciones
 -- ============================================================
 
--- 1.13 TESTS PSICOLÓGICOS (catálogo)
+-- ============================================================
+-- 1. UNIDADES ORGANIZACIONALES
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS unidades_organizacionales (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  codigo TEXT UNIQUE,
+  nombre TEXT NOT NULL,
+  tipo TEXT NOT NULL DEFAULT 'departamento' CHECK (tipo IN ('direccion', 'gerencia', 'departamento')),
+  parent_id UUID REFERENCES unidades_organizacionales(id) ON DELETE CASCADE,
+  color TEXT DEFAULT '#6366f1',
+  descripcion TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE cargos ADD COLUMN IF NOT EXISTS unidad_id UUID REFERENCES unidades_organizacionales(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_cargos_unidad ON cargos(unidad_id);
+CREATE INDEX IF NOT EXISTS idx_unidades_parent ON unidades_organizacionales(parent_id);
+
+ALTER TABLE unidades_organizacionales ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS unidades_select_authenticated ON unidades_organizacionales;
+DROP POLICY IF EXISTS unidades_all_admin ON unidades_organizacionales;
+
+CREATE POLICY "unidades_select_authenticated"
+  ON unidades_organizacionales FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+CREATE POLICY "unidades_all_admin"
+  ON unidades_organizacionales FOR ALL
+  USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+-- ============================================================
+-- 2. COMPETENCIAS DE CARGOS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS competencias (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL UNIQUE,
+  descripcion TEXT,
+  color TEXT DEFAULT '#6366f1',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cargo_competencias (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  cargo_id TEXT NOT NULL REFERENCES cargos(id) ON DELETE CASCADE,
+  competencia_id UUID NOT NULL REFERENCES competencias(id) ON DELETE CASCADE,
+  nivel_requerido INTEGER DEFAULT 3 CHECK (nivel_requerido BETWEEN 1 AND 5),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(cargo_id, competencia_id)
+);
+
+ALTER TABLE competencias ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cargo_competencias ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "competencias_select_all" ON competencias;
+CREATE POLICY "competencias_select_all" ON competencias
+  FOR SELECT USING (TRUE);
+
+DROP POLICY IF EXISTS "competencias_insert_admin" ON competencias;
+CREATE POLICY "competencias_insert_admin" ON competencias
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+DROP POLICY IF EXISTS "competencias_update_admin" ON competencias;
+CREATE POLICY "competencias_update_admin" ON competencias
+  FOR UPDATE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+DROP POLICY IF EXISTS "competencias_delete_admin" ON competencias;
+CREATE POLICY "competencias_delete_admin" ON competencias
+  FOR DELETE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+DROP POLICY IF EXISTS "cargo_competencias_select_all" ON cargo_competencias;
+CREATE POLICY "cargo_competencias_select_all" ON cargo_competencias
+  FOR SELECT USING (TRUE);
+
+DROP POLICY IF EXISTS "cargo_competencias_insert_admin" ON cargo_competencias;
+CREATE POLICY "cargo_competencias_insert_admin" ON cargo_competencias
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+DROP POLICY IF EXISTS "cargo_competencias_update_admin" ON cargo_competencias;
+CREATE POLICY "cargo_competencias_update_admin" ON cargo_competencias
+  FOR UPDATE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+DROP POLICY IF EXISTS "cargo_competencias_delete_admin" ON cargo_competencias;
+CREATE POLICY "cargo_competencias_delete_admin" ON cargo_competencias
+  FOR DELETE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+INSERT INTO competencias (nombre, descripcion, color) VALUES
+  ('Agilidad Numérica', 'Capacidad para realizar cálculos matemáticos y analizar datos numéricos', '#3b82f6'),
+  ('Liderazgo', 'Capacidad para guiar, motivar e influir en equipos de trabajo', '#8b5cf6'),
+  ('Comunicación Efectiva', 'Habilidad para transmitir ideas de manera clara y concisa', '#10b981'),
+  ('Persuasión', 'Capacidad para influir en las decisiones y opiniones de otros', '#f59e0b'),
+  ('Trabajo en Equipo', 'Habilidad para colaborar efectivamente con otros', '#ec4899'),
+  ('Resolución de Problemas', 'Capacidad para identificar y solucionar problemas complejos', '#ef4444'),
+  ('Pensamiento Crítico', 'Habilidad para analizar información de manera objetiva', '#06b6d4'),
+  ('Adaptabilidad', 'Capacidad para ajustarse a cambios y nuevas situaciones', '#84cc16'),
+  ('Gestión del Tiempo', 'Habilidad para organizar y priorizar tareas eficientemente', '#f97316'),
+  ('Creatividad', 'Capacidad para generar ideas innovadoras y originales', '#a855f7'),
+  ('Inteligencia Emocional', 'Habilidad para reconocer y gestionar emociones propias y ajenas', '#14b8a6'),
+  ('Negociación', 'Capacidad para alcanzar acuerdos beneficiosos', '#eab308'),
+  ('Orientación al Cliente', 'Enfoque en satisfacer las necesidades del cliente', '#3b82f6'),
+  ('Toma de Decisiones', 'Capacidad para elegir la mejor opción basada en análisis', '#6366f1'),
+  ('Planificación Estratégica', 'Habilidad para definir objetivos y planes a largo plazo', '#8b5cf6')
+ON CONFLICT (nombre) DO NOTHING;
+
+CREATE INDEX IF NOT EXISTS idx_competencias_nombre ON competencias(nombre);
+CREATE INDEX IF NOT EXISTS idx_cargo_competencias_cargo ON cargo_competencias(cargo_id);
+CREATE INDEX IF NOT EXISTS idx_cargo_competencias_competencia ON cargo_competencias(competencia_id);
+
+-- ============================================================
+-- 3. TESTS PSICOLÓGICOS
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS tests_psicologicos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nombre TEXT NOT NULL,
@@ -14,7 +132,6 @@ CREATE TABLE IF NOT EXISTS tests_psicologicos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.14 PREGUNTAS DE TESTS
 CREATE TABLE IF NOT EXISTS preguntas_tests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   test_id UUID NOT NULL REFERENCES tests_psicologicos(id) ON DELETE CASCADE,
@@ -25,7 +142,6 @@ CREATE TABLE IF NOT EXISTS preguntas_tests (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.15 RESPUESTAS DE TESTS
 CREATE TABLE IF NOT EXISTS respuestas_tests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   test_id UUID NOT NULL REFERENCES tests_psicologicos(id) ON DELETE CASCADE,
@@ -37,7 +153,6 @@ CREATE TABLE IF NOT EXISTS respuestas_tests (
   UNIQUE(test_id, user_id)
 );
 
--- 1.16 DETALLES DE RESPUESTAS
 CREATE TABLE IF NOT EXISTS detalles_respuestas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   respuesta_id UUID NOT NULL REFERENCES respuestas_tests(id) ON DELETE CASCADE,
@@ -48,7 +163,6 @@ CREATE TABLE IF NOT EXISTS detalles_respuestas (
   UNIQUE(respuesta_id, pregunta_id)
 );
 
--- 1.17 RESULTADOS DE TESTS
 CREATE TABLE IF NOT EXISTS resultados_tests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   respuesta_id UUID NOT NULL REFERENCES respuestas_tests(id) ON DELETE CASCADE,
@@ -58,10 +172,6 @@ CREATE TABLE IF NOT EXISTS resultados_tests (
   fecha_interpretacion TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
--- ============================================================
--- POLICIES RLS
--- ============================================================
 
 ALTER TABLE tests_psicologicos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE preguntas_tests ENABLE ROW LEVEL SECURITY;
@@ -129,55 +239,31 @@ DROP POLICY IF EXISTS "resultados_update_profesional" ON resultados_tests;
 CREATE POLICY "resultados_update_profesional" ON resultados_tests
   FOR UPDATE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
--- ============================================================
--- DATOS INICIALES - TESTS
--- ============================================================
-
--- Test Moss
+-- Tests iniciales
 INSERT INTO tests_psicologicos (nombre, descripcion, tipo, duracion_minutos, instrucciones) VALUES
-  ('Test Moss', 'Cuestionario de valores y actitudes en el trabajo', 'cuestionario', 30, 
-   'Responde cada pregunta seleccionando la opción que mejor describa lo que harías en esa situación. No hay respuestas correctas o incorrectas.')
-ON CONFLICT DO NOTHING;
-
--- Figura Humana Bajo la Lluvia
-INSERT INTO tests_psicologicos (nombre, descripcion, tipo, duracion_minutos, instrucciones) VALUES
+  ('Test Moss', 'Cuestionario de valores y actitudes en el trabajo', 'cuestionario', 30,
+   'Responde cada pregunta seleccionando la opción que mejor describa lo que harías en esa situación. No hay respuestas correctas o incorrectas.'),
   ('Figura Humana Bajo la Lluvia', 'Test proyectivo de dibujo', 'proyectivo', 15,
-   'Dibuja una figura humana bajo la lluvia. No hay tiempo límite, pero trata de hacerlo en menos de 15 minutos.')
-ON CONFLICT DO NOTHING;
-
--- Wartegg
-INSERT INTO tests_psicologicos (nombre, descripcion, tipo, duracion_minutos, instrucciones) VALUES
+   'Dibuja una figura humana bajo la lluvia. No hay tiempo límite, pero trata de hacerlo en menos de 15 minutos.'),
   ('Wartegg', 'Test proyectivo de completamiento de figuras', 'proyectivo', 20,
-   'Completa los 8 campos con dibujos que surjan de tu imaginación. No hay respuestas correctas.')
-ON CONFLICT DO NOTHING;
-
--- 16 PF
-INSERT INTO tests_psicologicos (nombre, descripcion, tipo, duracion_minutos, instrucciones) VALUES
+   'Completa los 8 campos con dibujos que surjan de tu imaginación. No hay respuestas correctas.'),
   ('16 PF', 'Cuestionario de 16 factores de personalidad', 'cuestionario', 45,
-   'Responde cada pregunta indicando si es verdadera (V) o falsa (F) para ti. Sé honesto en tus respuestas.')
-ON CONFLICT DO NOTHING;
-
--- Zavic
-INSERT INTO tests_psicologicos (nombre, descripcion, tipo, duracion_minutos, instrucciones) VALUES
+   'Responde cada pregunta indicando si es verdadera (V) o falsa (F) para ti. Sé honesto en tus respuestas.'),
   ('Test Zavic', 'Cuestionario de valores y actitudes', 'cuestionario', 25,
    'Responde cada pregunta seleccionando la opción que mejor te represente.')
 ON CONFLICT DO NOTHING;
 
--- ============================================================
--- PREGUNTAS TEST MOSS (30 preguntas)
--- ============================================================
-
+-- Preguntas Test Moss (30 preguntas)
 DO $$
 DECLARE
   moss_test_id UUID;
 BEGIN
   SELECT id INTO moss_test_id FROM tests_psicologicos WHERE nombre = 'Test Moss' LIMIT 1;
-  
   IF moss_test_id IS NOT NULL THEN
-    INSERT INTO preguntas_tests (test_id, texto, orden, tipo_respuesta, opciones) 
+    INSERT INTO preguntas_tests (test_id, texto, orden, tipo_respuesta, opciones)
     SELECT moss_test_id, t.texto, t.orden, 'opcion_multiple', t.opciones
     FROM (VALUES
-      ('Se le ha asignado un puesto en una gran empresa. La mejor forma de establecer relaciones amistosas y cordiales con sus nuevos compañeros será:', 1, 
+      ('Se le ha asignado un puesto en una gran empresa. La mejor forma de establecer relaciones amistosas y cordiales con sus nuevos compañeros será:', 1,
        '["Evitando tomar nota de los errores en que incurran", "Hablando bien de ellos al jefe", "Mostrando interés en el trabajo de ellos", "Pidiéndoles les permitan hacer los trabajos que usted puede hacer mejor"]'::jsonb),
       ('Tiene usted un empleado muy eficiente pero que constantemente se queja del trabajo, sus quejas producen mal efecto en los demás empleados, lo mejor sería:', 2,
        '["Pedir a los demás empleados que no hagan caso", "Averiguar la causa de esa actitud y procurar su modificación", "Cambiarlo de departamento donde quede a cargo de otro jefe", "Permitirle planear lo más posible acerca de su trabajo"]'::jsonb),
@@ -239,24 +325,20 @@ BEGIN
        '["Ceder en todos los pequeños puntos posibles", "Tratar de convencerlos de todas sus ideas", "Ceder parcialmente en todas las cuestiones importantes", "Abogar por muchas reformas"]'::jsonb)
     ) AS t(texto, orden, opciones)
     WHERE NOT EXISTS (
-      SELECT 1 FROM preguntas_tests p 
+      SELECT 1 FROM preguntas_tests p
       WHERE p.test_id = moss_test_id AND p.texto = t.texto
     );
   END IF;
 END $$;
 
--- ============================================================
--- PREGUNTAS 16 PF (versión simplificada - 10 preguntas ejemplo)
--- ============================================================
-
+-- Preguntas 16 PF
 DO $$
 DECLARE
   pf_test_id UUID;
 BEGIN
   SELECT id INTO pf_test_id FROM tests_psicologicos WHERE nombre = '16 PF' LIMIT 1;
-  
   IF pf_test_id IS NOT NULL THEN
-    INSERT INTO preguntas_tests (test_id, texto, orden, tipo_respuesta, opciones) 
+    INSERT INTO preguntas_tests (test_id, texto, orden, tipo_respuesta, opciones)
     SELECT pf_test_id, t.texto, t.orden, 'opcion_multiple', t.opciones
     FROM (VALUES
       ('Me gusta hacer amigos nuevos', 1, '["Verdadero", "Falso"]'::jsonb),
@@ -271,27 +353,23 @@ BEGIN
       ('Analizo las situaciones antes de actuar', 10, '["Verdadero", "Falso"]'::jsonb)
     ) AS t(texto, orden, opciones)
     WHERE NOT EXISTS (
-      SELECT 1 FROM preguntas_tests p 
+      SELECT 1 FROM preguntas_tests p
       WHERE p.test_id = pf_test_id AND p.texto = t.texto
     );
   END IF;
 END $$;
 
--- ============================================================
--- PREGUNTAS ZAVIC (versión simplificada - 10 preguntas ejemplo)
--- ============================================================
-
+-- Preguntas Zavic
 DO $$
 DECLARE
   zavic_test_id UUID;
 BEGIN
   SELECT id INTO zavic_test_id FROM tests_psicologicos WHERE nombre = 'Test Zavic' LIMIT 1;
-  
   IF zavic_test_id IS NOT NULL THEN
-    INSERT INTO preguntas_tests (test_id, texto, orden, tipo_respuesta, opciones) 
+    INSERT INTO preguntas_tests (test_id, texto, orden, tipo_respuesta, opciones)
     SELECT zavic_test_id, t.texto, t.orden, 'opcion_multiple', t.opciones
     FROM (VALUES
-      ('Me siento motivado cuando tengo metas claras', 1, 
+      ('Me siento motivado cuando tengo metas claras', 1,
        '["Muy en desacuerdo", "En desacuerdo", "Neutral", "De acuerdo", "Muy de acuerdo"]'::jsonb),
       ('Valoro el trabajo en equipo por encima del individual', 2,
        '["Muy en desacuerdo", "En desacuerdo", "Neutral", "De acuerdo", "Muy de acuerdo"]'::jsonb),
@@ -313,18 +391,27 @@ BEGIN
        '["Muy en desacuerdo", "En desacuerdo", "Neutral", "De acuerdo", "Muy de acuerdo"]'::jsonb)
     ) AS t(texto, orden, opciones)
     WHERE NOT EXISTS (
-      SELECT 1 FROM preguntas_tests p 
+      SELECT 1 FROM preguntas_tests p
       WHERE p.test_id = zavic_test_id AND p.texto = t.texto
     );
   END IF;
 END $$;
-
--- ============================================================
--- ÍNDICES
--- ============================================================
 
 CREATE INDEX IF NOT EXISTS idx_preguntas_test ON preguntas_tests(test_id);
 CREATE INDEX IF NOT EXISTS idx_respuestas_user ON respuestas_tests(user_id);
 CREATE INDEX IF NOT EXISTS idx_respuestas_test ON respuestas_tests(test_id);
 CREATE INDEX IF NOT EXISTS idx_detalles_respuesta ON detalles_respuestas(respuesta_id);
 CREATE INDEX IF NOT EXISTS idx_resultados_respuesta ON resultados_tests(respuesta_id);
+
+-- ============================================================
+-- 4. IMAGEN PORTADA CURSOS
+-- ============================================================
+
+ALTER TABLE cursos ADD COLUMN IF NOT EXISTS imagen_portada TEXT;
+COMMENT ON COLUMN cursos.imagen_portada IS 'URL de imagen de portada del curso';
+
+-- ============================================================
+-- 5. ANCLADO PUBLICACIONES (CARRUSEL)
+-- ============================================================
+
+ALTER TABLE publicaciones ADD COLUMN IF NOT EXISTS anclado_hasta TIMESTAMPTZ;
