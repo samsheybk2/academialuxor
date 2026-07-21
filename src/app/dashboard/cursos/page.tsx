@@ -324,7 +324,7 @@ function CursosContent() {
                 <CardContent className="space-y-3">
                   <div className="flex items-start gap-3">
                     {curso.imagen_portada && (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                      <div className="w-24 h-24 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
                         <img
                           src={curso.imagen_portada}
                           alt={`Portada de ${curso.titulo}`}
@@ -338,9 +338,6 @@ function CursosContent() {
                           <h3 className="font-semibold text-gray-900 truncate">
                             {curso.titulo}
                           </h3>
-                      <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
-                        {curso.descripcion || curso.introduccion || "Sin descripción"}
-                      </p>
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       {(Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]).map((n) => (
