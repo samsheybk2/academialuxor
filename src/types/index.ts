@@ -40,6 +40,7 @@ export interface Curso {
   estado: EstadoCurso
   fechaCreacion?: string
   observaciones?: string
+  imagen_portada?: string
 }
 
 export interface Modulo {

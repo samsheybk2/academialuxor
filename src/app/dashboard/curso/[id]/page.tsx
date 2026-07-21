@@ -60,6 +60,7 @@ interface CursoData {
   modulos_count: number
   video_bienvenida?: string
   introduccion?: string
+  imagen_portada?: string
 }
 
 type Pestaña = "informacion" | "contenido" | "opiniones"
@@ -996,6 +997,15 @@ function CursoContent({ id }: { id: string }) {
         )}
 
         <div>
+          {curso.imagen_portada && (
+            <div className="mb-4 rounded-xl overflow-hidden border border-gray-200">
+              <img
+                src={curso.imagen_portada}
+                alt={`Portada de ${curso.titulo}`}
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-gray-900">
             {curso.titulo}
           </h1>

@@ -41,6 +41,7 @@ interface Curso {
   duracion: string
   estado: "borrador" | "pendiente" | "aprobado" | "rechazado"
   observaciones?: string
+  imagen_portada?: string
 }
 
 const nivelColors: Record<string, string> = {
@@ -320,6 +321,15 @@ function CursosContent() {
                 className="block"
               >
               <Card className="hover:shadow-md transition-shadow h-full cursor-pointer overflow-hidden">
+                {curso.imagen_portada && (
+                  <div className="w-full overflow-hidden border-b border-gray-100">
+                    <img
+                      src={curso.imagen_portada}
+                      alt={`Portada de ${curso.titulo}`}
+                      className="w-full h-auto object-contain"
+                    />
+                  </div>
+                )}
                 <CardContent className="space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">

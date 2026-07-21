@@ -78,7 +78,10 @@ function NuevoCursoContent() {
     facilitador_id: "",
     introduccion: "",
     video_bienvenida: "",
+    imagen_portada: "",
   })
+  const [portadaFile, setPortadaFile] = useState<File | null>(null)
+  const [portadaPreview, setPortadaPreview] = useState<string>("")
 
   const [modulos, setModulos] = useState<ModuloForm[]>([])
 
@@ -283,6 +286,18 @@ function NuevoCursoContent() {
     const duracionCalculada = Math.round(totalMinutos * 1.3)
 
     try {
+      let imagenPortadaUrl = ""
+      if (portadaFile) {
+        const fileName = `portadas/${Date.now()}_${portadaFile.name}`
+        const { data: uploadData } = await supabase.storage
+          .from("cursos")
+          .upload(fileName, portadaFile)
+        if (uploadData) {
+          const { data: urlData } = supabase.storage.from("cursos").getPublicUrl(uploadData.path)
+          imagenPortadaUrl = urlData.publicUrl
+        }
+      }
+
       const { data: curso, error: cursoError } = await supabase
         .from("cursos")
         .insert({
@@ -293,6 +308,7 @@ function NuevoCursoContent() {
           facilitador_nombre: facilitador?.nombre || "",
           introduccion: form.introduccion,
           video_bienvenida: form.video_bienvenida,
+          imagen_portada: imagenPortadaUrl || null,
           duracion: `${duracionCalculada} min`,
           estado: "borrador",
           activo: false,
@@ -539,6 +555,32 @@ function NuevoCursoContent() {
                 />
               </div>
             )}
+          </div>
+
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Imagen de Portada</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  setPortadaFile(file)
+                  setPortadaPreview(URL.createObjectURL(file))
+                }
+              }}
+              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-luxor-primary file:text-white file:cursor-pointer hover:file:bg-luxor-secondary"
+            />
+            {portadaPreview && (
+              <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 max-w-md">
+                <img
+                  src={portadaPreview}
+                  alt="Vista previa de portada"
+                  className="w-full h-auto object-contain"
+                />
+              </div>
+            )}
+            <p className="text-xs text-gray-400">Se mostrara en el catalogo y al inicio del curso. Se mantiene la relacion de aspecto original.</p>
           </div>
         </div>
       </div>
