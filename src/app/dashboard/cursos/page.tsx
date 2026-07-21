@@ -321,10 +321,10 @@ function CursosContent() {
                 className="block"
               >
               <Card className="hover:shadow-md transition-shadow h-full cursor-pointer overflow-hidden">
-                <CardContent className="space-y-3">
-                  <div className="flex items-start gap-3">
+                <CardContent className="p-0">
+                  <div className="flex">
                     {curso.imagen_portada && (
-                      <div className="w-24 h-24 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
+                      <div className="w-36 h-36 flex-shrink-0 overflow-hidden bg-gray-100">
                         <img
                           src={curso.imagen_portada}
                           alt={`Portada de ${curso.titulo}`}
@@ -332,68 +332,59 @@ function CursosContent() {
                         />
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate">
-                            {curso.titulo}
-                          </h3>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      {(Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]).map((n) => (
-                        <span
-                          key={n}
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize whitespace-nowrap ${
-                            nivelColors[n] || "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {n}
+                    <div className="flex-1 min-w-0 p-3 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 truncate">
+                          {curso.titulo}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          <span
+                            className={`text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${estadoInfo.color}`}
+                          >
+                            <EstadoIcon className="w-3 h-3" />
+                            {estadoInfo.label}
+                          </span>
+                          {(Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]).map((n) => (
+                            <span
+                              key={n}
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                                nivelColors[n] || "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {n}
+                            </span>
+                          ))}
+                          {curso.tipo === "electivo" && (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 flex items-center gap-1">
+                              <Star className="w-2.5 h-2.5" />
+                              Electivo
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-2">
+                        <span className="flex items-center gap-1">
+                          <GraduationCap className="w-3 h-3" />
+                          {curso.facilitador_nombre}
                         </span>
-                      ))}
-                      {curso.tipo === "electivo" && (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 flex items-center gap-1 whitespace-nowrap">
-                          <Star className="w-2.5 h-2.5" />
-                          Electivo
+                        <span className="flex items-center gap-1">
+                          <BookOpen className="w-3 h-3" />
+                          {curso.modulos_count} modulos
                         </span>
-                      )}
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {curso.estudiantes_count}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {curso.duracion}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
-                    <span className="flex items-center gap-1 min-w-0">
-                      <GraduationCap className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span className="truncate">{curso.facilitador_nombre}</span>
-                    </span>
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <BookOpen className="w-3.5 h-3.5" />
-                      {curso.modulos_count} módulos
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <Users className="w-3.5 h-3.5" />
-                      {curso.estudiantes_count} estudiantes
-                    </span>
-                    <span className="flex items-center gap-1 whitespace-nowrap">
-                      <Clock className="w-3.5 h-3.5" />
-                      {curso.duracion}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 ${estadoInfo.color}`}
-                      >
-                        <EstadoIcon className="w-3 h-3" />
-                        {estadoInfo.label}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  {(isDecano || isFacilitador) && (
+                    <div className="flex items-center justify-end gap-1 p-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
                       {isDecano && curso.estado === "pendiente" && (
                         <>
                           <button
@@ -447,7 +438,7 @@ function CursosContent() {
                         </>
                       )}
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
               </Link>
