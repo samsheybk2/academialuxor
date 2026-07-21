@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
 import type { Publicacion, TipoReaccion, EncuestaOpcion } from "@/types"
@@ -256,6 +257,56 @@ function PublicacionContenido({ contenido }: { contenido: string }) {
           {expanded ? "Ver menos" : "Ver más"}
         </button>
       )}
+    </div>
+  )
+}
+
+function CarruselBanners({ banners }: { banners: Array<{ titulo: string; sub: string; grad: string; emoji: string }> }) {
+  const [current, setCurrent] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % banners.length)
+    }, 4000)
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [banners.length])
+
+  function goTo(index: number) {
+    setCurrent(index)
+    if (timerRef.current) clearInterval(timerRef.current)
+    timerRef.current = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % banners.length)
+    }, 4000)
+  }
+
+  function prev() { goTo((current - 1 + banners.length) % banners.length) }
+  function next() { goTo((current + 1) % banners.length) }
+
+  return (
+    <div className="mt-4 rounded-2xl overflow-hidden relative">
+      <div className={`bg-gradient-to-br ${banners[current].grad} p-5 text-white min-h-[140px] flex flex-col justify-between transition-all duration-500`}>
+        <div>
+          <span className="text-3xl">{banners[current].emoji}</span>
+          <h4 className="text-base font-bold mt-2 leading-snug">{banners[current].titulo}</h4>
+          <p className="text-xs text-white/80 mt-1">{banners[current].sub}</p>
+        </div>
+      </div>
+      <button onClick={prev} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-colors">
+        <ChevronLeft className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={next} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white transition-colors">
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+        {banners.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={`w-1.5 h-1.5 rounded-full transition-all ${i === current ? "bg-white w-4" : "bg-white/50"}`}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -531,10 +582,11 @@ async function handleEliminar(pubId: string) {
     <>
        <div className="relative z-[2] w-full h-full flex flex-col -mb-4 sm:-mb-6">
        <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 w-full h-full">
-         {/* Sidebar izquierdo — Calendario */}
-         <div className="hidden lg:block h-full w-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] p-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-           <CalendarioSidebar />
-         </div>
+          {/* Sidebar izquierdo — Calendario */}
+          <div className="hidden lg:block h-full w-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] p-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+            <CalendarioSidebar />
+            <CarruselBanners banners={banners} />
+          </div>
 
          {/* Feed principal — siempre centrado */}
          <div className="h-full overflow-y-auto bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
