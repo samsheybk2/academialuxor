@@ -233,7 +233,7 @@ export function LoginForm() {
             }}
             className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all ${
               mode === "login"
-                ? "bg-white text-indigo-600 shadow-sm"
+                ? "bg-white text-[#28315F] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
@@ -247,7 +247,7 @@ export function LoginForm() {
             }}
             className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all ${
               mode === "signup"
-                ? "bg-white text-indigo-600 shadow-sm"
+                ? "bg-white text-[#28315F] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
@@ -314,7 +314,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={() => router.push("/recuperar-contrasena")}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-xs text-[#28315F] hover:text-[#1e2549] font-medium"
               >
                 ¿Olvidaste tu contraseña?
               </button>
@@ -530,7 +530,7 @@ export function LoginForm() {
               />
               <label htmlFor="terms" className="text-xs text-gray-600">
                 Acepto los{" "}
-                <span className="text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer">
+                <span className="text-[#28315F] hover:text-[#1e2549] font-medium cursor-pointer">
                   términos y condiciones
                 </span>{" "}
                 de la Academia LUXOR
