@@ -275,7 +275,16 @@ function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Pub
         .gt("anclado_hasta", new Date().toISOString())
         .order("anclado_hasta", { ascending: false })
         .limit(10)
-      if (data) setAncladas(data)
+      if (!data || data.length === 0) { setAncladas([]); return }
+
+      const autorIds = [...new Set(data.map((p: any) => p.autor_id))]
+      const { data: perfiles } = await supabase
+        .from("profiles")
+        .select("id, nombre, avatar_url, rol")
+        .in("id", autorIds)
+      const perfilMap = new Map((perfiles || []).map((p: any) => [p.id, p]))
+
+      setAncladas(data.map((p: any) => ({ ...p, autor: perfilMap.get(p.autor_id) })))
     }
     fetch()
   }, [supabase, publicaciones])
