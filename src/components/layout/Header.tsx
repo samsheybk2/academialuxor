@@ -150,6 +150,12 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <>
+      <div className="fixed top-0 left-0 right-0 z-40 bg-luxor-primary text-white text-xs font-semibold overflow-hidden h-7 flex items-center">
+        <div className="animate-marquee">
+          ✦ Proximamente la Gran Cosecha Luxor Q3-2026 &nbsp;&nbsp;&nbsp; ✦ Proximamente la Gran Cosecha Luxor Q3-2026 &nbsp;&nbsp;&nbsp; ✦ Proximamente la Gran Cosecha Luxor Q3-2026 &nbsp;&nbsp;&nbsp; ✦ Proximamente la Gran Cosecha Luxor Q3-2026 &nbsp;&nbsp;&nbsp; ✦ Proximamente la Gran Cosecha Luxor Q3-2026 &nbsp;&nbsp;&nbsp; ✦ Proximamente la Gran Cosecha Luxor Q3-2026 &nbsp;&nbsp;&nbsp; ✦ Proximamente la Gran Cosecha Luxor Q3-2026 &nbsp;&nbsp;&nbsp; ✦ Proximamente la Gran Cosecha Luxor Q3-2026
+        </div>
+      </div>
+
       {isBirthday && (
         <button
           onClick={() => setShowBirthdayModal(true)}
@@ -270,7 +276,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
       )}
 
-    <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200 flex items-center px-4">
+    <header className="fixed top-7 left-0 right-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200 flex items-center px-4">
       <div className="flex items-center gap-2 shrink-0">
         <Link href="/dashboard" prefetch={true} className="flex items-center gap-2.5">
           <img
