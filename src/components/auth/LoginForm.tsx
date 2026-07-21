@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { signIn, signUp, lookupCedula } from "@/lib/auth"
+import { createSupabaseClient } from "@/lib/supabase"
 import {
   LogIn,
   Mail,
@@ -15,6 +16,7 @@ import {
   CheckCircle2,
   IdCard,
   MapPin,
+  Briefcase,
 } from "lucide-react"
 
 const SUCURSALES = [
@@ -54,6 +56,20 @@ export function LoginForm() {
   const [lookingUp, setLookingUp] = useState(false)
   const [nameAutoFilled, setNameAutoFilled] = useState(false)
   const [cedulaError, setCedulaError] = useState("")
+  const [cargo, setCargo] = useState("")
+  const [cargos, setCargos] = useState<Array<{ id: string; nombre: string }>>([])
+
+  useEffect(() => {
+    async function fetchCargos() {
+      const supabase = createSupabaseClient()
+      const { data } = await supabase
+        .from("cargos")
+        .select("id, nombre")
+        .order("nombre")
+      setCargos(data || [])
+    }
+    fetchCargos()
+  }, [])
 
   function resetSignup() {
     setEmail("")
@@ -63,6 +79,7 @@ export function LoginForm() {
     setApellidos("")
     setCedula("")
     setSucursal("")
+    setCargo("")
     setError("")
     setNameAutoFilled(false)
   }
@@ -160,7 +177,8 @@ export function LoginForm() {
         nombreCompleto,
         cedula,
         "estudiante",
-        sucursal
+        sucursal,
+        cargos.find((c) => c.id === cargo)?.nombre || undefined
       )
       setEmailSent(true)
     } catch (err: unknown) {
@@ -402,6 +420,27 @@ export function LoginForm() {
                   {SUCURSALES.map((s) => (
                     <option key={s} value={s}>
                       {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Cargo
+              </label>
+              <div className="relative">
+                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <select
+                  value={cargo}
+                  onChange={(e) => setCargo(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 bg-white"
+                >
+                  <option value="">Seleccionar cargo</option>
+                  {cargos.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre}
                     </option>
                   ))}
                 </select>

@@ -23,14 +23,15 @@ export async function signUp(
   nombre: string,
   cedula: string,
   rol: Rol = "estudiante",
-  sucursal?: string
+  sucursal?: string,
+  cargo?: string
 ) {
   const supabase = getClient()
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { nombre, rol, cedula, sucursal },
+      data: { nombre, rol, cedula, sucursal, cargo },
       emailRedirectTo: `${window.location.origin}/login`,
     },
   })
@@ -45,6 +46,7 @@ export async function signUp(
         rol,
         cedula,
         sucursal: sucursal || null,
+        cargo: cargo || null,
         aprobado: rol === "decano" || rol === "facilitador" || rol === "developer",
       })
     } catch {}
