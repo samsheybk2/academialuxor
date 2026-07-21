@@ -211,7 +211,7 @@ export function LoginForm() {
                 setMode("login")
                 resetSignup()
               }}
-              className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+              className="w-full bg-[#28315F] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#1e2549] transition-colors"
             >
               Volver al Inicio de Sesión
             </button>
@@ -323,7 +323,7 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+              className="w-full bg-[#28315F] text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-[#1e2549] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
             >
               {loading ? (
                 <>
@@ -540,7 +540,7 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+              className="w-full bg-[#28315F] text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-[#1e2549] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
             >
               {loading ? (
                 <>
