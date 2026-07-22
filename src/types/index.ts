@@ -72,6 +72,7 @@ export interface Publicacion {
   enlace_url?: string
   enlace_titulo?: string
   anclado_hasta?: string
+  sucursales_destino?: string[]
   created_at: string
   autor?: UserProfile
   mis_reacciones?: string

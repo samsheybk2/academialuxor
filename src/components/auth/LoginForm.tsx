@@ -277,7 +277,7 @@ export function LoginForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
                   required
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -294,7 +294,7 @@ export function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full pl-9 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
+                  className="w-full pl-9 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
                 />
                 <button
                   type="button"
@@ -352,10 +352,10 @@ export function LoginForm() {
                   onChange={(e) => handleCedulaLookup(e.target.value)}
                   placeholder="Ej: 12345678"
                   maxLength={8}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
                 />
                 {lookingUp && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500 animate-spin" />
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-luxor-primary animate-spin" />
                 )}
                 {!lookingUp && nameAutoFilled && (
                   <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
@@ -377,7 +377,7 @@ export function LoginForm() {
                     value={nombres}
                     onChange={(e) => setNombres(e.target.value)}
                     placeholder="Nombres"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400 ${
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400 ${
                       nameAutoFilled
                         ? "border-green-300 bg-green-50"
                         : "border-gray-300"
@@ -400,7 +400,7 @@ export function LoginForm() {
                   value={apellidos}
                   onChange={(e) => setApellidos(e.target.value)}
                   placeholder="Apellidos"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -414,7 +414,7 @@ export function LoginForm() {
                 <select
                   value={sucursal}
                   onChange={(e) => setSucursal(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 bg-white"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900"
                 >
                   <option value="">Seleccionar sucursal</option>
                   {SUCURSALES.map((s) => (
@@ -435,7 +435,7 @@ export function LoginForm() {
                 <select
                   value={cargo}
                   onChange={(e) => setCargo(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 bg-white"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900"
                 >
                   <option value="">Seleccionar cargo</option>
                   {cargos.map((c) => (
@@ -459,7 +459,7 @@ export function LoginForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
                   required
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
+                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -477,7 +477,7 @@ export function LoginForm() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full pl-9 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-9 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
                   />
                   <button
                     type="button"
@@ -505,7 +505,7 @@ export function LoginForm() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full pl-9 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
+                    className="w-full pl-9 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
                   />
                   <button
                     type="button"
@@ -526,7 +526,7 @@ export function LoginForm() {
               <input
                 type="checkbox"
                 id="terms"
-                className="mt-0.5 h-3.5 w-3.5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                className="mt-0.5 h-3.5 w-3.5 text-luxor-primary border-gray-300 rounded focus:ring-luxor-primary/30"
               />
               <label htmlFor="terms" className="text-xs text-gray-600">
                 Acepto los{" "}

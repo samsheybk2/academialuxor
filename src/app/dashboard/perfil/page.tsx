@@ -47,7 +47,7 @@ interface Badge {
 function getStudentBadges(stats: StudentStats): Badge[] {
   return [
     { id: "primera-inscripcion", nombre: "Primera Inscripcion", desc: "Te inscribiste en tu primer curso", icon: "📋", color: "text-blue-700", bg: "bg-blue-100", ok: stats.cursosInscritos >= 1, p: Math.min(stats.cursosInscritos, 1), t: 1, xp: 10 },
-    { id: "estudiante-activo", nombre: "Estudiante Activo", desc: "Inscrito en 3 cursos", icon: "📚", color: "text-indigo-700", bg: "bg-indigo-100", ok: stats.cursosInscritos >= 3, p: Math.min(stats.cursosInscritos, 3), t: 3, xp: 30 },
+    { id: "estudiante-activo", nombre: "Estudiante Activo", desc: "Inscrito en 3 cursos", icon: "📚", color: "text-luxor-primary", bg: "bg-luxor-primary/10", ok: stats.cursosInscritos >= 3, p: Math.min(stats.cursosInscritos, 3), t: 3, xp: 30 },
     { id: "explorador", nombre: "Explorador", desc: "Inscrito en 5 cursos", icon: "🔍", color: "text-violet-700", bg: "bg-violet-100", ok: stats.cursosInscritos >= 5, p: Math.min(stats.cursosInscritos, 5), t: 5, xp: 50 },
     { id: "primera-finalizacion", nombre: "Primera Finalizacion", desc: "Completaste tu primer curso", icon: "🎯", color: "text-green-700", bg: "bg-green-100", ok: stats.cursosCompletados >= 1, p: Math.min(stats.cursosCompletados, 1), t: 1, xp: 100 },
     { id: "estudiante-dedicado", nombre: "Estudiante Dedicado", desc: "Completaste 3 cursos", icon: "🏅", color: "text-amber-700", bg: "bg-amber-100", ok: stats.cursosCompletados >= 3, p: Math.min(stats.cursosCompletados, 3), t: 3, xp: 300 },
@@ -68,7 +68,7 @@ function getStudentNivel(badges: Badge[]) {
   
   if (percentage >= 95) return { n: "Leyenda", bg: "bg-yellow-500", bar: "from-yellow-400 to-amber-500", i: "👑", score: earnedXP, from: Math.floor(totalXP * 0.95), to: totalXP, pct: percentage, frame: "from-yellow-400 via-amber-500 to-orange-400", glow: "shadow-yellow-500/50" }
   if (percentage >= 60) return { n: "Experto", bg: "bg-purple-500", bar: "from-purple-400 to-violet-500", i: "🏆", score: earnedXP, from: Math.floor(totalXP * 0.60), to: Math.floor(totalXP * 0.95), pct: percentage, frame: "from-purple-400 via-violet-500 to-purple-400", glow: "shadow-purple-500/50" }
-  if (percentage >= 30) return { n: "Avanzado", bg: "bg-blue-500", bar: "from-blue-400 to-indigo-500", i: "⭐", score: earnedXP, from: Math.floor(totalXP * 0.30), to: Math.floor(totalXP * 0.60), pct: percentage, frame: "from-blue-400 via-indigo-500 to-blue-400", glow: "shadow-blue-500/50" }
+  if (percentage >= 30) return { n: "Avanzado", bg: "bg-blue-500", bar: "from-blue-400 to-luxor-primary", i: "⭐", score: earnedXP, from: Math.floor(totalXP * 0.30), to: Math.floor(totalXP * 0.60), pct: percentage, frame: "from-blue-400 via-luxor-primary to-blue-400", glow: "shadow-blue-500/50" }
   if (percentage >= 10) return { n: "Intermedio", bg: "bg-green-500", bar: "from-green-400 to-emerald-500", i: "📈", score: earnedXP, from: Math.floor(totalXP * 0.10), to: Math.floor(totalXP * 0.30), pct: percentage, frame: "from-green-400 via-emerald-500 to-green-400", glow: "shadow-green-500/50" }
   if (percentage >= 1.8) return { n: "Principiante", bg: "bg-gray-500", bar: "from-gray-400 to-gray-500", i: "🌱", score: earnedXP, from: Math.floor(totalXP * 0.018), to: Math.floor(totalXP * 0.10), pct: percentage, frame: "from-gray-400 via-gray-500 to-gray-400", glow: "shadow-gray-400/30" }
   return { n: "Novato", bg: "bg-gray-400", bar: "from-gray-300 to-gray-400", i: "📋", score: earnedXP, from: 0, to: Math.floor(totalXP * 0.018), pct: percentage, frame: "from-gray-300 via-gray-400 to-gray-300", glow: "shadow-gray-300/20" }
@@ -77,7 +77,7 @@ function getStudentNivel(badges: Badge[]) {
 function getBadges(stats: FacilitadorStats): Badge[] {
   return [
     { id: "primer-curso", nombre: "Primer Curso", desc: "Creaste tu primer curso", icon: "📘", color: "text-blue-700", bg: "bg-blue-100", ok: stats.cursosCreados >= 1, p: Math.min(stats.cursosCreados, 1), t: 1, xp: 10 },
-    { id: "creador-activo", nombre: "Creador Activo", desc: "Creaste 5 cursos", icon: "📚", color: "text-indigo-700", bg: "bg-indigo-100", ok: stats.cursosCreados >= 5, p: Math.min(stats.cursosCreados, 5), t: 5, xp: 50 },
+    { id: "creador-activo", nombre: "Creador Activo", desc: "Creaste 5 cursos", icon: "📚", color: "text-luxor-primary", bg: "bg-luxor-primary/10", ok: stats.cursosCreados >= 5, p: Math.min(stats.cursosCreados, 5), t: 5, xp: 50 },
     { id: "maestro-creador", nombre: "Maestro Creador", desc: "Creaste 10 cursos", icon: "🎓", color: "text-violet-700", bg: "bg-violet-100", ok: stats.cursosCreados >= 10, p: Math.min(stats.cursosCreados, 10), t: 10, xp: 100 },
     { id: "primera-aprobacion", nombre: "Primera Aprobacion", desc: "Tu primer curso fue aprobado", icon: "✅", color: "text-green-700", bg: "bg-green-100", ok: stats.cursosAprobados >= 1, p: Math.min(stats.cursosAprobados, 1), t: 1, xp: 10 },
     { id: "instructor-cert", nombre: "Instructor Certificado", desc: "5 cursos aprobados", icon: "🏅", color: "text-amber-700", bg: "bg-amber-100", ok: stats.cursosAprobados >= 5, p: Math.min(stats.cursosAprobados, 5), t: 5, xp: 50 },
@@ -98,7 +98,7 @@ function getNivel(badges: Badge[]) {
   
   if (percentage >= 95) return { n: "Leyenda", bg: "bg-yellow-500", bar: "from-yellow-400 to-amber-500", i: "👑", score: earnedXP, from: Math.floor(totalXP * 0.95), to: totalXP, pct: percentage, frame: "from-yellow-400 via-amber-500 to-orange-400", glow: "shadow-yellow-500/50" }
   if (percentage >= 60) return { n: "Experto", bg: "bg-purple-500", bar: "from-purple-400 to-violet-500", i: "🏆", score: earnedXP, from: Math.floor(totalXP * 0.60), to: Math.floor(totalXP * 0.95), pct: percentage, frame: "from-purple-400 via-violet-500 to-purple-400", glow: "shadow-purple-500/50" }
-  if (percentage >= 30) return { n: "Avanzado", bg: "bg-blue-500", bar: "from-blue-400 to-indigo-500", i: "⭐", score: earnedXP, from: Math.floor(totalXP * 0.30), to: Math.floor(totalXP * 0.60), pct: percentage, frame: "from-blue-400 via-indigo-500 to-blue-400", glow: "shadow-blue-500/50" }
+  if (percentage >= 30) return { n: "Avanzado", bg: "bg-blue-500", bar: "from-blue-400 to-luxor-primary", i: "⭐", score: earnedXP, from: Math.floor(totalXP * 0.30), to: Math.floor(totalXP * 0.60), pct: percentage, frame: "from-blue-400 via-luxor-primary to-blue-400", glow: "shadow-blue-500/50" }
   if (percentage >= 10) return { n: "Intermedio", bg: "bg-green-500", bar: "from-green-400 to-emerald-500", i: "📈", score: earnedXP, from: Math.floor(totalXP * 0.10), to: Math.floor(totalXP * 0.30), pct: percentage, frame: "from-green-400 via-emerald-500 to-green-400", glow: "shadow-green-500/50" }
   if (percentage >= 1.8) return { n: "Principiante", bg: "bg-gray-500", bar: "from-gray-400 to-gray-500", i: "🌱", score: earnedXP, from: Math.floor(totalXP * 0.018), to: Math.floor(totalXP * 0.10), pct: percentage, frame: "from-gray-400 via-gray-500 to-gray-400", glow: "shadow-gray-400/30" }
   return { n: "Novato", bg: "bg-gray-400", bar: "from-gray-300 to-gray-400", i: "📋", score: earnedXP, from: 0, to: Math.floor(totalXP * 0.018), pct: percentage, frame: "from-gray-300 via-gray-400 to-gray-300", glow: "shadow-gray-300/20" }
@@ -799,7 +799,7 @@ function PerfilContent() {
                     return [
                       { label: "Puntos", value: stuNivel ? stuNivel.score : 0, icon: <Zap className="w-5 h-5" />, color: "from-amber-400 to-orange-500", textColor: "text-amber-700" },
                       { label: "Racha", value: `${stats.rachaActual}d`, icon: <Flame className="w-5 h-5" />, color: "from-red-400 to-orange-500", textColor: "text-red-700" },
-                      { label: "Promedio", value: `${stats.calificacionPromedio}%`, icon: <Target className="w-5 h-5" />, color: "from-blue-400 to-indigo-500", textColor: "text-blue-700" },
+                      { label: "Promedio", value: `${stats.calificacionPromedio}%`, icon: <Target className="w-5 h-5" />, color: "from-blue-400 to-luxor-primary", textColor: "text-blue-700" },
                       { label: "Cursos", value: `${stats.cursosCompletados}/${stats.cursosInscritos}`, icon: <BookOpen className="w-5 h-5" />, color: "from-green-400 to-emerald-500", textColor: "text-green-700" },
                     ]
                   })().map((stat) => (

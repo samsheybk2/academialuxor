@@ -1239,6 +1239,7 @@ END $$;
 
 ALTER TABLE cursos ADD COLUMN IF NOT EXISTS imagen_portada TEXT;
 ALTER TABLE publicaciones ADD COLUMN IF NOT EXISTS anclado_hasta TIMESTAMPTZ;
+ALTER TABLE publicaciones ADD COLUMN IF NOT EXISTS sucursales_destino TEXT[] DEFAULT '{}';
 
 -- ============================================================
 -- 5. INDICES PARA RENDIMIENTO

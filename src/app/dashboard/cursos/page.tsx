@@ -48,7 +48,23 @@ const nivelColors: Record<string, string> = {
   gerentes: "bg-blue-100 text-blue-700",
   coordinadores: "bg-blue-100 text-blue-700",
   administrativos: "bg-violet-100 text-violet-700",
-  operadores: "bg-amber-100 text-amber-700",
+  operativos: "bg-green-100 text-green-700",
+  supervisores: "bg-amber-100 text-amber-700",
+}
+
+const hoverColors = [
+  "hover:!bg-blue-100",
+  "hover:!bg-green-100",
+  "hover:!bg-yellow-100",
+  "hover:!bg-purple-100",
+  "hover:!bg-pink-100",
+  "hover:!bg-indigo-100",
+  "hover:!bg-teal-100",
+  "hover:!bg-orange-100",
+]
+
+function getHoverColor(index: number): string {
+  return hoverColors[index % hoverColors.length]
 }
 
 const estadoConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -207,17 +223,6 @@ function CursosContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        {isFacilitador && (
-          <Link href="/dashboard/cursos/nuevo">
-            <Button>
-              <Plus className="w-4 h-4" />
-              Nuevo Curso
-            </Button>
-          </Link>
-        )}
-      </div>
-
       {isDecano && pendientesCount > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <div className="flex items-center gap-3">
@@ -236,28 +241,26 @@ function CursosContent() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar curso o facilitador..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-          />
-        </div>
-        <div className="relative">
-          <button
-            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors text-sm whitespace-nowrap"
-          >
-            <Filter className="w-4 h-4" />
-            Filtros
-            {(filterNivel !== "todos" || filterEstado !== "todos") && (
-              <span className="w-2 h-2 bg-luxor-primary rounded-full" />
-            )}
-          </button>
+      <div className="flex justify-center">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar curso o facilitador..."
+              className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+            />
+            <button
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <Filter className="w-4 h-4 text-gray-400" />
+              {(filterNivel !== "todos" || filterEstado !== "todos") && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-luxor-primary rounded-full" />
+              )}
+            </button>
           {showFilterDropdown && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowFilterDropdown(false)} />
@@ -302,155 +305,181 @@ function CursosContent() {
             </>
           )}
         </div>
+        {isFacilitador && (
+          <Link href="/dashboard/cursos/nuevo">
+            <Button>
+              <Plus className="w-4 h-4" />
+              Nuevo Curso
+            </Button>
+          </Link>
+        )}
       </div>
+    </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-luxor-primary animate-spin" />
-        </div>
-      ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((curso) => {
+    {loading ? (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 text-luxor-primary animate-spin" />
+      </div>
+    ) : (
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        {filtered.map((curso, index) => {
             const estadoInfo = estadoConfig[curso.estado]
             const EstadoIcon = estadoInfo.icon
 
             return (
-              <Link
-                key={curso.id}
-                href={`/dashboard/cursos/${curso.id}`}
-                className="block"
-              >
-              <Card className="hover:shadow-md transition-shadow h-full cursor-pointer overflow-hidden">
-                <CardContent className="p-0">
-                  {curso.imagen_portada && (
-                    <div className="w-full overflow-hidden bg-gray-100">
-                      <img
-                        src={curso.imagen_portada}
-                        alt={`Portada de ${curso.titulo}`}
-                        className="w-full h-auto object-cover max-h-48"
-                      />
-                    </div>
-                  )}
-                  <div className="p-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-luxor-primary/10 flex items-center justify-center flex-shrink-0">
-                        <GraduationCap className="w-4 h-4 text-luxor-primary" />
-                      </div>
-                      <h3 className="font-semibold text-gray-900 truncate text-sm">
-                        {curso.titulo}
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {curso.duracion}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="w-3 h-3" />
-                        {curso.modulos_count} modulos
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {curso.estudiantes_count}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
-                      <span
-                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-1 ${estadoInfo.color}`}
-                      >
-                        <EstadoIcon className="w-2.5 h-2.5" />
-                        {estadoInfo.label}
-                      </span>
-                      {(Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]).map((n) => (
-                        <span
-                          key={n}
-                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium capitalize ${
-                            nivelColors[n] || "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {n}
-                        </span>
-                      ))}
-                      {(isDecano || isFacilitador) && (
-                        <div className="flex items-center gap-0.5 ml-auto">
-                          {isDecano && curso.estado === "pendiente" && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setCursoToAprobar(curso)
-                                  setShowAprobarModal(true)
-                                }}
-                                className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                                title="Aprobar"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setCursoToAprobar(curso)
-                                  setShowAprobarModal(true)
-                                }}
-                                className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                                title="Rechazar"
-                              >
-                                <XCircle className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          )}
-                          {isFacilitador && curso.estado === "borrador" && (
-                            <button
-                              onClick={() => handleEnviarRevision(curso.id)}
-                              className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                              title="Enviar a revisión"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          {(isFacilitador || isDecano) && (
-                            <>
-                              <button
-                                onClick={() => openEdit(curso)}
-                                className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setCursoToDelete(curso)
-                                  setShowDeleteModal(true)
-                                }}
-                                className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          )}
+              <div key={curso.id} className="relative">
+                <Link
+                  href={`/dashboard/cursos/${curso.id}`}
+                  className="block"
+                >
+                  <Card className={`!bg-transparent ${getHoverColor(index)} transition-colors cursor-pointer overflow-hidden !border-transparent !shadow-none`}>
+                    <CardContent className="p-0">
+                      {curso.imagen_portada && (
+                        <div className="w-full overflow-hidden bg-gray-100">
+                          <img
+                            src={curso.imagen_portada}
+                            alt={`Portada de ${curso.titulo}`}
+                            className="w-full h-auto object-cover max-h-48"
+                          />
                         </div>
                       )}
-                    </div>
+                      <div className="p-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-luxor-primary/10 flex items-center justify-center flex-shrink-0">
+                            <GraduationCap className="w-4 h-4 text-luxor-primary" />
+                          </div>
+                          <h3 className="font-semibold text-gray-900 truncate text-sm">
+                            {curso.titulo}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {curso.duracion}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" />
+                            {curso.modulos_count} modulos
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {curso.estudiantes_count}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <span
+                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-1 ${estadoInfo.color}`}
+                          >
+                            <EstadoIcon className="w-2.5 h-2.5" />
+                            {estadoInfo.label}
+                          </span>
+                          {(Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]).map((n) => (
+                            <span
+                              key={n}
+                              className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium capitalize ${
+                                nivelColors[n] || "bg-gray-100 text-gray-700"
+                              }`}
+                            >
+                              {n}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+                {(isDecano || isFacilitador) && (
+                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-sm">
+                    {isDecano && curso.estado === "pendiente" && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setCursoToAprobar(curso)
+                            setShowAprobarModal(true)
+                          }}
+                          className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Aprobar"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setCursoToAprobar(curso)
+                            setShowAprobarModal(true)
+                          }}
+                          className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Rechazar"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                    {isFacilitador && curso.estado === "borrador" && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleEnviarRevision(curso.id)
+                        }}
+                        className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        title="Enviar a revisión"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {(isFacilitador || isDecano) && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            openEdit(curso)
+                          }}
+                          className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Editar"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setCursoToDelete(curso)
+                            setShowDeleteModal(true)
+                          }}
+                          className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-              </Link>
+                )}
+              </div>
             )
           })}
-        </div>
-      )}
+      </div>
+    )}
 
-      {!loading && filtered.length === 0 && (
-        <div className="text-center py-12">
-          <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No se encontraron cursos</p>
-        </div>
-      )}
+    {!loading && filtered.length === 0 && (
+      <div className="text-center py-12">
+        <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500">No se encontraron cursos</p>
+      </div>
+    )}
 
-      {/* Modal Crear/Editar */}
-      <Modal
-        show={showModal}
-        onClose={() => setShowModal(false)}
-        title={editingCurso ? "Editar Curso" : "Nuevo Curso"}
-      >
-        <div className="space-y-4">
+    {/* Modal Crear/Editar */}
+    <Modal
+      show={showModal}
+      onClose={() => setShowModal(false)}
+      title={editingCurso ? "Editar Curso" : "Nuevo Curso"}
+    >
+      <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">Título</label>
             <input

@@ -282,7 +282,7 @@ function TabInformacion({
 
   const nivelIcon: Record<string, string> = {
     gerentes: "bg-blue-100 text-blue-700",
-    coordinadores: "bg-indigo-100 text-indigo-700",
+    coordinadores: "bg-luxor-primary/10 text-luxor-primary",
     administrativos: "bg-violet-100 text-violet-700",
     operadores: "bg-amber-100 text-amber-700",
   }

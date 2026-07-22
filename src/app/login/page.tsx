@@ -1,14 +1,36 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
+import { createSupabaseClient } from "@/lib/supabase"
 import { LoginForm } from "@/components/auth/LoginForm"
 import { GraduationCap, BookOpen, Award, Users } from "lucide-react"
 
 export default function LoginPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [fondos, setFondos] = useState<string[]>([])
+
+  useEffect(() => {
+    async function fetchFondos() {
+      const supabase = createSupabaseClient()
+      const { data } = await supabase
+        .from("configuraciones")
+        .select("valor")
+        .eq("clave", "fondos_login")
+        .single()
+
+      if (data?.valor) {
+        try {
+          setFondos(JSON.parse(data.valor))
+        } catch {
+          setFondos([])
+        }
+      }
+    }
+    fetchFondos()
+  }, [])
 
   useEffect(() => {
     if (!loading && user) {
@@ -35,15 +57,25 @@ export default function LoginPage() {
 
   if (user) return null
 
+  const fondosAnimados = fondos.length > 0 ? fondos : ["/fondo (1).webp", "/fondo (2).webp", "/fondo (3).webp"]
+
   return (
     <div className="min-h-screen flex overflow-hidden">
       {/* Panel izquierdo - Branding */}
       <div className="hidden lg:flex lg:w-[58%] h-screen sticky top-0 relative overflow-hidden flex-shrink-0">
         {/* Slideshow de fondos */}
         <div className="absolute inset-0">
-          <img src="/fondo (1).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow1_12s_infinite]" />
-          <img src="/fondo (2).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow2_12s_infinite]" />
-          <img src="/fondo (3).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow3_12s_infinite]" />
+          {fondosAnimados.map((fondo, index) => (
+            <img
+              key={index}
+              src={fondo}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                animation: `slideshow${(index % 3) + 1} 12s infinite`,
+              }}
+            />
+          ))}
         </div>
         {/* Overlay oscuro para legibilidad */}
         <div className="absolute inset-0 bg-luxor-primary/60" />
@@ -109,13 +141,21 @@ export default function LoginPage() {
         <div className="flex-1 overflow-y-auto relative bg-white lg:bg-white">
           {/* Slideshow de fondos - solo móvil */}
           <div className="absolute inset-0 lg:hidden">
-            <img src="/fondo (1).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow1_12s_infinite]" />
-            <img src="/fondo (2).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow2_12s_infinite]" />
-            <img src="/fondo (3).webp" alt="" className="absolute inset-0 w-full h-full object-cover animate-[slideshow3_12s_infinite]" />
+            {fondosAnimados.map((fondo, index) => (
+              <img
+                key={index}
+                src={fondo}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{
+                  animation: `slideshow${(index % 3) + 1} 12s infinite`,
+                }}
+              />
+            ))}
           </div>
           {/* Overlay oscuro para legibilidad - solo móvil */}
           <div className="absolute inset-0 bg-luxor-primary/60 lg:hidden" />
-          
+
           <div className="relative z-10 flex items-center justify-center min-h-full px-6 py-12">
             <div className="w-full max-w-lg">
               {/* Logo - solo visible en desktop */}

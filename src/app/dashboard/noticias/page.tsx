@@ -10,9 +10,6 @@ import StarterKit from "@tiptap/starter-kit"
 import Placeholder from "@tiptap/extension-placeholder"
 import Link from "@tiptap/extension-link"
 import {
-  Image as ImageIcon,
-  Link2,
-  Send,
   Loader2,
   X,
   ExternalLink,
@@ -33,11 +30,28 @@ import {
   CircleHelp,
   Pencil,
   MapPin,
-  Tag,
-  MoreHorizontal,
 } from "lucide-react"
 import { CalendarioSidebar } from "@/components/ui/CalendarioSidebar"
 import { Modal } from "@/components/ui/Modal"
+
+const SUCURSALES = [
+  "Oficina Central",
+  "IPSFA Maracay",
+  "Santa Rita",
+  "La Mora",
+  "Las Acacias",
+  "Circulo Militar",
+  "Villas de Aragua",
+  "El Bosque",
+  "Naguanagua",
+  "San Diego",
+  "Tucacas",
+  "Barquisimeto",
+  "San Juan de Los Morros",
+  "La Victoria",
+  "Guacara",
+  "El Castaño",
+]
 
 const REACCIONES_CONFIG: Record<TipoReaccion, { icon: typeof ThumbsUp; color: string; bg: string; hoverBg: string; label: string }> = {
   me_gusta: { icon: ThumbsUp, color: "text-blue-600", bg: "bg-blue-50 border-blue-200", hoverBg: "hover:bg-blue-50", label: "Me gusta" },
@@ -261,7 +275,7 @@ function PublicacionContenido({ contenido }: { contenido: string }) {
   )
 }
 
-function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Publicacion[]; supabase: ReturnType<typeof createSupabaseClient> }) {
+function CarruselPublicaciones({ publicaciones, supabase, userSucursal, isAdmin }: { publicaciones: Publicacion[]; supabase: ReturnType<typeof createSupabaseClient>; userSucursal?: string; isAdmin?: boolean }) {
   const [current, setCurrent] = useState(0)
   const [ancladas, setAncladas] = useState<Publicacion[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -277,17 +291,25 @@ function CarruselPublicaciones({ publicaciones, supabase }: { publicaciones: Pub
         .limit(10)
       if (!data || data.length === 0) { setAncladas([]); return }
 
-      const autorIds = [...new Set(data.map((p: any) => p.autor_id))]
+      const filtered = data.filter((p: any) => {
+        if (isAdmin) return true
+        const destinos: string[] = p.sucursales_destino || []
+        if (destinos.length === 0) return true
+        return userSucursal && destinos.includes(userSucursal)
+      })
+      if (filtered.length === 0) { setAncladas([]); return }
+
+      const autorIds = [...new Set(filtered.map((p: any) => p.autor_id))]
       const { data: perfiles } = await supabase
         .from("profiles")
         .select("id, nombre, avatar_url, rol")
         .in("id", autorIds)
       const perfilMap = new Map((perfiles || []).map((p: any) => [p.id, p]))
 
-      setAncladas(data.map((p: any) => ({ ...p, autor: perfilMap.get(p.autor_id) })))
+      setAncladas(filtered.map((p: any) => ({ ...p, autor: perfilMap.get(p.autor_id) })))
     }
     fetch()
-  }, [supabase, publicaciones])
+  }, [supabase, publicaciones, userSucursal, isAdmin])
 
   useEffect(() => {
     if (ancladas.length <= 1) return
@@ -382,6 +404,8 @@ export default function NoticiasPage() {
   const [pollOpciones, setPollOpciones] = useState<string[]>(["", ""])
   const [pollMultiple, setPollMultiple] = useState(false)
   const [anclarDias, setAnclarDias] = useState(0)
+  const [sucursalesDestino, setSucursalesDestino] = useState<string[]>([])
+  const [modalView, setModalView] = useState<"main" | "sucursales">("main")
 
   const [showCreateModal, setShowCreateModal] = useState(false)
 
@@ -402,7 +426,7 @@ export default function NoticiasPage() {
       .from("publicaciones")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(50)
+      .limit(100)
 
     if (!pubData) {
       setPublicaciones([])
@@ -410,7 +434,18 @@ export default function NoticiasPage() {
       return
     }
 
-    const autorIds = [...new Set(pubData.map((p: { autor_id: string }) => p.autor_id))]
+    const mySucursal = user?.sucursal || ""
+    const isAdmin = user?.rol === "decano" || user?.rol === "developer"
+
+    const visiblePubs = pubData.filter((p: any) => {
+      if (isAdmin) return true
+      if (p.autor_id === user?.id) return true
+      const destinos: string[] = p.sucursales_destino || []
+      if (destinos.length === 0) return true
+      return mySucursal && destinos.includes(mySucursal)
+    })
+
+    const autorIds = [...new Set(visiblePubs.map((p: { autor_id: string }) => p.autor_id))]
     const { data: perfiles } = await supabase
       .from("profiles")
       .select("id, nombre, avatar_url, rol")
@@ -418,7 +453,7 @@ export default function NoticiasPage() {
 
     const perfilMap = new Map((perfiles || []).map((p: { id: string }) => [p.id, p]))
 
-    const pubIds = pubData.map((p: { id: string }) => p.id)
+    const pubIds = visiblePubs.map((p: { id: string }) => p.id)
     const { data: reacciones } = await supabase
       .from("reacciones")
       .select("publicacion_id, usuario_id, tipo")
@@ -443,7 +478,7 @@ export default function NoticiasPage() {
       reactionCounts.set(r.publicacion_id, counts)
     }
 
-    const enriched: Publicacion[] = pubData.map((p: { id: string; autor_id: string; [key: string]: any }) => ({
+    const enriched: Publicacion[] = visiblePubs.map((p: { id: string; autor_id: string; [key: string]: any }) => ({
       ...p,
       autor: perfilMap.get(p.autor_id) as any,
       mis_reacciones: myReactions.get(p.id),
@@ -522,6 +557,7 @@ export default function NoticiasPage() {
         enlace_url: enlaceUrl.trim() || null,
         enlace_titulo: enlaceTitulo.trim() || null,
         anclado_hasta: anclarDias > 0 ? new Date(Date.now() + anclarDias * 86400000).toISOString() : null,
+        sucursales_destino: sucursalesDestino.length > 0 ? sucursalesDestino : [],
       })
       .select("id")
       .single()
@@ -559,6 +595,9 @@ export default function NoticiasPage() {
       setPollMultiple(false)
       setShowCreateModal(false)
       setAnclarDias(0)
+      setSucursalesDestino([])
+      setModalView("main")
+      setShowCreateModal(false)
       fetchPublicaciones()
     }
 
@@ -628,214 +667,304 @@ async function handleEliminar(pubId: string) {
        <div className="relative z-[2] w-full h-full flex flex-col -mb-4 sm:-mb-6">
        <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 w-full h-full">
           {/* Sidebar izquierdo — Calendario */}
-          <div className="hidden lg:block h-full w-full overflow-y-auto custom-scrollbar bg-[#F0F2F5] p-4 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
-            <CalendarioSidebar />
-            <div className="mt-3">
-              <CarruselPublicaciones publicaciones={publicaciones} supabase={supabase} />
-            </div>
-          </div>
+           <div className="hidden lg:flex flex-col gap-3 h-full w-full bg-[#F0F2F5] p-4 sticky top-0 self-start max-h-screen overflow-y-auto custom-scrollbar [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+             <CarruselPublicaciones publicaciones={publicaciones} supabase={supabase} userSucursal={user?.sucursal} isAdmin={canPost} />
+             <CalendarioSidebar />
+           </div>
 
          {/* Feed principal — siempre centrado */}
          <div className="h-full overflow-y-auto bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-         <div className="max-w-xl mx-auto space-y-6 px-4 py-6">
+           <div className="w-full space-y-6 pt-0 pb-6 px-4">
 
          {/* Modal Crear Publicación */}
          {canPost && (
-           <Modal
-             show={showCreateModal}
-             onClose={() => setShowCreateModal(false)}
-             title=""
-           >
-          <div className="px-0 py-0">
-            {/* Header con usuario */}
-            <div className="flex items-center gap-3 px-6 pb-4">
+            <Modal
+              show={showCreateModal}
+              onClose={() => { setModalView("main"); setShowCreateModal(false) }}
+              title=""
+              hideHeader
+              size="lg"
+            >
+          <>
+            {/* Header con usuario + botón cerrar */}
+            <div className="flex items-center gap-3 px-0 pb-3">
               <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">
                 {user?.nombre?.charAt(0) || "?"}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">{user?.nombre || "Usuario"}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-xs font-medium text-gray-600">
-                    <span className="w-3 h-3 rounded-full bg-green-500 inline-block" />
-                    Público
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Editor */}
-            <div className="px-6 pb-4">
-              <div className="border-b border-gray-100 pb-4">
-                <EditorContent
-                  editor={editor}
-                  className="prose prose-sm max-w-none min-h-[120px] text-gray-900 text-base [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-gray-400 [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:text-gray-900 [&_.tiptap_strong]:font-bold [&_.tiptap_u]:underline"
-                />
-              </div>
-            </div>
-
-            {/* Preview imagen */}
-            {imagenPreview && (
-              <div className="px-6 pb-4">
-                <div className="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-                  <img src={imagenPreview} alt="Preview" className="w-full max-h-60 object-cover" />
-                  <button
-                    onClick={removeImagen}
-                    className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 backdrop-blur-sm"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Enlace */}
-            {showEnlace && (
-              <div className="px-6 pb-4 space-y-2">
-                <input
-                  type="url"
-                  value={enlaceUrl}
-                  onChange={(e) => setEnlaceUrl(e.target.value)}
-                  placeholder="https://ejemplo.com"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
-                />
-                <input
-                  type="text"
-                  value={enlaceTitulo}
-                  onChange={(e) => setEnlaceTitulo(e.target.value)}
-                  placeholder="Título del enlace (opcional)"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
-                />
-              </div>
-            )}
-
-            {/* Encuesta */}
-            {showPoll && (
-              <div className="px-6 pb-4">
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-luxor-primary" />
-                      <span className="text-sm font-medium text-gray-700">Encuesta</span>
-                    </div>
-                    <button onClick={() => setShowPoll(false)} className="text-gray-400 hover:text-red-500">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={pollPregunta}
-                    onChange={(e) => setPollPregunta(e.target.value)}
-                    placeholder="¿Qué pregunta quieres hacer?"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
-                  />
-                  {pollOpciones.map((opt, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400 w-4 text-center">{i + 1}</span>
-                      <input
-                        type="text"
-                        value={opt}
-                        onChange={(e) => updatePollOption(i, e.target.value)}
-                        placeholder={`Opción ${i + 1}`}
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
-                      />
-                      {pollOpciones.length > 2 && (
-                        <button onClick={() => removePollOption(i)} className="text-gray-300 hover:text-red-500">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  {pollOpciones.length < 6 && (
-                    <button
-                      onClick={addPollOption}
-                      className="flex items-center gap-1 text-xs text-luxor-primary hover:text-luxor-secondary font-medium"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Agregar opción
-                    </button>
+                  {sucursalesDestino.length > 0 ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-luxor-primary/10 text-xs font-medium text-luxor-primary">
+                      <MapPin className="w-3 h-3" fill="currentColor" />
+                      {sucursalesDestino.length === 1 ? sucursalesDestino[0] : `${sucursalesDestino.length} sucursales`}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-100 text-xs font-medium text-gray-600">
+                      <span className="w-3 h-3 rounded-full bg-green-500 inline-block" />
+                      Público
+                    </span>
                   )}
-                  <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={pollMultiple}
-                      onChange={(e) => setPollMultiple(e.target.checked)}
-                      className="rounded border-gray-300 text-luxor-primary focus:ring-luxor-primary"
-                    />
-                    Permitir selección múltiple
-                  </label>
                 </div>
               </div>
-            )}
-
-            {canPost && (
-              <div className="px-6 pb-2">
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-gray-500">Anclar al carrusel por</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={365}
-                    value={anclarDias}
-                    onChange={(e) => setAnclarDias(parseInt(e.target.value) || 0)}
-                    className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
-                  />
-                  <label className="text-xs text-gray-500">días (0 = sin anclar)</label>
-                </div>
-              </div>
-            )}
-
-            {/* Toolbar inferior */}
-            <div className="px-6 pb-4">
-              <div className="border border-gray-200 rounded-xl p-3">
-                <p className="text-sm font-medium text-gray-700 mb-2">Agregar a tu publicación</p>
-                <div className="flex items-center gap-1 flex-wrap">
-                  <input ref={fileRef} type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                    title="Agregar imagen"
-                  >
-                    <ImageIcon className="w-6 h-6 text-green-500" />
-                  </button>
-                  <button
-                    onClick={() => setShowEnlace(!showEnlace)}
-                    className={`p-2 rounded-lg transition-colors ${showEnlace ? "bg-blue-50" : "hover:bg-gray-100"}`}
-                    title="Agregar enlace"
-                  >
-                    <Link2 className="w-6 h-6 text-blue-500" />
-                  </button>
-                  <button
-                    onClick={() => setShowPoll(!showPoll)}
-                    className={`p-2 rounded-lg transition-colors ${showPoll ? "bg-purple-50" : "hover:bg-gray-100"}`}
-                    title="Agregar encuesta"
-                  >
-                    <BarChart3 className="w-6 h-6 text-purple-500" />
-                  </button>
-                  <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Etiquetar personas">
-                    <Tag className="w-6 h-6 text-blue-500" />
-                  </button>
-                  <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Ubicación">
-                    <MapPin className="w-6 h-6 text-red-500" />
-                  </button>
-                  <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Más opciones">
-                    <MoreHorizontal className="w-6 h-6 text-gray-500" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Botón Publicar */}
-            <div className="px-6 pb-6">
               <button
-                onClick={handlePublicar}
-                disabled={submitting || uploading || !(editor?.getText().trim())}
-                className="w-full py-2.5 bg-luxor-primary text-white text-sm font-semibold rounded-lg hover:bg-luxor-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                onClick={() => { setModalView("main"); setShowCreateModal(false) }}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
               >
-                {submitting || uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                Publicar
+                <X className="w-5 h-5" />
               </button>
             </div>
-          </div>
+
+            {/* Sliding container */}
+            <div className="overflow-hidden">
+              <div
+                className="flex w-[200%] transition-transform duration-300 ease-in-out"
+                style={{ transform: modalView === "sucursales" ? "translateX(-50%)" : "translateX(0)" }}
+              >
+
+                {/* Pane 1: Editor principal */}
+                <div className="w-1/2 shrink-0 flex flex-col" style={{ height: "calc(40vh + 180px)" }}>
+                  {/* Editor scrolleable */}
+                  <div className="overflow-y-auto custom-scrollbar" style={{ maxHeight: "40vh" }}>
+                  {/* Editor */}
+                  <div className="pb-4">
+                    <div className="border-b border-gray-100 pb-4">
+                      <EditorContent
+                        editor={editor}
+                        className="prose prose-sm max-w-none min-h-[120px] text-gray-900 text-base [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-gray-400 [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)] [&_.tiptap_ul]:list-disc [&_.tiptap_ul]:pl-5 [&_.tiptap_ol]:list-decimal [&_.tiptap_ol]:pl-5 [&_.tiptap_li]:text-gray-900 [&_.tiptap_strong]:font-bold [&_.tiptap_u]:underline"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preview imagen */}
+                  {imagenPreview && (
+                    <div className="pb-4">
+                      <div className="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                        <img src={imagenPreview} alt="Preview" className="w-full max-h-60 object-cover" />
+                        <button
+                          onClick={removeImagen}
+                          className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80 backdrop-blur-sm"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Enlace */}
+                  {showEnlace && (
+                    <div className="pb-4 space-y-2">
+                      <input
+                        type="url"
+                        value={enlaceUrl}
+                        onChange={(e) => setEnlaceUrl(e.target.value)}
+                        placeholder="https://ejemplo.com"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
+                      />
+                      <input
+                        type="text"
+                        value={enlaceTitulo}
+                        onChange={(e) => setEnlaceTitulo(e.target.value)}
+                        placeholder="Título del enlace (opcional)"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
+                      />
+                    </div>
+                  )}
+
+                  {/* Encuesta */}
+                  {showPoll && (
+                    <div className="pb-4">
+                      <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4 text-luxor-primary" />
+                            <span className="text-sm font-medium text-gray-700">Encuesta</span>
+                          </div>
+                          <button onClick={() => setShowPoll(false)} className="text-gray-400 hover:text-red-500">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={pollPregunta}
+                          onChange={(e) => setPollPregunta(e.target.value)}
+                          placeholder="¿Qué pregunta quieres hacer?"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
+                        />
+                        {pollOpciones.map((opt, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="text-xs text-gray-400 w-4 text-center">{i + 1}</span>
+                            <input
+                              type="text"
+                              value={opt}
+                              onChange={(e) => updatePollOption(i, e.target.value)}
+                              placeholder={`Opción ${i + 1}`}
+                              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
+                            />
+                            {pollOpciones.length > 2 && (
+                              <button onClick={() => removePollOption(i)} className="text-gray-300 hover:text-red-500">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {pollOpciones.length < 6 && (
+                          <button
+                            onClick={addPollOption}
+                            className="flex items-center gap-1 text-xs text-luxor-primary hover:text-luxor-secondary font-medium"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Agregar opción
+                          </button>
+                        )}
+                        <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={pollMultiple}
+                            onChange={(e) => setPollMultiple(e.target.checked)}
+                            className="rounded border-gray-300 text-luxor-primary focus:ring-luxor-primary"
+                          />
+                          Permitir selección múltiple
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                  </div>
+
+                  {/* Controles fijos - siempre visibles */}
+                  <div className="border-t border-gray-100 bg-white pt-3 pb-2 space-y-3">
+                    {canPost && (
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-500">Anclar al carrusel por</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={365}
+                          value={anclarDias}
+                          onChange={(e) => setAnclarDias(parseInt(e.target.value) || 0)}
+                          className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/20"
+                        />
+                        <label className="text-xs text-gray-500">días (0 = sin anclar)</label>
+                      </div>
+                    )}
+
+                    {/* Toolbar inferior */}
+                    <div className="border border-gray-200 rounded-xl p-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium text-gray-700">Agregar a tu publicación</p>
+                        <input ref={fileRef} type="file" accept="image/*" onChange={handleImagenChange} className="hidden" />
+                        <button
+                          onClick={() => fileRef.current?.click()}
+                          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                          title="Agregar imagen"
+                        >
+                          <img src="/imagen.svg" alt="" className="w-6 h-6" />
+                        </button>
+                        <button
+                          onClick={() => setShowEnlace(!showEnlace)}
+                          className={`p-2 rounded-lg transition-colors ${showEnlace ? "bg-blue-50" : "hover:bg-gray-100"}`}
+                          title="Agregar enlace"
+                        >
+                          <img src="/enlace.svg" alt="" className="w-6 h-6" />
+                        </button>
+                        <button
+                          onClick={() => setShowPoll(!showPoll)}
+                          className={`p-2 rounded-lg transition-colors ${showPoll ? "bg-purple-50" : "hover:bg-gray-100"}`}
+                          title="Agregar encuesta"
+                        >
+                          <img src="/encuesta.svg" alt="" className="w-6 h-6" />
+                        </button>
+                        <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Etiquetar personas">
+                          <img src="/etiqueta.svg" alt="" className="w-6 h-6" />
+                        </button>
+                        <button
+                          onClick={() => setModalView("sucursales")}
+                          className={`p-2 rounded-lg transition-colors ${sucursalesDestino.length > 0 ? "bg-red-50" : "hover:bg-gray-100"}`}
+                          title="Ubicación"
+                        >
+                          <img src="/ubicacion.svg" alt="" className="w-6 h-6" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Botón Publicar */}
+                    <button
+                      onClick={handlePublicar}
+                      disabled={submitting || uploading || !(editor?.getText().trim())}
+                      className="w-full py-2.5 bg-luxor-primary text-white text-sm font-semibold rounded-lg hover:bg-luxor-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {submitting || uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Publicar"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pane 2: Selector de sucursales */}
+                <div className="w-1/2 shrink-0 flex flex-col" style={{ height: "calc(40vh + 180px)" }}>
+                  {/* Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <button
+                      onClick={() => setModalView("main")}
+                      className="p-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <h3 className="text-base font-bold text-gray-900">Buscar ubicación</h3>
+                    <div className="w-8" />
+                  </div>
+
+                  {/* Search */}
+                  <div className="mt-3 mb-4">
+                    <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2.5">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="¿Dónde estás?"
+                        className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sugerencias */}
+                  <p className="text-sm font-semibold text-gray-900 mb-2">Sugerencias</p>
+                  <div className="space-y-1 overflow-y-auto custom-scrollbar flex-1">
+                    {SUCURSALES.map((s) => {
+                      const activa = sucursalesDestino.includes(s)
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setSucursalesDestino((prev) =>
+                              prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+                            )
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                            activa ? "bg-luxor-primary/10" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            activa ? "bg-luxor-primary text-white" : "bg-gray-100 text-gray-500"
+                          }`}>
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 text-left min-w-0">
+                            <p className={`text-sm font-medium truncate ${activa ? "text-luxor-primary" : "text-gray-900"}`}>{s}</p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <p className="text-[11px] text-gray-400 mt-3 text-center">
+                    Si no seleccionas ninguna, la publicación será visible para <strong>todos</strong>.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          </>
         </Modal>
         )}
 
@@ -845,7 +974,7 @@ async function handleEliminar(pubId: string) {
               {user?.nombre?.charAt(0) || "?"}
             </div>
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => { setModalView("main"); setShowCreateModal(true) }}
               className="flex-1 text-left px-4 py-2.5 bg-gray-100 rounded-full text-gray-500 text-sm hover:bg-gray-200 transition-colors"
             >
               ¿Qué quieres compartir con la comunidad?
@@ -881,6 +1010,15 @@ async function handleEliminar(pubId: string) {
                       </span>
                       <span className="mx-1.5 text-gray-300">·</span>
                       {timeAgo(pub.created_at)}
+                      {pub.sucursales_destino && pub.sucursales_destino.length > 0 && (
+                        <>
+                          <span className="mx-1.5 text-gray-300">·</span>
+                          <span className="inline-flex items-center gap-0.5 text-luxor-primary font-medium">
+                            <MapPin className="w-3 h-3" />
+                            {pub.sucursales_destino.length === 1 ? pub.sucursales_destino[0] : `${pub.sucursales_destino.length} sucursales`}
+                          </span>
+                        </>
+                      )}
                     </p>
                   </div>
                   {(user?.id === pub.autor_id || user?.rol === "decano" || user?.rol === "developer") && (
