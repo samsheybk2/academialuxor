@@ -15,7 +15,6 @@ import {
   Newspaper,
   Network,
   Brain,
-  Settings,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -35,7 +34,6 @@ const navByRole = {
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   developer: [
-    { href: "/dashboard/config", label: "Configuraciones", icon: Settings },
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Gestionar Cursos", icon: BookOpen },

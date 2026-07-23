@@ -1,36 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
-import { createSupabaseClient } from "@/lib/supabase"
 import { LoginForm } from "@/components/auth/LoginForm"
 import { GraduationCap, BookOpen, Award, Users } from "lucide-react"
 
 export default function LoginPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [fondos, setFondos] = useState<string[]>([])
-
-  useEffect(() => {
-    async function fetchFondos() {
-      const supabase = createSupabaseClient()
-      const { data } = await supabase
-        .from("configuraciones")
-        .select("valor")
-        .eq("clave", "fondos_login")
-        .single()
-
-      if (data?.valor) {
-        try {
-          setFondos(JSON.parse(data.valor))
-        } catch {
-          setFondos([])
-        }
-      }
-    }
-    fetchFondos()
-  }, [])
 
   useEffect(() => {
     if (!loading && user) {
@@ -57,7 +35,7 @@ export default function LoginPage() {
 
   if (user) return null
 
-  const fondosAnimados = fondos.length > 0 ? fondos : ["/fondo (1).webp", "/fondo (2).webp", "/fondo (3).webp"]
+  const fondosAnimados = ["/fondo (1).webp", "/fondo (2).webp", "/fondo (3).webp"]
 
   return (
     <div className="min-h-screen flex overflow-hidden">
