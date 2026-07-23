@@ -273,10 +273,31 @@ function Pestañas({
 function TabInformacion({
   curso,
   modulos,
+  isEstudiante,
+  inscrito,
+  cursoCompletado,
+  modoRepaso,
+  setModoRepaso,
+  setModuloCompletados,
+  setModuloActual,
+  setShowQuiz,
+  setVideoCompletado,
+  setPestaña,
 }: {
   curso: CursoData
   modulos: ModuloData[]
+  isEstudiante: boolean
+  inscrito: boolean
+  cursoCompletado: boolean
+  modoRepaso: boolean
+  setModoRepaso: (v: boolean) => void
+  setModuloCompletados: (v: string[]) => void
+  setModuloActual: (v: number) => void
+  setShowQuiz: (v: boolean) => void
+  setVideoCompletado: (v: boolean) => void
+  setPestaña: (v: Pestaña) => void
 }) {
+  const id = curso.id
   const [showVideo, setShowVideo] = useState(false)
   const niveles = Array.isArray(curso.nivel)
     ? curso.nivel
@@ -315,11 +336,10 @@ function TabInformacion({
               {curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
                 <button
                   onClick={() => setShowVideo(true)}
-                  className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
+                  className="absolute bottom-4 right-4 bg-luxor-primary/90 hover:bg-luxor-primary text-white text-sm font-medium px-4 py-2 rounded-lg shadow-lg transition-colors flex items-center gap-2"
                 >
-                  <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-                    <Play className="w-9 h-9 text-luxor-primary ml-1" />
-                  </div>
+                  <Play className="w-4 h-4" />
+                  Reproducir video
                 </button>
               )}
             </div>
@@ -359,6 +379,51 @@ function TabInformacion({
             Descripcion del curso
           </h3>
           <p className="text-gray-600 leading-relaxed flex-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: curso.descripcion || curso.introduccion || "Este curso aun no tiene descripcion." }} />
+          {isEstudiante && inscrito && cursoCompletado && !modoRepaso && (
+            <div className="flex flex-wrap gap-3 mt-6 pt-4 border-t border-gray-100">
+              <a
+                href={`/dashboard/curso/${id}?certificado=1`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+              >
+                <GraduationCap className="w-4 h-4" />
+                Ver Certificado
+              </a>
+              <button
+                onClick={() => {
+                  setModoRepaso(true)
+                  setModuloCompletados([])
+                  setModuloActual(0)
+                  setShowQuiz(false)
+                  setVideoCompletado(false)
+                  setPestaña("contenido")
+                  window.scrollTo({ top: 0, behavior: "smooth" })
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Repetir Curso
+              </button>
+            </div>
+          )}
+          {isEstudiante && inscrito && modoRepaso && (
+            <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-100">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-800">Modo repaso activo</p>
+                <p className="text-xs text-blue-600">Practica sin afectar tus resultados</p>
+              </div>
+              <button
+                onClick={() => {
+                  setModoRepaso(false)
+                  window.location.reload()
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                Salir del repaso
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1083,43 +1148,27 @@ function CursoContent({ id }: { id: string }) {
           </div>
 
           {(isDecano || inscrito) && (
-            <Pestañas activa={pestaña} onChange={setPestaña}>
-              {isEstudiante && inscrito && cursoCompletado && !modoRepaso && (
-                <>
-                  <a
-                    href={`/dashboard/curso/${id}?certificado=1`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
-                  >
-                    <GraduationCap className="w-3.5 h-3.5" />
-                    Ver Certificado
-                  </a>
-                  <button
-                    onClick={() => {
-                      setModoRepaso(true)
-                      setModuloCompletados([])
-                      setModuloActual(0)
-                      setShowQuiz(false)
-                      setVideoCompletado(false)
-                      setPestaña("contenido")
-                      window.scrollTo({ top: 0, behavior: "smooth" })
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Repetir Curso
-                  </button>
-                </>
-              )}
-            </Pestañas>
+            <Pestañas activa={pestaña} onChange={setPestaña} />
           )}
         </div>
 
         {(isDecano || inscrito) && (
           <>
             {pestaña === "informacion" && (
-              <TabInformacion curso={curso} modulos={modulos} />
+              <TabInformacion
+                curso={curso}
+                modulos={modulos}
+                isEstudiante={isEstudiante}
+                inscrito={inscrito}
+                cursoCompletado={cursoCompletado}
+                modoRepaso={modoRepaso}
+                setModoRepaso={setModoRepaso}
+                setModuloCompletados={setModuloCompletados}
+                setModuloActual={setModuloActual}
+                setShowQuiz={setShowQuiz}
+                setVideoCompletado={setVideoCompletado}
+                setPestaña={setPestaña}
+              />
             )}
 
             {pestaña === "contenido" && (
