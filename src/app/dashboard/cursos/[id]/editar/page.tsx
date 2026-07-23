@@ -121,11 +121,21 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
         if (modulosData) {
           const modulosConPreguntas = await Promise.all(
             modulosData.map(async (mod: { id: string; titulo?: string; introduccion?: string; video_url?: string; imagen_portada?: string; duracion?: string }) => {
-              const { data: preguntasData } = await supabase
+              const { data: preguntasData, error: preguntasError } = await supabase
                 .from("preguntas")
                 .select("*")
                 .eq("modulo_id", mod.id)
                 .order("orden")
+
+              if (preguntasError) {
+                console.error("Error fetching preguntas for modulo", mod.id, preguntasError)
+              }
+
+              const safeOpciones = (raw: any): string[] => {
+                if (Array.isArray(raw)) return raw
+                if (typeof raw === "string") { try { return JSON.parse(raw) } catch { return [] } }
+                return []
+              }
 
               return {
                 id: mod.id,
@@ -134,15 +144,15 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
                 videoUrl: mod.video_url || "",
                 imagenPortada: mod.imagen_portada || "",
                 duracion: mod.duracion || "",
-                preguntas: (preguntasData || []).map((p: { id: string; pregunta: string; tipo?: string; opciones?: string[]; respuesta_correcta?: number | string }) => ({
+                preguntas: (preguntasData || []).map((p: any) => ({
                   id: p.id,
                   pregunta: p.pregunta,
                   tipo: p.tipo || "multiple",
-                  opciones: (p.opciones || []).map((o: string, i: number) => ({
+                  opciones: safeOpciones(p.opciones).map((o: string, i: number) => ({
                     id: `opt-${i}`,
                     texto: o,
                   })),
-                  respuestaCorrecta: p.respuesta_correcta ?? 0,
+                  respuestaCorrecta: typeof p.respuesta_correcta === "string" ? parseInt(p.respuesta_correcta) : (p.respuesta_correcta ?? 0),
                 })),
               }
             })

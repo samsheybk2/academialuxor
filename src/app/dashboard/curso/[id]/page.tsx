@@ -27,6 +27,7 @@ import {
   MessageSquare,
   Globe,
   Zap,
+  RotateCcw,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -225,9 +226,11 @@ function YouTubePlayer({
 function Pestañas({
   activa,
   onChange,
+  children,
 }: {
   activa: Pestaña
   onChange: (p: Pestaña) => void
+  children?: React.ReactNode
 }) {
   const tabs: { id: Pestaña; label: string; icon: React.ElementType }[] = [
     { id: "informacion", label: "Informacion", icon: Info },
@@ -237,28 +240,31 @@ function Pestañas({
 
   return (
     <div className="border-b border-gray-200">
-      <div className="flex gap-0">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const active = activa === tab.id
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onChange(tab.id)}
-              className={`relative flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
-                active
-                  ? "text-luxor-primary"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {tab.label}
-              {active && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-luxor-primary rounded-full" />
-              )}
-            </button>
-          )
-        })}
+      <div className="flex flex-col items-center gap-2 py-1">
+        <div className="flex gap-0 justify-center">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            const active = activa === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onChange(tab.id)}
+                className={`relative flex items-center gap-2 px-4 sm:px-5 py-3 text-sm font-medium transition-colors ${
+                  active
+                    ? "text-luxor-primary"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+                {active && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-luxor-primary rounded-full" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+        {children && <div className="flex items-center justify-center gap-2 pb-2">{children}</div>}
       </div>
     </div>
   )
@@ -296,10 +302,10 @@ function TabInformacion({
 
   return (
     <div className="space-y-6">
-      <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6">
-        <div className="space-y-4">
+      <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 px-6">
+        <div className="space-y-4 flex flex-col items-center">
           {curso.imagen_portada && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden max-w-lg">
               <img
                 src={curso.imagen_portada}
                 alt={`Portada de ${curso.titulo}`}
@@ -329,50 +335,12 @@ function TabInformacion({
           )}
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 pl-10 flex flex-col">
           <h3 className="font-semibold text-gray-900 mb-3">
             Descripcion del curso
           </h3>
           <p className="text-gray-600 leading-relaxed flex-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: curso.descripcion || curso.introduccion || "Este curso aun no tiene descripcion." }} />
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-luxor-primary/10 text-luxor-primary text-xs font-medium">
-          <GraduationCap className="w-3.5 h-3.5" />
-          {curso.facilitador_nombre}
-        </span>
-
-        {niveles.map((n) => (
-          <span
-            key={n}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium capitalize ${
-              nivelIcon[n] || "bg-gray-100 text-gray-700"
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            {nivelLabel[n] || n}
-          </span>
-        ))}
-
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">
-          {curso.tipo === "asincronico" ? (
-            <Globe className="w-3.5 h-3.5" />
-          ) : (
-            <Zap className="w-3.5 h-3.5" />
-          )}
-          {tipoLabel[curso.tipo || ""] || curso.tipo || "Sin definir"}
-        </span>
-
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
-          <BookOpen className="w-3.5 h-3.5" />
-          {modulos.length} {modulos.length === 1 ? "Módulo" : "Módulos"}
-        </span>
-
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-xs font-medium">
-          <Clock className="w-3.5 h-3.5" />
-          {formatDuration(curso.duracion)}
-        </span>
       </div>
     </div>
   )
@@ -390,6 +358,7 @@ function TabContenido({
   setShowQuiz,
   videoCompletado,
   setVideoCompletado,
+  modoRepaso,
   onModuloCompletado,
 }: {
   modulos: ModuloData[]
@@ -403,6 +372,7 @@ function TabContenido({
   setShowQuiz: (v: boolean) => void
   videoCompletado: boolean
   setVideoCompletado: (v: boolean) => void
+  modoRepaso: boolean
   onModuloCompletado: (
     aprobado: boolean,
     respuestas: {
@@ -438,38 +408,47 @@ function TabContenido({
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
       <div className="space-y-5">
-        <div className="bg-black rounded-xl overflow-hidden max-w-2xl mx-auto aspect-video">
-          {modulo.imagen_portada && !embedUrl ? (
-            <img
-              src={modulo.imagen_portada}
-              alt={`Portada de ${modulo.titulo}`}
-              className="w-full h-full object-cover"
+        {showQuiz ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <Quiz
+              preguntas={modulo.preguntas}
+              onCompletar={onModuloCompletado}
             />
-          ) : embedUrl ? (
-            <YouTubePlayer
-              key={modulo.id}
-              videoId={getYouTubeVideoId(modulo.video_url)}
-              className="w-full h-full"
-              noSkip={!isDecano && inscrito}
-              onEnd={() => {
-                if (!isDecano && inscrito && !isModuloCompleted(modulo.id)) {
-                  if (modulo.preguntas.length === 0) {
-                    onModuloCompletado(true, [])
-                  } else {
-                    const evt = new CustomEvent("video-modulo-completado")
-                    window.dispatchEvent(evt)
-                  }
-                }
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Play className="w-12 h-12 text-gray-500" />
+          </div>
+        ) : (
+          <>
+            <div className="bg-black rounded-xl overflow-hidden max-w-2xl mx-auto aspect-video">
+              {modulo.imagen_portada && !embedUrl ? (
+                <img
+                  src={modulo.imagen_portada}
+                  alt={`Portada de ${modulo.titulo}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : embedUrl ? (
+                <YouTubePlayer
+                  key={modulo.id}
+                  videoId={getYouTubeVideoId(modulo.video_url)}
+                  className="w-full h-full"
+                  noSkip={!isDecano && inscrito}
+                  onEnd={() => {
+                    if (!isDecano && inscrito && !isModuloCompleted(modulo.id)) {
+                      if (modulo.preguntas.length === 0) {
+                        onModuloCompletado(true, [])
+                      } else {
+                        const evt = new CustomEvent("video-modulo-completado")
+                        window.dispatchEvent(evt)
+                      }
+                    }
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Play className="w-12 h-12 text-gray-500" />
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2 py-0.5 bg-luxor-primary/10 text-luxor-primary rounded-full text-xs font-medium">
               Modulo {modulo.orden}
@@ -520,38 +499,37 @@ function TabContenido({
 
           {!isDecano &&
             !isModuloCompleted(modulo.id) &&
-            inscrito && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                {!showQuiz ? (
-                  <button
-                    onClick={() => setShowQuiz(true)}
-                    disabled={!videoCompletado}
-                    className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                      videoCompletado
-                        ? "bg-luxor-primary text-white hover:bg-luxor-secondary"
-                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    }`}
-                  >
-                    {videoCompletado ? (
-                      <>
-                        <Play className="w-4 h-4" />
-                        Iniciar Evaluacion del Modulo
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4" />
-                        Mira el video completo para desbloquear la
-                        evaluacion
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <Quiz
-                    preguntas={modulo.preguntas}
-                    onCompletar={onModuloCompletado}
-                  />
-                )}
-              </div>
+            inscrito &&
+            !showQuiz && (
+                  <div className="fixed bottom-16 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-lg lg:bottom-0">
+                    <div className="max-w-2xl mx-auto">
+                      <button
+                        onClick={() => {
+                          setShowQuiz(true)
+                          window.scrollTo({ top: 0, behavior: "smooth" })
+                        }}
+                        disabled={!modoRepaso && (!!embedUrl && !videoCompletado)}
+                        className={`w-full px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                          modoRepaso || !embedUrl || videoCompletado
+                            ? "bg-luxor-primary text-white hover:bg-luxor-secondary"
+                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        {modoRepaso || !embedUrl || videoCompletado ? (
+                          <>
+                            <Play className="w-4 h-4" />
+                            Iniciar Evaluacion del Modulo
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4" />
+                            Mira el video completo para desbloquear la
+                            evaluacion
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
             )}
 
           {isDecano && (
@@ -562,6 +540,8 @@ function TabContenido({
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-3 h-fit lg:sticky lg:top-24">
@@ -663,6 +643,7 @@ function CursoContent({ id }: { id: string }) {
   const [cursoCompletado, setCursoCompletado] = useState(false)
   const [videoCompletado, setVideoCompletado] = useState(false)
   const [materialPdf, setMaterialPdf] = useState<MaterialPDF[]>([])
+  const [modoRepaso, setModoRepaso] = useState(false)
 
   useEffect(() => {
     async function fetchCurso() {
@@ -697,11 +678,11 @@ function CursoContent({ id }: { id: string }) {
 
             const preguntas: Pregunta[] = (
               preguntasData || []
-            ).map((p: { id: string; pregunta: string; opciones?: string[]; respuesta_correcta?: string; tipo?: string }) => ({
+            ).map((p: { id: string; pregunta: string; opciones?: any; respuesta_correcta?: any; tipo?: string }) => ({
               id: p.id,
               pregunta: p.pregunta,
-              opciones: p.opciones,
-              respuestaCorrecta: p.respuesta_correcta,
+              opciones: Array.isArray(p.opciones) ? p.opciones : typeof p.opciones === "string" ? JSON.parse(p.opciones || "[]") : [],
+              respuestaCorrecta: typeof p.respuesta_correcta === "string" ? parseInt(p.respuesta_correcta) : p.respuesta_correcta,
               tipo: p.tipo || "multiple",
             }))
 
@@ -833,7 +814,7 @@ function CursoContent({ id }: { id: string }) {
     }[]
   ) {
     const modulo = modulos[moduloActual]
-    if (respuestas && user && curso && modulo) {
+    if (respuestas && user && curso && modulo && !modoRepaso) {
       for (const r of respuestas) {
         if (r.libre || r.seleccionada !== null) {
           const payload: any = {
@@ -858,7 +839,7 @@ function CursoContent({ id }: { id: string }) {
       setShowQuiz(false)
       setVideoCompletado(false)
 
-      if (user && !isDecano) {
+      if (user && !isDecano && !modoRepaso) {
         await supabase.from("progreso_modulos").upsert(
           {
             user_id: user.id,
@@ -884,43 +865,47 @@ function CursoContent({ id }: { id: string }) {
       }
 
       if (newCompletados.length === modulos.length) {
-        setCursoCompletado(true)
-        if (user && !isDecano) {
-          await supabase
-            .from("inscripciones")
-            .update({
-              estado: "completada",
-              fecha_completado: new Date().toISOString(),
-            })
-            .eq("user_id", user.id)
-            .eq("curso_id", curso.id)
+        if (modoRepaso) {
+          setShowQuiz(false)
+        } else {
+          setCursoCompletado(true)
+          if (user && !isDecano) {
+            await supabase
+              .from("inscripciones")
+              .update({
+                estado: "completada",
+                fecha_completado: new Date().toISOString(),
+              })
+              .eq("user_id", user.id)
+              .eq("curso_id", curso.id)
 
-          await supabase.from("actividad_usuario").upsert(
-            {
+            await supabase.from("actividad_usuario").upsert(
+              {
+                user_id: user.id,
+                fecha: new Date().toISOString().slice(0, 10),
+                tipo: "completo_curso",
+                puntos: 100,
+                metadata: { curso_id: curso.id },
+              },
+              { onConflict: "user_id,fecha,tipo" }
+            )
+
+            const certId = `LX-${Math.random()
+              .toString(36)
+              .substring(2, 10)
+              .toUpperCase()}-${Date.now()
+              .toString(36)
+              .toUpperCase()
+              .slice(-4)}`
+            await supabase.from("certificados").insert({
               user_id: user.id,
-              fecha: new Date().toISOString().slice(0, 10),
-              tipo: "completo_curso",
-              puntos: 100,
-              metadata: { curso_id: curso.id },
-            },
-            { onConflict: "user_id,fecha,tipo" }
-          )
-
-          const certId = `LX-${Math.random()
-            .toString(36)
-            .substring(2, 10)
-            .toUpperCase()}-${Date.now()
-            .toString(36)
-            .toUpperCase()
-            .slice(-4)}`
-          await supabase.from("certificados").insert({
-            user_id: user.id,
-            curso_id: curso.id,
-            cert_id: certId,
-            user_nombre: user.nombre || "",
-            curso_nombre: curso.titulo,
-            duracion: curso.duracion,
-          })
+              curso_id: curso.id,
+              cert_id: certId,
+              user_nombre: user.nombre || "",
+              curso_nombre: curso.titulo,
+              duracion: curso.duracion,
+            })
+          }
         }
       } else {
         const nextIndex = modulos.findIndex(
@@ -961,7 +946,7 @@ function CursoContent({ id }: { id: string }) {
 
   return (
     <ProtectedRoute>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20">
         {isDecano && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -1011,29 +996,94 @@ function CursoContent({ id }: { id: string }) {
           </div>
         )}
 
-        {isEstudiante && inscrito && cursoCompletado && (
-          <Link
-            href={`/dashboard/curso/${id}?certificado=1`}
-            className="flex items-center gap-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 hover:from-amber-100 hover:to-yellow-100 transition-colors"
-          >
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-amber-600" />
+        {isEstudiante && inscrito && modoRepaso && (
+          <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <RotateCcw className="w-5 h-5 text-blue-600 animate-spin" />
             </div>
-            <div>
-              <p className="font-medium text-amber-800">Curso completado</p>
-              <p className="text-sm text-amber-600">Toca aquí para ver tu certificado</p>
+            <div className="flex-1">
+              <p className="font-medium text-blue-800">Modo repaso activo</p>
+              <p className="text-sm text-blue-600">Practica sin afectar tus resultados anteriores</p>
             </div>
-          </Link>
+            <button
+              onClick={() => {
+                setModoRepaso(false)
+                window.location.reload()
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Salir del repaso
+            </button>
+          </div>
         )}
 
-        <h1 className="text-2xl font-bold text-gray-900">
-          {curso.titulo}
-        </h1>
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 -mt-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 ml-2">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {curso.titulo}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-luxor-primary/10 text-luxor-primary text-xs font-medium">
+                <GraduationCap className="w-3.5 h-3.5" />
+                {curso.facilitador_nombre}
+              </span>
+              {curso.tipo && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">
+                  {curso.tipo === "asincronico" ? <Globe className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+                  {curso.tipo === "asincronico" ? "Asincronico" : "Sincronico"}
+                </span>
+              )}
+              {modulos.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  {modulos.length} {modulos.length === 1 ? "Modulo" : "Modulos"}
+                </span>
+              )}
+              {curso.duracion && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-xs font-medium">
+                  <Clock className="w-3.5 h-3.5" />
+                  {formatDuration(curso.duracion)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {(isDecano || inscrito) && (
+            <Pestañas activa={pestaña} onChange={setPestaña}>
+              {isEstudiante && inscrito && cursoCompletado && !modoRepaso && (
+                <>
+                  <a
+                    href={`/dashboard/curso/${id}?certificado=1`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+                  >
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    Ver Certificado
+                  </a>
+                  <button
+                    onClick={() => {
+                      setModoRepaso(true)
+                      setModuloCompletados([])
+                      setModuloActual(0)
+                      setShowQuiz(false)
+                      setVideoCompletado(false)
+                      setPestaña("contenido")
+                      window.scrollTo({ top: 0, behavior: "smooth" })
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Repetir Curso
+                  </button>
+                </>
+              )}
+            </Pestañas>
+          )}
+        </div>
 
         {(isDecano || inscrito) && (
           <>
-            <Pestañas activa={pestaña} onChange={setPestaña} />
-
             {pestaña === "informacion" && (
               <TabInformacion curso={curso} modulos={modulos} />
             )}
@@ -1051,6 +1101,7 @@ function CursoContent({ id }: { id: string }) {
                 setShowQuiz={setShowQuiz}
                 videoCompletado={videoCompletado}
                 setVideoCompletado={setVideoCompletado}
+                modoRepaso={modoRepaso}
                 onModuloCompletado={handleModuloCompletado}
               />
             )}
@@ -1059,6 +1110,7 @@ function CursoContent({ id }: { id: string }) {
               <OpinionesCurso
                 cursoId={curso.id}
                 inscrito={!!inscrito}
+                cursoCompletado={cursoCompletado}
               />
             )}
           </>

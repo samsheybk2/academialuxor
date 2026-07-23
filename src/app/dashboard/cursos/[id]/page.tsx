@@ -359,12 +359,23 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
       if (modulosData) {
         const modulosConPreguntas = await Promise.all(
           modulosData.map(async (mod: { id: string; [key: string]: any }) => {
-            const { data: preguntasData } = await supabase
+            const { data: preguntasData, error: preguntasError } = await supabase
               .from("preguntas")
               .select("*")
               .eq("modulo_id", mod.id)
               .order("orden")
-            return { ...mod, preguntas: preguntasData || [] }
+
+            if (preguntasError) {
+              console.error("Error fetching preguntas for modulo", mod.id, preguntasError)
+            }
+
+            return {
+              ...mod,
+              preguntas: (preguntasData || []).map((p: any) => ({
+                ...p,
+                opciones: Array.isArray(p.opciones) ? p.opciones : typeof p.opciones === "string" ? JSON.parse(p.opciones || "[]") : [],
+              })),
+            }
           })
         )
         setModulos(modulosConPreguntas as Modulo[])
@@ -527,7 +538,7 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
         />
       )}
 
-      {pestaña === "opiniones" && <OpinionesCurso cursoId={curso.id} inscrito={inscrito} />}
+      {pestaña === "opiniones" && <OpinionesCurso cursoId={curso.id} inscrito={inscrito} cursoCompletado={true} />}
 
       {showAprobarModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
