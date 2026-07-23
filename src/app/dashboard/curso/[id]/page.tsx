@@ -297,25 +297,37 @@ function TabInformacion({
   return (
     <div className="space-y-6">
       <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6">
-        {curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Play className="w-4 h-4 text-luxor-primary" />
-                Video de presentacion
-              </h3>
-            </div>
-            <div className="aspect-video">
-              <iframe
-                src={`https://www.youtube.com/embed/${getYouTubeVideoId(curso.video_bienvenida)}`}
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title="Video de presentacion"
+        <div className="space-y-4">
+          {curso.imagen_portada && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <img
+                src={curso.imagen_portada}
+                alt={`Portada de ${curso.titulo}`}
+                className="w-full h-auto object-contain"
               />
             </div>
-          </div>
-        )}
+          )}
+
+          {curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="p-4 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Play className="w-4 h-4 text-luxor-primary" />
+                  Video de presentacion
+                </h3>
+              </div>
+              <div className="aspect-video">
+                <iframe
+                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(curso.video_bienvenida)}`}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title="Video de presentacion"
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
           <h3 className="font-semibold text-gray-900 mb-3">
@@ -967,6 +979,18 @@ function CursoContent({ id }: { id: string }) {
           </div>
         )}
 
+        {isEstudiante && !inscrito && curso.imagen_portada && (
+          <div className="flex justify-center">
+            <div className="w-48 rounded-xl overflow-hidden border border-gray-200">
+              <img
+                src={curso.imagen_portada}
+                alt={`Portada de ${curso.titulo}`}
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          </div>
+        )}
+
         {isEstudiante && !inscrito && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
             <p className="text-amber-800 font-medium mb-3">
@@ -1002,20 +1026,9 @@ function CursoContent({ id }: { id: string }) {
           </Link>
         )}
 
-        <div className={inscrito ? "" : "text-center"}>
-          {curso.imagen_portada && (
-            <div className={`mb-4 rounded-xl overflow-hidden border border-gray-200 ${inscrito ? "" : "max-w-md mx-auto"}`}>
-              <img
-                src={curso.imagen_portada}
-                alt={`Portada de ${curso.titulo}`}
-                className="w-full h-auto object-contain"
-              />
-            </div>
-          )}
-          <h1 className={`text-2xl font-bold text-gray-900 ${inscrito ? "" : "text-center"}`}>
-            {curso.titulo}
-          </h1>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {curso.titulo}
+        </h1>
 
         {(isDecano || inscrito) && (
           <>
