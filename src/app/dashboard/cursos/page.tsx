@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/Button"
+import { RichTextEditor } from "@/components/ui/RichTextEditor"
+import { TimeInput } from "@/components/ui/TimeInput"
+import { parseDurationToMinutes, formatMinutesToHHMM, formatDuration } from "@/lib/duration"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Modal } from "@/components/ui/Modal"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
@@ -305,7 +308,7 @@ function CursosContent() {
             </>
           )}
         </div>
-        {isFacilitador && (
+        {(isFacilitador || isDecano) && (
           <Link href="/dashboard/cursos/nuevo">
             <Button>
               <Plus className="w-4 h-4" />
@@ -355,7 +358,7 @@ function CursosContent() {
                         <div className="flex items-center gap-3 text-xs text-gray-500 mt-2">
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {curso.duracion}
+                            {formatDuration(curso.duracion)}
                           </span>
                           <span className="flex items-center gap-1">
                             <BookOpen className="w-3 h-3" />
@@ -515,12 +518,11 @@ function CursosContent() {
           </div>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">Descripción</label>
-            <textarea
+            <RichTextEditor
               value={form.descripcion}
-              onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-              rows={3}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm resize-none"
+              onChange={(html) => setForm({ ...form, descripcion: html })}
               placeholder="Descripción del curso..."
+              minHeight="min-h-[100px]"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -536,11 +538,10 @@ function CursosContent() {
             </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">Duración</label>
-              <input
-                type="text"
+              <TimeInput
                 value={form.duracion}
-                onChange={(e) => setForm({ ...form, duracion: e.target.value })}
-                placeholder="Ej: 12 horas"
+                onChange={(val) => setForm({ ...form, duracion: val })}
+                placeholder="00:00"
                 className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
               />
             </div>

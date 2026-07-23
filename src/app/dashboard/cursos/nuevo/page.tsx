@@ -5,6 +5,9 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/Button"
+import { RichTextEditor } from "@/components/ui/RichTextEditor"
+import { TimeInput } from "@/components/ui/TimeInput"
+import { parseDurationToMinutes, formatMinutesToHHMM, formatDuration } from "@/lib/duration"
 import {
   ArrowLeft,
   Plus,
@@ -117,6 +120,13 @@ function NuevoCursoContent() {
     const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
     if (match) return `https://www.youtube.com/embed/${match[1]}`
     return url
+  }
+
+  function getYouTubeThumbnail(url: string): string {
+    if (!url) return ""
+    const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/)
+    if (match) return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`
+    return ""
   }
 
   function addModulo() {
@@ -275,25 +285,39 @@ function NuevoCursoContent() {
   async function handleSave() {
     if (!form.titulo || !form.facilitador_id || form.niveles.length === 0) return
 
+    const modulosSinMedia = modulos.filter((m) => !m.videoUrl && !m.imagenPortada && !m.imagenFile)
+    if (modulosSinMedia.length > 0) {
+      const nombres = modulosSinMedia.map((m, i) => m.titulo || `Modulo ${i + 1}`).join(", ")
+      alert(`Los siguientes modulos no tienen video ni imagen de portada: ${nombres}. Por favor agrega al menos uno.`)
+      return
+    }
+
+    if (!form.video_bienvenida && !portadaFile && !form.imagen_portada) {
+      alert("El curso debe tener al menos un video de bienvenida o una imagen de portada.")
+      return
+    }
+
     setSaving(true)
 
     const facilitador = facilitadores.find((f) => f.id === form.facilitador_id)
 
-    const totalMinutos = modulos.reduce((sum, m) => {
-      const min = parseInt(m.duracion) || 0
-      return sum + min
-    }, 0)
+    const totalMinutos = modulos.reduce((sum, m) => sum + parseDurationToMinutes(m.duracion), 0)
     const duracionCalculada = Math.round(totalMinutos * 1.3)
 
     try {
       let imagenPortadaUrl = ""
       if (portadaFile) {
-        const fileName = `portadas/${Date.now()}_${portadaFile.name}`
-        const { data: uploadData } = await supabase.storage
-          .from("cursos")
-          .upload(fileName, portadaFile)
+        const ext = portadaFile.name.split(".").pop() || "jpg"
+        const fileName = `portadas/${Date.now()}_portada.${ext}`
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("curso-materiales")
+          .upload(fileName, portadaFile, { contentType: portadaFile.type })
+        if (uploadError) {
+          console.error("Error uploading portada:", uploadError)
+          throw new Error(`Error al subir imagen de portada: ${uploadError.message}`)
+        }
         if (uploadData) {
-          const { data: urlData } = supabase.storage.from("cursos").getPublicUrl(uploadData.path)
+          const { data: urlData } = supabase.storage.from("curso-materiales").getPublicUrl(uploadData.path)
           imagenPortadaUrl = urlData.publicUrl
         }
       }
@@ -309,7 +333,7 @@ function NuevoCursoContent() {
           introduccion: form.introduccion,
           video_bienvenida: form.video_bienvenida,
           imagen_portada: imagenPortadaUrl || null,
-          duracion: `${duracionCalculada} min`,
+          duracion: formatMinutesToHHMM(duracionCalculada),
           estado: "borrador",
           activo: false,
           modulos_count: modulos.length,
@@ -337,6 +361,10 @@ function NuevoCursoContent() {
             const { data: urlData } = supabase.storage.from("curso-materiales").getPublicUrl(filePath)
             imagenPortadaUrl = urlData.publicUrl
           }
+        }
+
+        if (!imagenPortadaUrl && mod.videoUrl) {
+          imagenPortadaUrl = getYouTubeThumbnail(mod.videoUrl)
         }
 
         const { data: modulo, error: modError } = await supabase
@@ -512,13 +540,13 @@ function NuevoCursoContent() {
             <label className="block text-sm font-medium text-gray-700">Duración del Curso</label>
             <div className="px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm">
               {(() => {
-                const total = modulos.reduce((sum, m) => sum + (parseInt(m.duracion) || 0), 0)
+                const total = modulos.reduce((sum, m) => sum + parseDurationToMinutes(m.duracion), 0)
                 const calculada = Math.round(total * 1.3)
                 if (total === 0) return <span className="text-gray-400">Se calculará al agregar duración a los módulos</span>
                 return (
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-luxor-primary">{calculada} min</span>
-                    <span className="text-gray-400 text-xs">({total} min módulos + 30%)</span>
+                    <span className="font-semibold text-luxor-primary">{formatMinutesToHHMM(calculada)}</span>
+                    <span className="text-gray-400 text-xs">({formatMinutesToHHMM(total)} módulos + 30%)</span>
                   </div>
                 )
               })()}
@@ -527,12 +555,11 @@ function NuevoCursoContent() {
 
           <div className="space-y-1.5 sm:col-span-2">
             <label className="block text-sm font-medium text-gray-700">Introducción del Curso</label>
-            <textarea
+            <RichTextEditor
               value={form.introduccion}
-              onChange={(e) => setForm({ ...form, introduccion: e.target.value })}
-              rows={3}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm resize-none"
+              onChange={(html) => setForm({ ...form, introduccion: html })}
               placeholder="Describe brevemente el contenido del curso..."
+              minHeight="min-h-[100px]"
             />
           </div>
 
@@ -572,12 +599,23 @@ function NuevoCursoContent() {
               className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-luxor-primary file:text-white file:cursor-pointer hover:file:bg-luxor-secondary"
             />
             {portadaPreview && (
-              <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 max-w-md">
+              <div className="mt-2 relative rounded-lg overflow-hidden border border-gray-200 max-w-md">
                 <img
                   src={portadaPreview}
                   alt="Vista previa de portada"
                   className="w-full h-auto object-contain"
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPortadaFile(null)
+                    setPortadaPreview("")
+                    setForm({ ...form, imagen_portada: "" })
+                  }}
+                  className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full hover:bg-black/80 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             )}
             <p className="text-xs text-gray-400">Se mostrara en el catalogo y al inicio del curso. Se mantiene la relacion de aspecto original.</p>
@@ -624,7 +662,7 @@ function NuevoCursoContent() {
                       {modulo.titulo || `Módulo ${index + 1}`}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {modulo.duracion ? `${modulo.duracion} min` : "Sin duración"} ·{" "}
+                        {modulo.duracion ? formatDuration(modulo.duracion) : "Sin duración"} ·{" "}
                       {modulo.preguntas.length} pregunta{modulo.preguntas.length !== 1 ? "s" : ""}
                     </p>
                   </div>
@@ -658,30 +696,27 @@ function NuevoCursoContent() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block text-sm font-medium text-gray-700">Duración (min)</label>
-                      <input
-                        type="number"
-                        min="1"
+                      <label className="block text-sm font-medium text-gray-700">Duración</label>
+                      <TimeInput
                         value={modulo.duracion}
-                        onChange={(e) => updateModulo(modulo.id, "duracion", e.target.value)}
-                        placeholder="15"
+                        onChange={(val) => updateModulo(modulo.id, "duracion", val)}
+                        placeholder="00:15"
                         className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Introducción del Módulo
-                    </label>
-                    <textarea
-                      value={modulo.introduccion}
-                      onChange={(e) => updateModulo(modulo.id, "introduccion", e.target.value)}
-                      rows={2}
-                      placeholder="Breve descripción del módulo..."
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm resize-none"
-                    />
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Introducción del Módulo
+                      </label>
+                      <RichTextEditor
+                        value={modulo.introduccion}
+                        onChange={(html) => updateModulo(modulo.id, "introduccion", html)}
+                        placeholder="Breve descripción del módulo..."
+                        minHeight="min-h-[80px]"
+                      />
+                    </div>
 
                     <div className="space-y-1.5">
                       <label className="block text-sm font-medium text-gray-700">Video (YouTube)</label>

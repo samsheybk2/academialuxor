@@ -202,7 +202,7 @@ export function OpinionesCurso({ cursoId, inscrito }: OpinionesCursoProps) {
                 <StarRating rating={o.calificacion} />
               </div>
               {o.comentario && (
-                <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+                <p className="text-sm text-gray-600 mt-3 leading-relaxed whitespace-pre-line">
                   {o.comentario}
                 </p>
               )}

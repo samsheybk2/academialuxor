@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
+import { formatDuration } from "@/lib/duration"
 import type { Publicacion, TipoReaccion, EncuestaOpcion } from "@/types"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
@@ -667,7 +668,7 @@ async function handleEliminar(pubId: string) {
        <div className="relative z-[2] w-full h-full flex flex-col -mb-4 sm:-mb-6">
        <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,760px)_340px] gap-0 w-full h-full">
           {/* Sidebar izquierdo — Calendario */}
-           <div className="hidden lg:flex flex-col gap-3 h-full w-full bg-[#F0F2F5] p-4 sticky top-0 self-start max-h-screen overflow-y-auto custom-scrollbar [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
+           <div className="hidden lg:flex flex-col gap-3 h-full w-full bg-[#F0F2F5] p-4 overflow-y-auto custom-scrollbar [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full">
              <CarruselPublicaciones publicaciones={publicaciones} supabase={supabase} userSucursal={user?.sucursal} isAdmin={canPost} />
              <CalendarioSidebar />
            </div>
@@ -1127,7 +1128,7 @@ async function handleEliminar(pubId: string) {
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-luxor-primary">
                     {curso.categoria}
                   </span>
-                  <span className="text-[10px] text-gray-400">{curso.duracion}</span>
+                  <span className="text-[10px] text-gray-400">{formatDuration(curso.duracion)}</span>
                 </div>
                 <h4 className="mt-2 text-sm font-semibold text-gray-800">{curso.titulo}</h4>
                 <button className="mt-3 w-full rounded-lg bg-luxor-primary/10 px-3 py-2 text-xs font-medium text-luxor-primary hover:bg-luxor-primary/20 transition-colors">

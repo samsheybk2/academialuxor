@@ -188,35 +188,6 @@ export default function ConfiguracionesPage() {
     setTimeout(() => setSuccessMessage(""), 3000)
   }
 
-  // Validar si las imágenes existen al cargar
-  useEffect(() => {
-    async function validateFondos() {
-      if (fondosLogin.length === 0) return
-
-      const fondosValidos: string[] = []
-
-      for (const url of fondosLogin) {
-        try {
-          const response = await fetch(url, { method: "HEAD" })
-          if (response.ok) {
-            fondosValidos.push(url)
-          }
-        } catch {
-          // Imagen no existe, no la agregamos
-        }
-      }
-
-      if (fondosValidos.length !== fondosLogin.length) {
-        setFondosLogin(fondosValidos)
-        await supabase
-          .from("configuraciones")
-          .upsert({ clave: "fondos_login", valor: JSON.stringify(fondosValidos) })
-      }
-    }
-
-    validateFondos()
-  }, [fondosLogin])
-
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Mensaje de éxito */}
@@ -372,7 +343,7 @@ export default function ConfiguracionesPage() {
                 <img src={url} alt={`Fondo ${index + 1}`} className="w-full h-full object-cover" />
                 <button
                   onClick={() => removeFondo(index)}
-                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

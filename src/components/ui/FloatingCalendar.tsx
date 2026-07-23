@@ -88,7 +88,7 @@ export function FloatingCalendar() {
       </button>
 
       {open && (
-        <div className="fixed bottom-20 right-4 z-50 lg:bottom-6 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div className="fixed bottom-20 right-4 left-4 z-50 lg:left-auto lg:w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-h-[calc(100dvh-7rem)] flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-luxor-primary text-white">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -139,9 +139,9 @@ export function FloatingCalendar() {
           </div>
 
           {proximosEventos.length > 0 && (
-            <div className="border-t border-gray-100 p-3">
+            <div className="border-t border-gray-100 p-3 overflow-y-auto">
               <p className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Proximos eventos</p>
-              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+              <div className="space-y-1.5">
                 {proximosEventos.map((ev) => (
                   <div key={ev.id} className="flex items-center gap-2 text-xs">
                     <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${CAT_COLORS[ev.categoria] || "bg-gray-400"}`} />

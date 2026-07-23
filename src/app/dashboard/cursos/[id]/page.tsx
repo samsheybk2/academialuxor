@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
+import { formatDuration } from "@/lib/duration"
 import { OpinionesCurso } from "@/components/course/OpinionesCurso"
 import {
   BookOpen,
@@ -60,6 +61,7 @@ interface Curso {
   descripcion: string
   introduccion?: string
   video_bienvenida?: string
+  imagen_portada?: string
   modulos_count: number
   estudiantes_count: number
   activo: boolean
@@ -131,7 +133,13 @@ function TabInformacion({ curso, modulos }: { curso: Curso; modulos: Modulo[] })
     <div className="space-y-6">
       <div className="grid lg:grid-cols-[1fr_1fr] gap-6">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {curso.video_bienvenida ? (
+          {curso.imagen_portada ? (
+            <img
+              src={curso.imagen_portada}
+              alt={`Portada de ${curso.titulo}`}
+              className="w-full h-auto object-cover"
+            />
+          ) : curso.video_bienvenida ? (
             <div className="aspect-video">
               <iframe
                 src={curso.video_bienvenida}
@@ -149,9 +157,7 @@ function TabInformacion({ curso, modulos }: { curso: Curso; modulos: Modulo[] })
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col">
           <h3 className="font-semibold text-gray-900 mb-3">Descripcion del curso</h3>
-          <p className="text-gray-600 leading-relaxed whitespace-pre-line flex-1">
-            {curso.descripcion || curso.introduccion || "Este curso aun no tiene descripcion."}
-          </p>
+          <p className="text-gray-600 leading-relaxed flex-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: curso.descripcion || curso.introduccion || "Este curso aun no tiene descripcion." }} />
         </div>
       </div>
 
@@ -237,7 +243,7 @@ function TabContenido({
                 <div>
                   <p className="font-medium text-gray-900">{modulo.titulo || `Modulo ${modulo.orden}`}</p>
                   <p className="text-xs text-gray-500">
-                    {modulo.duracion} · {modulo.preguntas.length} pregunta{modulo.preguntas.length !== 1 ? "s" : ""}
+                    {formatDuration(modulo.duracion)} · {modulo.preguntas.length} pregunta{modulo.preguntas.length !== 1 ? "s" : ""}
                   </p>
                 </div>
               </div>
@@ -250,17 +256,14 @@ function TabContenido({
 
             {expandido && (
               <div className="px-4 pb-4 border-t border-gray-100 pt-4">
-                {modulo.imagen_portada && (
-                  <div className="mb-4">
+                <div className="grid lg:grid-cols-[1fr_1fr] gap-4 mb-4">
+                  {modulo.imagen_portada ? (
                     <img
                       src={modulo.imagen_portada}
                       alt={`Portada de ${modulo.titulo}`}
-                      className="w-full h-48 object-cover rounded-lg"
+                      className="w-full h-auto object-cover rounded-lg aspect-video"
                     />
-                  </div>
-                )}
-                <div className="grid lg:grid-cols-[1fr_1fr] gap-4 mb-4">
-                  {modulo.video_url ? (
+                  ) : modulo.video_url ? (
                     <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
                       <iframe
                         src={modulo.video_url}
@@ -276,7 +279,7 @@ function TabContenido({
                   )}
                   <div className="flex flex-col justify-center">
                     {modulo.introduccion && (
-                      <p className="text-sm text-gray-600 leading-relaxed">{modulo.introduccion}</p>
+                      <div className="text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: modulo.introduccion }} />
                     )}
                   </div>
                 </div>

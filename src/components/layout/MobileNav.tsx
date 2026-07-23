@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
-import { LayoutDashboard, GraduationCap, BookOpen, Users, Route, Calendar, Newspaper, MoreVertical, X, Network, Brain } from "lucide-react"
+import { GraduationCap, BookOpen, Users, Route, Calendar, Newspaper, MoreVertical, X, Network, Brain, Settings } from "lucide-react"
 
 const navByRole = {
   decano: [
@@ -16,7 +16,7 @@ const navByRole = {
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   developer: [
-    { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
+    { href: "/dashboard/config", label: "Configuraciones", icon: Settings },
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Cursos", icon: BookOpen },

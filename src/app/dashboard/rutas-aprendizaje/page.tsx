@@ -691,7 +691,7 @@ function RutasContent() {
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
           />
         </div>
-        {isDecano && (
+        {(isDecano || isFacilitador) && (
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="px-4 py-2.5 bg-luxor-primary text-white rounded-lg font-medium hover:bg-luxor-secondary transition-colors text-sm flex items-center gap-2 self-start"
@@ -1055,7 +1055,7 @@ function RutasContent() {
                               ) : <span className="text-xs text-gray-400">-</span>}
                             </td>
                             <td className="px-4 py-2.5 text-right">
-                              {isDecano && (
+                              {(isDecano || isFacilitador) && (
                                 <div className="flex items-center justify-end gap-1.5">
                                   <Link
                                     href={`/dashboard/rutas-aprendizaje/${cargo.id}`}
@@ -1153,7 +1153,7 @@ function RutasContent() {
                           ) : <span className="text-xs text-gray-400">-</span>}
                         </td>
                         <td className="px-4 py-2.5 text-right">
-                          {isDecano && (
+                          {(isDecano || isFacilitador) && (
                             <div className="flex items-center justify-end gap-1.5">
                               <Link
                                 href={`/dashboard/rutas-aprendizaje/${cargo.id}`}

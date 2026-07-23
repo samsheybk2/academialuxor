@@ -936,7 +936,7 @@ function PerfilContent() {
                               )}
                               <div className="flex-1 min-w-0">
                                 <h4 className="text-sm font-semibold text-gray-900 truncate">{curso.titulo}</h4>
-                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{curso.descripcion}</p>
+                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-2" dangerouslySetInnerHTML={{ __html: curso.descripcion }} />
                                 <div className="flex items-center gap-2 mt-2">
                                   <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
                                     curso.estado === "aprobado" ? "bg-green-100 text-green-700" :

@@ -4,10 +4,11 @@ import { useState, useEffect, use } from "react"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
+import { RichTextEditor } from "@/components/ui/RichTextEditor"
+import { TimeInput } from "@/components/ui/TimeInput"
 import { tipoEtapaConfig } from "@/types/ruta-aprendizaje"
 import type { ElementoRuta, TipoEtapa } from "@/types/ruta-aprendizaje"
 import {
-  ArrowLeft,
   BookOpen,
   Wrench,
   FileText,
@@ -60,13 +61,15 @@ function CargoContent({ id }: { id: string }) {
   const { user } = useAuth()
   const supabase = createSupabaseClient()
   const isDecano = user?.rol === "decano" || user?.rol === "developer"
+  const isFacilitador = user?.rol === "facilitador"
+  const canEdit = isDecano || isFacilitador
 
   const [cargoName, setCargoName] = useState("")
   const [cargoDesc, setCargoDesc] = useState("")
   const [cargoNivel, setCargoNivel] = useState("")
   const [isCustom, setIsCustom] = useState(id.startsWith("custom_"))
   const [elementos, setElementos] = useState<ElementoRuta[]>([])
-  const [cursosDisponibles, setCursosDisponibles] = useState<{ id: string; titulo: string; descripcion: string; duracion: string }[]>([])
+  const [cursosDisponibles, setCursosDisponibles] = useState<{ id: string; titulo: string; descripcion: string; introduccion?: string; duracion: string }[]>([])
   const [students, setStudents] = useState<StudentData[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"sequential" | "grouped">("sequential")
@@ -93,7 +96,7 @@ function CargoContent({ id }: { id: string }) {
 
       const { data: cursosAll } = await supabase
         .from("cursos")
-        .select("id, titulo, descripcion, duracion, nivel")
+        .select("id, titulo, descripcion, introduccion, duracion, nivel")
         .eq("estado", "aprobado")
 
       const cursosFiltrados = (cursosAll || []).filter((c: any) => {
@@ -297,14 +300,6 @@ function CargoContent({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href="/dashboard/rutas-aprendizaje"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a Rutas
-        </Link>
-
         <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="min-w-0">
@@ -313,51 +308,19 @@ function CargoContent({ id }: { id: string }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4 sm:mt-6">
-            <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalStudents}</p>
-                  <p className="text-xs text-gray-500">Estudiantes</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold text-blue-600">{graduados}</p>
-                  <p className="text-xs text-gray-500">Graduados</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold text-blue-600">{enCurso}</p>
-                  <p className="text-xs text-gray-500">En Curso</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
-                </div>
-                <div>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-500">{sinIniciar}</p>
-                  <p className="text-xs text-gray-500">Sin Iniciar</p>
-                </div>
-              </div>
-            </div>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">
+              <Users className="w-3.5 h-3.5" /> {totalStudents} Estudiantes
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
+              <GraduationCap className="w-3.5 h-3.5" /> {graduados} Graduados
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
+              <Clock className="w-3.5 h-3.5" /> {enCurso} En Curso
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-500 text-sm font-medium">
+              <AlertCircle className="w-3.5 h-3.5" /> {sinIniciar} Sin Iniciar
+            </span>
           </div>
         </div>
       </div>
@@ -393,7 +356,7 @@ function CargoContent({ id }: { id: string }) {
                     <span className="hidden sm:inline">Agrupado</span>
                   </button>
                 </div>
-                {isDecano && (
+                {canEdit && (
                   <button
                     onClick={() => { setShowAddForm(true); setEditingId(null); setForm(emptyForm) }}
                     className="flex items-center gap-1 px-2 sm:px-3 py-1.5 bg-luxor-primary text-white rounded-lg text-xs font-medium hover:bg-luxor-secondary transition-colors"
@@ -430,70 +393,77 @@ function CargoContent({ id }: { id: string }) {
                   </div>
                   <div className="space-y-1.5">
                     <label className="block text-xs font-medium text-gray-600">Duracion</label>
-                    <input
-                      type="text"
-                      value={form.duracion}
-                      onChange={(e) => setForm({ ...form, duracion: e.target.value })}
-                      placeholder="Ej: 2 semanas"
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                    />
+                    {form.tipo === "curso" ? (
+                      <input
+                        type="text"
+                        value={form.duracion}
+                        readOnly
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 text-sm cursor-not-allowed"
+                        title="La duracion se toma automaticamente del curso seleccionado"
+                      />
+                    ) : (
+                      <TimeInput
+                        value={form.duracion}
+                        onChange={(val) => setForm({ ...form, duracion: val })}
+                        placeholder="00:00"
+                      />
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-3 items-end">
+                  <div className="flex-1 space-y-1.5">
+                    <label className="block text-xs font-medium text-gray-600">
+                      {form.tipo === "curso" ? "Seleccionar Curso *" : "Titulo *"}
+                    </label>
+                    {form.tipo === "curso" ? (
+                      <select
+                        value={form.titulo}
+                        onChange={(e) => {
+                          const curso = cursosDisponibles.find((c) => c.titulo === e.target.value)
+                          setForm({
+                            ...form,
+                            titulo: curso?.titulo || "",
+                            descripcion: curso?.descripcion || curso?.introduccion || "",
+                            duracion: curso?.duracion || "",
+                            cursoId: curso?.id || null,
+                          })
+                        }}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                      >
+                        <option value="">Selecciona un curso...</option>
+                        {cursosDisponibles.map((c) => (
+                          <option key={c.id} value={c.titulo}>{c.titulo}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={form.titulo}
+                        onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+                        placeholder="Nombre del elemento"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-medium text-gray-600">Obligatorio</label>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, obligatorio: !form.obligatorio })}
+                      className={`relative inline-flex h-9 w-12 items-center rounded-full transition-colors ${form.obligatorio ? "bg-luxor-primary" : "bg-gray-300"}`}
+                    >
+                      <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-sm transition-transform ${form.obligatorio ? "translate-x-[22px]" : "translate-x-[2px]"}`} />
+                    </button>
                   </div>
                 </div>
                 <div className="space-y-1.5 mt-3">
-                  <label className="block text-xs font-medium text-gray-600">
-                    {form.tipo === "curso" ? "Seleccionar Curso *" : "Titulo *"}
-                  </label>
-                  {form.tipo === "curso" ? (
-                    <select
-                      value={form.titulo}
-                      onChange={(e) => {
-                        const curso = cursosDisponibles.find((c) => c.titulo === e.target.value)
-                        setForm({
-                          ...form,
-                          titulo: curso?.titulo || "",
-                          descripcion: curso?.descripcion || "",
-                          duracion: curso?.duracion || "",
-                          cursoId: curso?.id || null,
-                        })
-                      }}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                    >
-                      <option value="">Selecciona un curso...</option>
-                      {cursosDisponibles.map((c) => (
-                        <option key={c.id} value={c.titulo}>{c.titulo}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={form.titulo}
-                      onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                      placeholder="Nombre del elemento"
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
-                    />
-                  )}
-                </div>
-                <div className="space-y-1.5 mt-3">
                   <label className="block text-xs font-medium text-gray-600">Descripcion</label>
-                  <textarea
+                  <RichTextEditor
                     value={form.descripcion}
-                    onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                    rows={2}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 resize-none"
+                    onChange={(html) => setForm({ ...form, descripcion: html })}
                     placeholder="Descripcion breve..."
+                    minHeight="min-h-[120px]"
                   />
-                </div>
-                <div className="flex items-center gap-2 mt-3">
-                  <input
-                    type="checkbox"
-                    id="obligatorio"
-                    checked={form.obligatorio}
-                    onChange={(e) => setForm({ ...form, obligatorio: e.target.checked })}
-                    className="w-4 h-4 rounded border-gray-300 text-luxor-primary focus:ring-luxor-primary"
-                  />
-                  <label htmlFor="obligatorio" className="text-sm text-gray-700">
-                    Obligatorio para esta ruta
-                  </label>
                 </div>
                 <div className="flex gap-3 mt-4">
                   <button
@@ -557,10 +527,10 @@ function CargoContent({ id }: { id: string }) {
                                 {elemento.obligatorio && <span className="text-xs font-medium text-red-500">Obligatorio</span>}
                               </div>
                               <h4 className="font-medium text-gray-900 mt-1.5 text-sm sm:text-base">{elemento.titulo}</h4>
-                              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 line-clamp-2">{elemento.descripcion}</p>
+                              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 line-clamp-2" dangerouslySetInnerHTML={{ __html: elemento.descripcion }} />
                             </button>
                             <div className="flex items-center gap-0.5 flex-shrink-0">
-                              {isDecano && (
+                              {canEdit && (
                                 <>
                                   <button onClick={() => startEdit(elemento)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
                                     <Edit3 className="w-3.5 h-3.5" />
@@ -579,13 +549,13 @@ function CargoContent({ id }: { id: string }) {
 
                         {isExpanded && (
                           <div className={`mt-2 p-3 sm:p-4 rounded-xl ${colors.bg} border border-current/10`}>
-                            <p className="text-sm text-gray-700">{elemento.descripcion || "Sin descripcion"}</p>
+                            <p className="text-sm text-gray-700 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: elemento.descripcion || "Sin descripcion" }} />
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-gray-500">
                               <span>Etapa {elemento.orden} de {sorted.length}</span>
                               <span>Duracion: {elemento.duracion}</span>
                               <span className={`font-medium ${colors.text}`}>{config.label}</span>
                             </div>
-                            {elemento.tipo === "taller" && !isDecano && (
+                            {elemento.tipo === "taller" && !canEdit && (
                               <Link
                                 href={`/dashboard/rutas-aprendizaje/taller/${elemento.id}`}
                                 className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium text-sm hover:bg-violet-700 transition-colors"
@@ -629,11 +599,11 @@ function CargoContent({ id }: { id: string }) {
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${colors.bg} ${colors.text} border ${colors.ring} flex-shrink-0`}>{elem.orden}</span>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-gray-900 text-sm">{elem.titulo}</p>
-                              <p className="text-xs text-gray-500 truncate">{elem.descripcion}</p>
+                              <p className="text-xs text-gray-500 truncate" dangerouslySetInnerHTML={{ __html: elem.descripcion }} />
                             </div>
                             <span className="text-xs text-gray-400 flex-shrink-0 hidden sm:inline">{elem.duracion}</span>
                             {elem.obligatorio && <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-xs rounded font-medium flex-shrink-0 hidden sm:inline">Obligatorio</span>}
-                            {elem.tipo === "taller" && !isDecano && (
+                            {elem.tipo === "taller" && !canEdit && (
                               <Link
                                 href={`/dashboard/rutas-aprendizaje/taller/${elem.id}`}
                                 className="px-2 py-1 bg-violet-600 text-white text-xs rounded-lg font-medium hover:bg-violet-700 transition-colors flex-shrink-0 hidden sm:inline-flex items-center gap-1"
@@ -642,7 +612,7 @@ function CargoContent({ id }: { id: string }) {
                                 Evaluar
                               </Link>
                             )}
-                            {isDecano && (
+                            {canEdit && (
                               <div className="flex items-center gap-0.5 flex-shrink-0">
                                 <button onClick={() => startEdit(elem)} className="p-1 text-gray-400 hover:text-blue-600 transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
                                 <button onClick={() => handleDeleteElemento(elem.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>

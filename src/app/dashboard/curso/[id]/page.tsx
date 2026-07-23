@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, use } from "react"
 import { useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
+import { formatDuration } from "@/lib/duration"
 import { Quiz } from "@/components/course/Quiz"
 import { Certificado } from "@/components/course/Certificado"
 import { OpinionesCurso } from "@/components/course/OpinionesCurso"
@@ -34,6 +35,7 @@ interface ModuloData {
   titulo: string
   descripcion: string
   video_url: string
+  imagen_portada?: string
   duracion: string
   orden: number
   preguntas: Pregunta[]
@@ -319,9 +321,7 @@ function TabInformacion({
           <h3 className="font-semibold text-gray-900 mb-3">
             Descripcion del curso
           </h3>
-          <p className="text-gray-600 leading-relaxed whitespace-pre-line flex-1">
-            {curso.descripcion || curso.introduccion || "Este curso aun no tiene descripcion."}
-          </p>
+          <p className="text-gray-600 leading-relaxed flex-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: curso.descripcion || curso.introduccion || "Este curso aun no tiene descripcion." }} />
         </div>
       </div>
 
@@ -359,7 +359,7 @@ function TabInformacion({
 
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-xs font-medium">
           <Clock className="w-3.5 h-3.5" />
-          {curso.duracion}
+          {formatDuration(curso.duracion)}
         </span>
       </div>
     </div>
@@ -427,7 +427,13 @@ function TabContenido({
     <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
       <div className="space-y-5">
         <div className="bg-black rounded-xl overflow-hidden max-w-2xl mx-auto aspect-video">
-          {embedUrl ? (
+          {modulo.imagen_portada && !embedUrl ? (
+            <img
+              src={modulo.imagen_portada}
+              alt={`Portada de ${modulo.titulo}`}
+              className="w-full h-full object-cover"
+            />
+          ) : embedUrl ? (
             <YouTubePlayer
               key={modulo.id}
               videoId={getYouTubeVideoId(modulo.video_url)}
@@ -458,7 +464,7 @@ function TabContenido({
             </span>
             <span className="text-sm text-gray-400 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
-              {modulo.duracion}
+              {formatDuration(modulo.duracion)}
             </span>
             {isModuloCompleted(modulo.id) && (
               <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex items-center gap-1">
@@ -470,7 +476,7 @@ function TabContenido({
           <h3 className="text-lg font-semibold text-gray-900">
             {modulo.titulo}
           </h3>
-          <p className="text-gray-500 mt-1">{modulo.descripcion}</p>
+          <p className="text-gray-500 mt-1 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: modulo.descripcion }} />
 
           {materialPdf.filter(
             (m) => m.modulo_id === modulo.id || m.modulo_id === null
@@ -996,9 +1002,9 @@ function CursoContent({ id }: { id: string }) {
           </Link>
         )}
 
-        <div>
+        <div className="text-center">
           {curso.imagen_portada && (
-            <div className="mb-4 rounded-xl overflow-hidden border border-gray-200">
+            <div className="mb-4 rounded-xl overflow-hidden border border-gray-200 max-w-md mx-auto">
               <img
                 src={curso.imagen_portada}
                 alt={`Portada de ${curso.titulo}`}
