@@ -346,21 +346,7 @@ function TabInformacion({
           )}
 
           {(showVideo || !curso.imagen_portada) && curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Play className="w-4 h-4 text-luxor-primary" />
-                  Video de presentacion
-                </h3>
-                {curso.imagen_portada && (
-                  <button
-                    onClick={() => setShowVideo(false)}
-                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    Volver a la imagen
-                  </button>
-                )}
-              </div>
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full max-h-[500px] relative">
               <div className="aspect-video min-h-[300px]">
                 <iframe
                   src={`https://www.youtube.com/embed/${getYouTubeVideoId(curso.video_bienvenida)}`}
@@ -370,6 +356,15 @@ function TabInformacion({
                   title="Video de presentacion"
                 />
               </div>
+              {curso.imagen_portada && (
+                <button
+                  onClick={() => setShowVideo(false)}
+                  className="absolute bottom-4 right-4 bg-white/80 hover:bg-white/95 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg shadow-lg transition-colors flex items-center gap-2 backdrop-blur-sm"
+                >
+                  <Play className="w-4 h-4 rotate-180" />
+                  Volver a la imagen
+                </button>
+              )}
             </div>
           )}
         </div>
