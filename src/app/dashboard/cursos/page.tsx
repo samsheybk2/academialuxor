@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/Button"
-import { RichTextEditor } from "@/components/ui/RichTextEditor"
-import { TimeInput } from "@/components/ui/TimeInput"
-import { parseDurationToMinutes, formatMinutesToHHMM, formatDuration } from "@/lib/duration"
+import { formatDuration } from "@/lib/duration"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Modal } from "@/components/ui/Modal"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
@@ -16,7 +14,6 @@ import {
   Search,
   Filter,
   Edit3,
-  Trash2,
   Users,
   Clock,
   GraduationCap,
@@ -25,7 +22,6 @@ import {
   AlertCircle,
   Send,
   Loader2,
-  Star,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -36,6 +32,7 @@ interface Curso {
   tipo: string
   facilitador_nombre: string
   facilitador_id: string
+  facilitador_avatar?: string
   descripcion: string
   introduccion?: string
   modulos_count: number
@@ -89,30 +86,17 @@ function CursosContent() {
   const [filterNivel, setFilterNivel] = useState("todos")
   const [filterEstado, setFilterEstado] = useState("todos")
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
-  const [showModal, setShowModal] = useState(false)
   const [showAprobarModal, setShowAprobarModal] = useState(false)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [cursoToDelete, setCursoToDelete] = useState<Curso | null>(null)
   const [cursoToAprobar, setCursoToAprobar] = useState<Curso | null>(null)
-  
-  const [editingCurso, setEditingCurso] = useState<Curso | null>(null)
-  const [form, setForm] = useState({
-    titulo: "",
-    nivel: "operadores",
-    facilitador_nombre: "",
-    descripcion: "",
-    modulos_count: 0,
-    duracion: "",
-  })
 
   async function fetchCursos() {
     setLoading(true)
     const { data } = await supabase
       .from("cursos")
-      .select("*")
+      .select("*, profiles!facilitador_id(avatar_url)")
       .order("created_at", { ascending: false })
     if (data) {
-      setCursos(data as Curso[])
+      setCursos(data.map((c: any) => ({ ...c, facilitador_avatar: c.profiles?.avatar_url })) as Curso[])
     }
     setLoading(false)
   }
@@ -122,6 +106,7 @@ function CursosContent() {
   }, [])
 
   const filtered = cursos.filter((c) => {
+    if (c.estado !== "aprobado" && c.facilitador_id !== user?.id && !isDecano) return false
     const matchSearch =
       c.titulo.toLowerCase().includes(search.toLowerCase()) ||
       c.facilitador_nombre.toLowerCase().includes(search.toLowerCase())
@@ -131,72 +116,8 @@ function CursosContent() {
     return matchSearch && matchNivel && matchEstado
   })
 
-  function openCreate() {
-    setEditingCurso(null)
-    setForm({
-      titulo: "",
-      nivel: "operadores",
-      facilitador_nombre: user?.nombre || "",
-      descripcion: "",
-      modulos_count: 0,
-      duracion: "",
-    })
-    setShowModal(true)
-  }
-
-  function openEdit(curso: Curso) {
-    setEditingCurso(curso)
-    setForm({
-      titulo: curso.titulo,
-      nivel: Array.isArray(curso.nivel) ? curso.nivel[0] || "" : curso.nivel,
-      facilitador_nombre: curso.facilitador_nombre,
-      descripcion: curso.descripcion,
-      modulos_count: curso.modulos_count,
-      duracion: curso.duracion,
-    })
-    setShowModal(true)
-  }
-
-  async function handleSave() {
-    if (editingCurso) {
-      await supabase
-        .from("cursos")
-        .update({
-          titulo: form.titulo,
-          nivel: form.nivel,
-          facilitador_nombre: form.facilitador_nombre,
-          descripcion: form.descripcion,
-          modulos_count: form.modulos_count,
-          duracion: form.duracion,
-        })
-        .eq("id", editingCurso.id)
-    } else {
-      await supabase.from("cursos").insert({
-        titulo: form.titulo,
-        nivel: form.nivel,
-        facilitador_nombre: form.facilitador_nombre,
-        facilitador_id: user?.id,
-        descripcion: form.descripcion,
-        modulos_count: form.modulos_count,
-        duracion: form.duracion,
-        estado: "borrador",
-        activo: false,
-      })
-    }
-    setShowModal(false)
-    fetchCursos()
-  }
-
   async function handleEnviarRevision(id: string) {
     await supabase.from("cursos").update({ estado: "pendiente" }).eq("id", id)
-    fetchCursos()
-  }
-
-  async function handleDeleteCurso() {
-    if (!cursoToDelete) return
-    await supabase.from("cursos").delete().eq("id", cursoToDelete.id)
-    setShowDeleteModal(false)
-    setCursoToDelete(null)
     fetchCursos()
   }
 
@@ -335,21 +256,37 @@ function CursosContent() {
                   href={`/dashboard/cursos/${curso.id}`}
                   className="block"
                 >
-                  <Card className={`!bg-transparent ${getHoverColor(index)} transition-colors cursor-pointer overflow-hidden !border-transparent !shadow-none`}>
+                    <Card className={`!bg-transparent !rounded-none ${getHoverColor(index)} transition-colors cursor-pointer overflow-hidden !border-transparent !shadow-none`}>
                     <CardContent className="p-0">
                       {curso.imagen_portada && (
-                        <div className="w-full overflow-hidden bg-gray-100">
+                        <div className="w-full overflow-hidden bg-gray-100 relative">
                           <img
                             src={curso.imagen_portada}
                             alt={`Portada de ${curso.titulo}`}
                             className="w-full h-auto object-cover max-h-48"
                           />
+                          {curso.estado === "aprobado" && (
+                            <div className="absolute top-0 right-0 w-11 h-11 bg-green-500 z-10" style={{ clipPath: "polygon(100% 0, 0 0, 100% 100%)" }} title="Aprobado" />
+                          )}
+                          {curso.estado === "rechazado" && (
+                            <div className="absolute top-0 right-0 w-11 h-11 bg-red-500 z-10" style={{ clipPath: "polygon(100% 0, 0 0, 100% 100%)" }} title="Rechazado" />
+                          )}
+                          {curso.estado === "pendiente" && (
+                            <div className="absolute top-0 right-0 w-11 h-11 bg-yellow-500 z-10" style={{ clipPath: "polygon(100% 0, 0 0, 100% 100%)" }} title="Pendiente" />
+                          )}
+                          {curso.estado === "borrador" && (
+                            <div className="absolute top-0 right-0 w-11 h-11 bg-blue-500 z-10" style={{ clipPath: "polygon(100% 0, 0 0, 100% 100%)" }} title="Borrador" />
+                          )}
                         </div>
                       )}
                       <div className="p-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-luxor-primary/10 flex items-center justify-center flex-shrink-0">
-                            <GraduationCap className="w-4 h-4 text-luxor-primary" />
+                          <div className="w-8 h-8 rounded-full bg-luxor-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {curso.facilitador_avatar ? (
+                              <img src={curso.facilitador_avatar} alt={curso.facilitador_nombre} className="w-full h-full object-cover" />
+                            ) : (
+                              <GraduationCap className="w-4 h-4 text-luxor-primary" />
+                            )}
                           </div>
                           <h3 className="font-semibold text-gray-900 truncate text-sm">
                             {curso.titulo}
@@ -434,33 +371,6 @@ function CursosContent() {
                         <Send className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    {(isFacilitador || isDecano) && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            openEdit(curso)
-                          }}
-                          className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="Editar"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setCursoToDelete(curso)
-                            setShowDeleteModal(true)
-                          }}
-                          className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </>
-                    )}
                   </div>
                 )}
               </div>
@@ -476,88 +386,7 @@ function CursosContent() {
       </div>
     )}
 
-    {/* Modal Crear/Editar */}
-    <Modal
-      show={showModal}
-      onClose={() => setShowModal(false)}
-      title={editingCurso ? "Editar Curso" : "Nuevo Curso"}
-    >
-      <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Título</label>
-            <input
-              type="text"
-              value={form.titulo}
-              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-              placeholder="Ej: Atención al Cliente"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Nivel</label>
-            <select
-              value={form.nivel}
-              onChange={(e) => setForm({ ...form, nivel: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-            >
-              <option value="gerentes">Gerentes</option>
-              <option value="coordinadores">Coordinadores</option>
-              <option value="administrativos">Administrativos</option>
-              <option value="operadores">Operadores</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Facilitador</label>
-            <input
-              type="text"
-              value={form.facilitador_nombre}
-              onChange={(e) => setForm({ ...form, facilitador_nombre: e.target.value })}
-              placeholder="Nombre del facilitador"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Descripción</label>
-            <RichTextEditor
-              value={form.descripcion}
-              onChange={(html) => setForm({ ...form, descripcion: html })}
-              placeholder="Descripción del curso..."
-              minHeight="min-h-[100px]"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Módulos</label>
-              <input
-                type="number"
-                value={form.modulos_count}
-                onChange={(e) => setForm({ ...form, modulos_count: parseInt(e.target.value) || 0 })}
-                min="0"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700">Duración</label>
-              <TimeInput
-                value={form.duracion}
-                onChange={(val) => setForm({ ...form, duracion: val })}
-                placeholder="00:00"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-              />
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setShowModal(false)} className="flex-1">
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} className="flex-1">
-              {editingCurso ? "Guardar" : "Crear Curso"}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Modal Aprobar/Rechazar */}
+    {/* Modal Aprobar/Rechazar */}
       <Modal
         show={showAprobarModal}
         onClose={() => setShowAprobarModal(false)}
@@ -584,31 +413,6 @@ function CursosContent() {
               <CheckCircle2 className="w-4 h-4" />
               Aprobar
             </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Modal Eliminar */}
-      <Modal
-        show={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Eliminar Curso"
-      >
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            ¿Estás seguro de eliminar <strong>{cursoToDelete?.titulo}</strong>? Esta acción no se puede deshacer.
-          </p>
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={() => setShowDeleteModal(false)} className="flex-1">
-              Cancelar
-            </Button>
-            <button
-              onClick={handleDeleteCurso}
-              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              Eliminar
-            </button>
           </div>
         </div>
       </Modal>

@@ -89,6 +89,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
   })
   const [portadaFile, setPortadaFile] = useState<File | null>(null)
   const [portadaPreview, setPortadaPreview] = useState<string>("")
+  const [cursoOriginal, setCursoOriginal] = useState<{ facilitador_id: string } | null>(null)
 
   useEffect(() => {
     async function loadCurso() {
@@ -99,6 +100,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
         .single()
 
       if (curso) {
+        setCursoOriginal({ facilitador_id: curso.facilitador_id })
         setForm({
           titulo: curso.titulo || "",
           niveles: Array.isArray(curso.nivel) ? curso.nivel : curso.nivel ? [curso.nivel] : [],
@@ -419,6 +421,14 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
 
       if (cursoError) {
         throw new Error(cursoError.message)
+      }
+
+      if (cursoOriginal?.facilitador_id && form.facilitador_id !== cursoOriginal.facilitador_id) {
+        await supabase.from("historial_creadores").insert({
+          curso_id: id,
+          facilitador_id: cursoOriginal.facilitador_id,
+          fecha_fin: new Date().toISOString(),
+        })
       }
 
       const moduloIdsPorLocalId = new Map<string, string>()

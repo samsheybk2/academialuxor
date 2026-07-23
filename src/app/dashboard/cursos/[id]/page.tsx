@@ -28,6 +28,7 @@ import {
   MessageSquare,
   Globe,
   Zap,
+  Unlock,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -418,6 +419,13 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
     fetchCurso()
   }
 
+  async function handleLiberarCurso() {
+    if (!curso) return
+    if (!confirm("¿Liberar este curso? Pasara a estado 'borrador' y los estudiantes activos perderan acceso. Los graduados podran entrar para descargar su certificado.")) return
+    await supabase.from("cursos").update({ estado: "borrador", activo: false }).eq("id", curso.id)
+    fetchCurso()
+  }
+
   async function handleDelete() {
     if (!curso) return
     await supabase.from("cursos").delete().eq("id", curso.id)
@@ -493,6 +501,15 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
                   Aprobar
                 </button>
               </>
+            )}
+            {isDecano && curso.estado === "aprobado" && (
+              <button
+                onClick={handleLiberarCurso}
+                className="px-4 py-2 bg-orange-50 text-orange-700 rounded-lg font-medium hover:bg-orange-100 transition-colors flex items-center gap-2 text-sm"
+              >
+                <Unlock className="w-4 h-4" />
+                Liberar Curso
+              </button>
             )}
             {isDecano && (
               <Link

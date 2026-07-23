@@ -138,6 +138,23 @@ CREATE TABLE IF NOT EXISTS certificados (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 1.7.1 HISTORIAL DE CREADORES
+CREATE TABLE IF NOT EXISTS historial_creadores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  curso_id UUID NOT NULL REFERENCES cursos(id) ON DELETE CASCADE,
+  facilitador_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  fecha_inicio TIMESTAMPTZ DEFAULT NOW(),
+  fecha_fin TIMESTAMPTZ
+);
+
+ALTER TABLE historial_creadores ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "historial_select_decano_developer" ON historial_creadores
+  FOR SELECT USING (public.get_my_role() IN ('decano', 'developer'));
+
+CREATE POLICY "historial_insert_decano_developer" ON historial_creadores
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'developer'));
+
 -- 1.8 MATERIALES PDF
 CREATE TABLE IF NOT EXISTS material_pdf (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -575,17 +592,23 @@ CREATE POLICY "p_delete_facilitador" ON profiles
 -- -------------------------------------------------
 ALTER TABLE cursos ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "cursos_select_aprobados"
-  ON cursos FOR SELECT
-  USING (estado = 'aprobado');
+DROP POLICY IF EXISTS "cursos_select_aprobados" ON cursos;
+DROP POLICY IF EXISTS "cursos_select_facilitador" ON cursos;
+DROP POLICY IF EXISTS "cursos_select_decano" ON cursos;
 
-CREATE POLICY "cursos_select_facilitador"
+CREATE POLICY "cursos_select_authenticated"
   ON cursos FOR SELECT
-  USING (facilitador_id = auth.uid());
-
-CREATE POLICY "cursos_select_decano"
-  ON cursos FOR SELECT
-  USING (public.get_my_role() IN ('decano', 'developer'));
+  USING (
+    auth.uid() IS NOT NULL AND (
+      public.get_my_role() IN ('decano', 'developer') OR
+      facilitador_id = auth.uid() OR
+      estado = 'aprobado' OR
+      EXISTS (
+        SELECT 1 FROM certificados c
+        WHERE c.user_id = auth.uid() AND c.curso_id = cursos.id
+      )
+    )
+  );
 
 CREATE POLICY "cursos_insert_facilitador"
   ON cursos FOR INSERT
