@@ -1002,9 +1002,9 @@ function CursoContent({ id }: { id: string }) {
           </Link>
         )}
 
-        <div className="text-center">
+        <div className={inscrito ? "" : "text-center"}>
           {curso.imagen_portada && (
-            <div className="mb-4 rounded-xl overflow-hidden border border-gray-200 max-w-md mx-auto">
+            <div className={`mb-4 rounded-xl overflow-hidden border border-gray-200 ${inscrito ? "" : "max-w-md mx-auto"}`}>
               <img
                 src={curso.imagen_portada}
                 alt={`Portada de ${curso.titulo}`}
@@ -1012,7 +1012,7 @@ function CursoContent({ id }: { id: string }) {
               />
             </div>
           )}
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className={`text-2xl font-bold text-gray-900 ${inscrito ? "" : "text-center"}`}>
             {curso.titulo}
           </h1>
         </div>
