@@ -385,11 +385,14 @@ function TabContenido({
   const modulo = modulos[moduloActual]
   const prevModuloRef = useRef(moduloActual)
 
+  const [showVideo, setShowVideo] = useState(false)
+
   useEffect(() => {
     if (prevModuloRef.current !== moduloActual) {
       prevModuloRef.current = moduloActual
       setVideoCompletado(false)
       setShowQuiz(false)
+      setShowVideo(false)
     }
   }, [moduloActual])
   if (!modulo) return null
@@ -417,13 +420,25 @@ function TabContenido({
           </div>
         ) : (
           <>
-            <div className="bg-black rounded-xl overflow-hidden max-w-2xl mx-auto aspect-video">
-              {modulo.imagen_portada && !embedUrl ? (
-                <img
-                  src={modulo.imagen_portada}
-                  alt={`Portada de ${modulo.titulo}`}
-                  className="w-full h-full object-cover"
-                />
+            <div className="bg-black rounded-xl overflow-hidden max-w-2xl mx-auto aspect-video relative">
+              {modulo.imagen_portada && !showVideo ? (
+                <div className="relative w-full h-full">
+                  <img
+                    src={modulo.imagen_portada}
+                    alt={`Portada de ${modulo.titulo}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {embedUrl && (
+                    <button
+                      onClick={() => setShowVideo(true)}
+                      className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
+                    >
+                      <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                        <Play className="w-7 h-7 text-luxor-primary ml-1" />
+                      </div>
+                    </button>
+                  )}
+                </div>
               ) : embedUrl ? (
                 <YouTubePlayer
                   key={modulo.id}
