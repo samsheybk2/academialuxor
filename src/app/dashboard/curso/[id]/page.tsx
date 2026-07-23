@@ -324,14 +324,14 @@ function TabInformacion({
 
   return (
     <div className="space-y-6">
-      <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 px-6">
-        <div className="space-y-4 flex flex-col items-center justify-center">
+      <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 px-4 sm:px-6">
+        <div className="space-y-4 flex flex-col items-center">
           {curso.imagen_portada && !showVideo && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full max-h-[500px] relative">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full relative">
               <img
                 src={curso.imagen_portada}
                 alt={`Portada de ${curso.titulo}`}
-                className="w-full h-full object-cover min-h-[300px]"
+                className="w-full h-auto object-contain max-h-[500px]"
               />
               {curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
                 <button
@@ -346,8 +346,8 @@ function TabInformacion({
           )}
 
           {(showVideo || !curso.imagen_portada) && curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full max-h-[500px] relative">
-              <div className="aspect-video min-h-[300px]">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full relative">
+              <div className="aspect-video">
                 <iframe
                   src={`https://www.youtube.com/embed/${getYouTubeVideoId(curso.video_bienvenida)}`}
                   className="w-full h-full border-0"
@@ -489,9 +489,9 @@ function TabContenido({
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
-      <div className="space-y-5">
+      <div className="space-y-5 min-w-0">
         {showQuiz ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
             <Quiz
               preguntas={modulo.preguntas}
               onCompletar={onModuloCompletado}
@@ -499,13 +499,13 @@ function TabContenido({
           </div>
         ) : (
           <>
-            <div className="bg-black rounded-xl overflow-hidden max-w-2xl mx-auto aspect-video relative">
+            <div className="bg-black rounded-xl overflow-hidden w-full aspect-video relative">
               {modulo.imagen_portada && !showVideo ? (
                 <div className="relative w-full h-full">
                   <img
                     src={modulo.imagen_portada}
                     alt={`Portada de ${modulo.titulo}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                   {embedUrl && (
                     <button
@@ -1040,7 +1040,7 @@ function CursoContent({ id }: { id: string }) {
 
   return (
     <ProtectedRoute>
-      <div className="space-y-6 pb-20">
+      <div className="space-y-6 pb-20 px-4 sm:px-6">
         {isDecano && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
