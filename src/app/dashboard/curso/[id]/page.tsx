@@ -304,21 +304,21 @@ function TabInformacion({
   return (
     <div className="space-y-6">
       <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 px-6">
-        <div className="space-y-4 flex flex-col items-center">
+        <div className="space-y-4 flex flex-col items-center justify-center">
           {curso.imagen_portada && !showVideo && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden max-w-lg relative">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full max-h-[500px] relative">
               <img
                 src={curso.imagen_portada}
                 alt={`Portada de ${curso.titulo}`}
-                className="w-full h-auto object-contain"
+                className="w-full h-full object-cover min-h-[300px]"
               />
               {curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
                 <button
                   onClick={() => setShowVideo(true)}
                   className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
                 >
-                  <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-                    <Play className="w-7 h-7 text-luxor-primary ml-1" />
+                  <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                    <Play className="w-9 h-9 text-luxor-primary ml-1" />
                   </div>
                 </button>
               )}
@@ -326,7 +326,7 @@ function TabInformacion({
           )}
 
           {(showVideo || !curso.imagen_portada) && curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden w-full">
               <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Play className="w-4 h-4 text-luxor-primary" />
@@ -341,7 +341,7 @@ function TabInformacion({
                   </button>
                 )}
               </div>
-              <div className="aspect-video">
+              <div className="aspect-video min-h-[300px]">
                 <iframe
                   src={`https://www.youtube.com/embed/${getYouTubeVideoId(curso.video_bienvenida)}`}
                   className="w-full h-full border-0"
