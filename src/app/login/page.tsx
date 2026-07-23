@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { LoginForm } from "@/components/auth/LoginForm"
@@ -9,6 +9,21 @@ import { GraduationCap, BookOpen, Award, Users } from "lucide-react"
 export default function LoginPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [imagesLoaded, setImagesLoaded] = useState(false)
+  const [loadedCount, setLoadedCount] = useState(0)
+
+  const fondosAnimados = ["/fondo (1).webp", "/fondo (2).webp", "/fondo (3).webp"]
+  const totalImages = fondosAnimados.length + 1 // fondos + logo
+
+  const handleImageLoad = () => {
+    setLoadedCount((prev) => {
+      const next = prev + 1
+      if (next >= totalImages) {
+        setImagesLoaded(true)
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!loading && user) {
@@ -20,7 +35,7 @@ export default function LoginPage() {
     }
   }, [user, loading, router])
 
-  if (loading) {
+  if (loading || !imagesLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-luxor-primary via-luxor-secondary to-luxor-primary">
         <div className="flex flex-col items-center gap-4">
@@ -35,8 +50,6 @@ export default function LoginPage() {
 
   if (user) return null
 
-  const fondosAnimados = ["/fondo (1).webp", "/fondo (2).webp", "/fondo (3).webp"]
-
   return (
     <div className="min-h-screen flex overflow-hidden">
       {/* Panel izquierdo - Branding */}
@@ -49,6 +62,7 @@ export default function LoginPage() {
               src={fondo}
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
+              onLoad={handleImageLoad}
               style={{
                 animation: `slideshow${(index % 3) + 1} 12s infinite`,
               }}
@@ -112,6 +126,7 @@ export default function LoginPage() {
             src="/logo.webp"
             alt="Academia Luxor"
             className="h-20 w-auto"
+            onLoad={handleImageLoad}
           />
         </div>
 
@@ -125,6 +140,7 @@ export default function LoginPage() {
                 src={fondo}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover"
+                onLoad={handleImageLoad}
                 style={{
                   animation: `slideshow${(index % 3) + 1} 12s infinite`,
                 }}
@@ -142,6 +158,7 @@ export default function LoginPage() {
                   src="/logo.webp"
                   alt="Academia Luxor"
                   className="max-h-32 w-auto object-contain"
+                  onLoad={handleImageLoad}
                 />
               </div>
 
