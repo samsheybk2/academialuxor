@@ -592,23 +592,23 @@ CREATE POLICY "p_delete_facilitador" ON profiles
 -- -------------------------------------------------
 ALTER TABLE cursos ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "cursos_select_authenticated" ON cursos;
 DROP POLICY IF EXISTS "cursos_select_aprobados" ON cursos;
 DROP POLICY IF EXISTS "cursos_select_facilitador" ON cursos;
 DROP POLICY IF EXISTS "cursos_select_decano" ON cursos;
+DROP POLICY IF EXISTS "cursos_select_graduados" ON cursos;
 
-CREATE POLICY "cursos_select_authenticated"
+CREATE POLICY "cursos_select_decano_developer"
   ON cursos FOR SELECT
-  USING (
-    auth.uid() IS NOT NULL AND (
-      public.get_my_role() IN ('decano', 'developer') OR
-      facilitador_id = auth.uid() OR
-      estado = 'aprobado' OR
-      EXISTS (
-        SELECT 1 FROM certificados c
-        WHERE c.user_id = auth.uid() AND c.curso_id = cursos.id
-      )
-    )
-  );
+  USING (public.get_my_role() IN ('decano', 'developer'));
+
+CREATE POLICY "cursos_select_facilitador_own"
+  ON cursos FOR SELECT
+  USING (facilitador_id = auth.uid());
+
+CREATE POLICY "cursos_select_aprobados"
+  ON cursos FOR SELECT
+  USING (estado = 'aprobado');
 
 CREATE POLICY "cursos_insert_facilitador"
   ON cursos FOR INSERT

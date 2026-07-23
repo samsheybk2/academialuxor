@@ -277,6 +277,7 @@ function TabInformacion({
   curso: CursoData
   modulos: ModuloData[]
 }) {
+  const [showVideo, setShowVideo] = useState(false)
   const niveles = Array.isArray(curso.nivel)
     ? curso.nivel
     : [curso.nivel]
@@ -304,23 +305,41 @@ function TabInformacion({
     <div className="space-y-6">
       <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 px-6">
         <div className="space-y-4 flex flex-col items-center">
-          {curso.imagen_portada && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden max-w-lg">
+          {curso.imagen_portada && !showVideo && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden max-w-lg relative">
               <img
                 src={curso.imagen_portada}
                 alt={`Portada de ${curso.titulo}`}
                 className="w-full h-auto object-contain"
               />
+              {curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
+                <button
+                  onClick={() => setShowVideo(true)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
+                >
+                  <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                    <Play className="w-7 h-7 text-luxor-primary ml-1" />
+                  </div>
+                </button>
+              )}
             </div>
           )}
 
-          {curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
+          {(showVideo || !curso.imagen_portada) && curso.video_bienvenida && getYouTubeVideoId(curso.video_bienvenida) && (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-100">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Play className="w-4 h-4 text-luxor-primary" />
                   Video de presentacion
                 </h3>
+                {curso.imagen_portada && (
+                  <button
+                    onClick={() => setShowVideo(false)}
+                    className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Volver a la imagen
+                  </button>
+                )}
               </div>
               <div className="aspect-video">
                 <iframe
