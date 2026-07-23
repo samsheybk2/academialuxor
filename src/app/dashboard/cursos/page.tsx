@@ -93,10 +93,10 @@ function CursosContent() {
     setLoading(true)
     const { data } = await supabase
       .from("cursos")
-      .select("*, profiles!facilitador_id(avatar_url)")
+      .select("*")
       .order("created_at", { ascending: false })
     if (data) {
-      setCursos(data.map((c: any) => ({ ...c, facilitador_avatar: c.profiles?.avatar_url })) as Curso[])
+      setCursos(data as Curso[])
     }
     setLoading(false)
   }
