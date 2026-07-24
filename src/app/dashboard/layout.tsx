@@ -53,7 +53,7 @@ export default function DashboardLayout({
         onToggleCollapse={() => {}}
       />
       <Header onMenuClick={() => setSidebarOpen(true)} />
-      <main className="flex-1 mt-14 mb-16 lg:mb-0 overflow-y-auto overflow-x-hidden bg-[#F0F2F5]">{children}</main>
+      <main className="flex-1 mt-14 mb-16 lg:mb-0 overflow-y-auto overflow-x-hidden bg-[#F0F2F5] px-6">{children}</main>
       <MobileNav />
       <FloatingCalendar />
     </div>

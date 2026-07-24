@@ -15,6 +15,7 @@ import {
   Newspaper,
   Network,
   Brain,
+  Star,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -40,6 +41,7 @@ const navByRole = {
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/tests", label: "Tests", icon: Brain },
+    { href: "/dashboard/insignias", label: "Experiencia", icon: Star },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   facilitador: [

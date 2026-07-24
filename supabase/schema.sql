@@ -862,6 +862,123 @@ CREATE POLICY "cargo_elementos_all_admin"
   USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 
+-- 1.22 INSIGNIAS (Badges parametrizables por developer)
+CREATE TABLE IF NOT EXISTS insignias (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL,
+  descripcion TEXT,
+  imagen_url TEXT,
+  rol TEXT NOT NULL DEFAULT 'facilitador' CHECK (rol IN ('facilitador', 'estudiante', 'ambos')),
+  min_cursos_creados INTEGER DEFAULT 0,
+  min_cursos_aprobados INTEGER DEFAULT 0,
+  min_estudiantes_capacitados INTEGER DEFAULT 0,
+  min_calificacion_promedio INTEGER DEFAULT 0,
+  min_cursos_inscritos INTEGER DEFAULT 0,
+  min_cursos_completados INTEGER DEFAULT 0,
+  min_modulos_completados INTEGER DEFAULT 0,
+  min_quizzes_aprobados INTEGER DEFAULT 0,
+  min_racha_dias INTEGER DEFAULT 0,
+  xp INTEGER DEFAULT 10,
+  color TEXT DEFAULT '#6366f1',
+  activa BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER update_insignias_updated_at
+  BEFORE UPDATE ON insignias
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE insignias ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "insignias_select_authenticated" ON insignias
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "insignias_all_developer" ON insignias
+  FOR ALL USING (public.get_my_role() = 'developer');
+
+-- 1.22b CARGOS ASOCIADOS A INSIGNIAS (N:N)
+CREATE TABLE IF NOT EXISTS insignia_cargos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  insignia_id UUID NOT NULL REFERENCES insignias(id) ON DELETE CASCADE,
+  cargo_id TEXT NOT NULL REFERENCES cargos(id) ON DELETE CASCADE,
+  UNIQUE(insignia_id, cargo_id)
+);
+
+ALTER TABLE insignia_cargos ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "insignia_cargos_select_authenticated" ON insignia_cargos
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "insignia_cargos_all_developer" ON insignia_cargos
+  FOR ALL USING (public.get_my_role() = 'developer');
+
+-- 1.23 INSIGNIAS ASIGNADAS A FACILITADORES
+CREATE TABLE IF NOT EXISTS insignias_facilitadores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  insignia_id UUID NOT NULL REFERENCES insignias(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  fecha_otorgada TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(insignia_id, user_id)
+);
+
+ALTER TABLE insignias_facilitadores ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "insignias_fac_select_authenticated" ON insignias_facilitadores
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "insignias_fac_insert_system" ON insignias_facilitadores
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'developer'));
+
+-- 1.23b INSIGNIAS ASIGNADAS A ESTUDIANTES
+CREATE TABLE IF NOT EXISTS insignias_estudiantes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  insignia_id UUID NOT NULL REFERENCES insignias(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  fecha_otorgada TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(insignia_id, user_id)
+);
+
+ALTER TABLE insignias_estudiantes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "insignias_est_select_authenticated" ON insignias_estudiantes
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "insignias_est_insert_system" ON insignias_estudiantes
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'developer'));
+
+-- 1.24 NIVELES DE EXPERIENCIA (titulo + marco de avatar)
+CREATE TABLE IF NOT EXISTS niveles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL,
+  descripcion TEXT,
+  imagen_url TEXT,
+  icono TEXT DEFAULT '⭐',
+  rol TEXT NOT NULL DEFAULT 'facilitador' CHECK (rol IN ('facilitador', 'estudiante', 'ambos')),
+  xp_minimo INTEGER NOT NULL DEFAULT 0,
+  color TEXT DEFAULT '#6366f1',
+  avatar_x INTEGER DEFAULT 50,
+  avatar_y INTEGER DEFAULT 50,
+  avatar_tamano INTEGER DEFAULT 70,
+  frame_tamano INTEGER DEFAULT 100,
+  avatar_delante BOOLEAN DEFAULT true,
+  activo BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER update_niveles_updated_at
+  BEFORE UPDATE ON niveles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE niveles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "niveles_select_authenticated" ON niveles
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "niveles_all_developer" ON niveles
+  FOR ALL USING (public.get_my_role() = 'developer');
+
 -- 1.13 EVALUACIONES DE TALLERES
 CREATE TABLE IF NOT EXISTS evaluacion_talleres (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

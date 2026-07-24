@@ -10,6 +10,62 @@ import { Card, CardContent } from "@/components/ui/Card"
 import { User, Loader2, CheckCircle2, AlertCircle, Camera, X, Eye, EyeOff, ChevronDown, ChevronUp, Pencil, Flame, Target, BookOpen, Award, Star, TrendingUp, Trophy, Zap, Calendar } from "lucide-react"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 
+function CompositeAvatar({
+  frameUrl,
+  avatarSrc,
+  initials,
+  x,
+  y,
+  tamano,
+  frameTamano,
+  avatarDelante,
+  onClick,
+}: {
+  frameUrl: string
+  avatarSrc: string | null
+  initials: string
+  x: number
+  y: number
+  tamano: number
+  frameTamano: number
+  avatarDelante: boolean
+  onClick: () => void
+}) {
+  const sizePercent = `${tamano}%`
+  const frameScale = `${frameTamano}%`
+  const frameZ = avatarDelante ? 10 : 20
+  const avatarZ = avatarDelante ? 20 : 10
+  return (
+    <div className="relative cursor-pointer group" onClick={onClick}>
+      <div className="w-32 h-32 sm:w-36 sm:h-36 relative">
+        <img src={frameUrl} alt="" className="absolute pointer-events-none" style={{ zIndex: frameZ, left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: frameScale, height: frameScale, maxWidth: "none", maxHeight: "none", objectFit: "contain" }} />
+        <div
+          className="absolute rounded-full bg-white overflow-hidden"
+          style={{
+            zIndex: avatarZ,
+            left: `${x}%`,
+            top: `${y}%`,
+            width: sizePercent,
+            height: sizePercent,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          {avatarSrc ? (
+            <img src={avatarSrc} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-luxor-primary/10 flex items-center justify-center">
+              <span className="text-luxor-primary font-bold text-3xl">{initials}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <Camera className="w-8 h-8 text-white drop-shadow-lg" />
+      </div>
+    </div>
+  )
+}
+
 interface FacilitadorStats {
   cursosCreados: number
   cursosAprobados: number
@@ -36,12 +92,99 @@ interface Badge {
   nombre: string
   desc: string
   icon: string
+  imagen_url?: string | null
   color: string
   bg: string
   ok: boolean
   p: number
   t: number
   xp: number
+}
+
+interface DbInsignia {
+  id: string
+  nombre: string
+  descripcion: string | null
+  imagen_url: string | null
+  rol: string
+  min_cursos_creados: number
+  min_cursos_aprobados: number
+  min_estudiantes_capacitados: number
+  min_calificacion_promedio: number
+  min_cursos_inscritos: number
+  min_cursos_completados: number
+  min_modulos_completados: number
+  min_quizzes_aprobados: number
+  min_racha_dias: number
+  xp: number
+  color: string
+  activa: boolean
+}
+
+function evaluateFacilitadorBadge(ins: DbInsignia, stats: FacilitadorStats): { ok: boolean; progress: number; total: number } {
+  const checks: { current: number; min: number }[] = []
+  if (ins.min_cursos_creados > 0) checks.push({ current: stats.cursosCreados, min: ins.min_cursos_creados })
+  if (ins.min_cursos_aprobados > 0) checks.push({ current: stats.cursosAprobados, min: ins.min_cursos_aprobados })
+  if (ins.min_estudiantes_capacitados > 0) checks.push({ current: stats.estudiantesCapacitados, min: ins.min_estudiantes_capacitados })
+  if (ins.min_calificacion_promedio > 0) checks.push({ current: stats.calificacionPromedio, min: ins.min_calificacion_promedio })
+  if (checks.length === 0) return { ok: false, progress: 0, total: 0 }
+  const progress = checks.reduce((sum, c) => sum + Math.min(c.current, c.min), 0)
+  const total = checks.reduce((sum, c) => sum + c.min, 0)
+  const ok = checks.every((c) => c.current >= c.min)
+  return { ok, progress, total }
+}
+
+function evaluateEstudianteBadge(ins: DbInsignia, stats: StudentStats): { ok: boolean; progress: number; total: number } {
+  const checks: { current: number; min: number }[] = []
+  if (ins.min_cursos_inscritos > 0) checks.push({ current: stats.cursosInscritos, min: ins.min_cursos_inscritos })
+  if (ins.min_cursos_completados > 0) checks.push({ current: stats.cursosCompletados, min: ins.min_cursos_completados })
+  if (ins.min_modulos_completados > 0) checks.push({ current: stats.modulosCompletados, min: ins.min_modulos_completados })
+  if (ins.min_quizzes_aprobados > 0) checks.push({ current: stats.quizzesAprobados, min: ins.min_quizzes_aprobados })
+  if (ins.min_racha_dias > 0) checks.push({ current: stats.mejorRacha, min: ins.min_racha_dias })
+  if (ins.min_calificacion_promedio > 0) checks.push({ current: stats.calificacionPromedio, min: ins.min_calificacion_promedio })
+  if (checks.length === 0) return { ok: false, progress: 0, total: 0 }
+  const progress = checks.reduce((sum, c) => sum + Math.min(c.current, c.min), 0)
+  const total = checks.reduce((sum, c) => sum + c.min, 0)
+  const ok = checks.every((c) => c.current >= c.min)
+  return { ok, progress, total }
+}
+
+function getDbFacilitadorBadges(insignias: DbInsignia[], stats: FacilitadorStats): Badge[] {
+  return insignias.filter(i => i.activa && (i.rol === "facilitador" || i.rol === "ambos")).map((ins) => {
+    const { ok, progress, total } = evaluateFacilitadorBadge(ins, stats)
+    return {
+      id: ins.id,
+      nombre: ins.nombre,
+      desc: ins.descripcion || ins.nombre,
+      icon: "",
+      imagen_url: ins.imagen_url,
+      color: `text-[${ins.color}]`,
+      bg: `bg-[${ins.color}]/15`,
+      ok,
+      p: progress,
+      t: total,
+      xp: ins.xp,
+    }
+  })
+}
+
+function getDbEstudianteBadges(insignias: DbInsignia[], stats: StudentStats): Badge[] {
+  return insignias.filter(i => i.activa && (i.rol === "estudiante" || i.rol === "ambos")).map((ins) => {
+    const { ok, progress, total } = evaluateEstudianteBadge(ins, stats)
+    return {
+      id: ins.id,
+      nombre: ins.nombre,
+      desc: ins.descripcion || ins.nombre,
+      icon: "",
+      imagen_url: ins.imagen_url,
+      color: `text-[${ins.color}]`,
+      bg: `bg-[${ins.color}]/15`,
+      ok,
+      p: progress,
+      t: total,
+      xp: ins.xp,
+    }
+  })
 }
 
 function getStudentBadges(stats: StudentStats): Badge[] {
@@ -89,6 +232,68 @@ function getBadges(stats: FacilitadorStats): Badge[] {
     { id: "calidad", nombre: "Calidad Comprobada", desc: "Calificacion promedio > 80%", icon: "⭐", color: "text-pink-700", bg: "bg-pink-100", ok: stats.calificacionPromedio >= 80, p: Math.min(stats.calificacionPromedio, 80), t: 80, xp: 100 },
     { id: "impacto", nombre: "Impacto Total", desc: "100 estudiantes capacitados", icon: "🚀", color: "text-red-700", bg: "bg-red-100", ok: stats.estudiantesCapacitados >= 100, p: Math.min(stats.estudiantesCapacitados, 100), t: 100, xp: 1000 },
   ]
+}
+
+interface DbNivel { id: string; nombre: string; descripcion: string | null; imagen_url: string | null; icono: string; rol: string; xp_minimo: number; color: string; avatar_x: number; avatar_y: number; avatar_tamano: number; frame_tamano: number; avatar_delante: boolean; activo: boolean }
+
+interface NivelInfo {
+  n: string; bg: string; bar: string; i: string; score: number; from: number; to: number; pct: number
+  frame: string; glow: string; frame_url?: string | null
+  avatar_x?: number; avatar_y?: number; avatar_tamano?: number; frame_tamano?: number; avatar_delante?: boolean
+}
+
+function getBaseNivel(earnedXP: number, totalXP: number): { n: string; bg: string; bar: string; i: string; from: number; to: number; frame: string; glow: string } {
+  const pct = totalXP > 0 ? (earnedXP / totalXP) * 100 : 0
+  if (pct >= 95) return { n: "Leyenda", bg: "bg-yellow-500", bar: "from-yellow-400 to-amber-500", i: "👑", from: Math.floor(totalXP * 0.95), to: totalXP, frame: "from-yellow-400 via-amber-500 to-orange-400", glow: "shadow-yellow-500/50" }
+  if (pct >= 60) return { n: "Experto", bg: "bg-purple-500", bar: "from-purple-400 to-violet-500", i: "🏆", from: Math.floor(totalXP * 0.60), to: Math.floor(totalXP * 0.95), frame: "from-purple-400 via-violet-500 to-purple-400", glow: "shadow-purple-500/50" }
+  if (pct >= 30) return { n: "Avanzado", bg: "bg-blue-500", bar: "from-blue-400 to-luxor-primary", i: "⭐", from: Math.floor(totalXP * 0.30), to: Math.floor(totalXP * 0.60), frame: "from-blue-400 via-luxor-primary to-blue-400", glow: "shadow-blue-500/50" }
+  if (pct >= 10) return { n: "Intermedio", bg: "bg-green-500", bar: "from-green-400 to-emerald-500", i: "📈", from: Math.floor(totalXP * 0.10), to: Math.floor(totalXP * 0.30), frame: "from-green-400 via-emerald-500 to-green-400", glow: "shadow-green-500/50" }
+  if (pct >= 1.8) return { n: "Principiante", bg: "bg-gray-500", bar: "from-gray-400 to-gray-500", i: "🌱", from: Math.floor(totalXP * 0.018), to: Math.floor(totalXP * 0.10), frame: "from-gray-400 via-gray-500 to-gray-400", glow: "shadow-gray-400/30" }
+  return { n: "Novato", bg: "bg-gray-400", bar: "from-gray-300 to-gray-400", i: "📋", from: 0, to: Math.floor(totalXP * 0.018), frame: "from-gray-300 via-gray-400 to-gray-300", glow: "shadow-gray-300/20" }
+}
+
+function getDbNivel(badges: Badge[], niveles: DbNivel[]): NivelInfo {
+  const totalXP = badges.reduce((sum, b) => sum + b.xp, 0)
+  const earnedXP = badges.filter(b => b.ok).reduce((sum, b) => sum + b.xp, 0)
+  const pct = totalXP > 0 ? (earnedXP / totalXP) * 100 : 0
+  const base = getBaseNivel(earnedXP, totalXP)
+  const activeNiveles = niveles.filter(n => n.activo && (n.rol === "facilitador" || n.rol === "ambos")).sort((a, b) => b.xp_minimo - a.xp_minimo)
+  const matched = activeNiveles.find(n => earnedXP >= n.xp_minimo) || activeNiveles[activeNiveles.length - 1] || null
+  return {
+    ...base,
+    n: matched?.nombre || base.n,
+    i: matched?.icono || base.i,
+    frame_url: matched?.imagen_url || null,
+    avatar_x: matched?.avatar_x ?? 50,
+    avatar_y: matched?.avatar_y ?? 50,
+    avatar_tamano: matched?.avatar_tamano ?? 70,
+    frame_tamano: matched?.frame_tamano ?? 100,
+    avatar_delante: matched?.avatar_delante ?? true,
+    score: earnedXP,
+    pct,
+  }
+}
+
+function getDbStudentNivel(badges: Badge[], niveles: DbNivel[]): NivelInfo {
+  const totalXP = badges.reduce((sum, b) => sum + b.xp, 0)
+  const earnedXP = badges.filter(b => b.ok).reduce((sum, b) => sum + b.xp, 0)
+  const pct = totalXP > 0 ? (earnedXP / totalXP) * 100 : 0
+  const base = getBaseNivel(earnedXP, totalXP)
+  const activeNiveles = niveles.filter(n => n.activo && (n.rol === "estudiante" || n.rol === "ambos")).sort((a, b) => b.xp_minimo - a.xp_minimo)
+  const matched = activeNiveles.find(n => earnedXP >= n.xp_minimo) || activeNiveles[activeNiveles.length - 1] || null
+  return {
+    ...base,
+    n: matched?.nombre || base.n,
+    i: matched?.icono || base.i,
+    frame_url: matched?.imagen_url || null,
+    avatar_x: matched?.avatar_x ?? 50,
+    avatar_y: matched?.avatar_y ?? 50,
+    avatar_tamano: matched?.avatar_tamano ?? 70,
+    frame_tamano: matched?.frame_tamano ?? 100,
+    avatar_delante: matched?.avatar_delante ?? true,
+    score: earnedXP,
+    pct,
+  }
 }
 
 function getNivel(badges: Badge[]) {
@@ -188,6 +393,8 @@ function PerfilContent() {
     cursosPendientes: 0,
     cursosRechazados: 0,
   })
+  const [dbInsignias, setDbInsignias] = useState<DbInsignia[]>([])
+  const [dbNiveles, setDbNiveles] = useState<DbNivel[]>([])
   const fetchedRef = useRef(false)
 
   const [modalForm, setModalForm] = useState({ nombre: "", bio: "", newPassword: "", confirmPassword: "" })
@@ -202,6 +409,7 @@ function PerfilContent() {
       fetchedRef.current = true
       setModalForm({ nombre: user.nombre || "", bio: user.bio || "", newPassword: "", confirmPassword: "" })
       if (user.avatar_url) setAvatarPreview(user.avatar_url)
+      fetchDbInsignias()
       if (user.rol === "facilitador") {
         fetchFacilitadorStats()
         fetchFacilitadorCursos()
@@ -222,6 +430,15 @@ function PerfilContent() {
     document.addEventListener("click", handleClickOutside)
     return () => document.removeEventListener("click", handleClickOutside)
   }, [])
+
+  async function fetchDbInsignias() {
+    const [insigniasRes, nivelesRes] = await Promise.all([
+      supabase.from("insignias").select("*").eq("activa", true),
+      supabase.from("niveles").select("*").order("xp_minimo"),
+    ])
+    setDbInsignias(insigniasRes.data || [])
+    setDbNiveles(nivelesRes.data || [])
+  }
 
   async function fetchFacilitadorStats() {
     setLoadingStats(true)
@@ -356,6 +573,7 @@ function PerfilContent() {
   const isFac = user?.rol === "facilitador"
   const isStu = user?.rol === "estudiante"
   const isDev = user?.rol === "developer"
+  const showsFacNivel = isFac || isDev
   
   // Calcular estadísticas para insignias (reales o simuladas)
   const effectiveFacStats = isDev && godMode 
@@ -367,17 +585,30 @@ function PerfilContent() {
     : stuStats || { cursosInscritos: 0, cursosCompletados: 0, modulosCompletados: 0, quizzesAprobados: 0, calificacionPromedio: 0, puntosTotales: 0, rachaActual: 0, mejorRacha: 0, ultimaActividad: null }
   
   // En Modo Dios, calcular insignias automáticamente según datos simulados
-  let facBadges = getBadges(effectiveFacStats)
-  let stuBadges = getStudentBadges(effectiveStuStats)
-  
-  // Si NO está en Modo Dios, usar las insignias reales
-  if (!isDev || !godMode) {
-    facBadges = facStats ? getBadges(facStats) : []
-    stuBadges = stuStats ? getStudentBadges(stuStats) : []
+  let facBadges: Badge[]
+  let stuBadges: Badge[]
+  if (isDev && godMode) {
+    facBadges = dbInsignias.length > 0
+      ? getDbFacilitadorBadges(dbInsignias, simulatedFacStats)
+      : getBadges(simulatedFacStats)
+    stuBadges = dbInsignias.length > 0
+      ? getDbEstudianteBadges(dbInsignias, effectiveStuStats)
+      : getStudentBadges(effectiveStuStats)
+  } else {
+    facBadges = facStats
+      ? (dbInsignias.length > 0 ? getDbFacilitadorBadges(dbInsignias, facStats) : getBadges(facStats))
+      : []
+    stuBadges = stuStats
+      ? (dbInsignias.length > 0 ? getDbEstudianteBadges(dbInsignias, stuStats) : getStudentBadges(stuStats))
+      : []
   }
   
-  const facNivel = getNivel(facBadges)
-  const stuNivel = getStudentNivel(stuBadges)
+  const facNivel = dbNiveles.length > 0
+    ? getDbNivel(facBadges, dbNiveles)
+    : getNivel(facBadges)
+  const stuNivel = dbNiveles.length > 0
+    ? getDbStudentNivel(stuBadges, dbNiveles)
+    : getStudentNivel(stuBadges)
   const facUnlocked = facBadges.filter((b) => b.ok).length
   const stuUnlocked = stuBadges.filter((b) => b.ok).length
 
@@ -594,34 +825,60 @@ function PerfilContent() {
       )}
 
       {/* Profile Header */}
+      <div className="w-full max-w-3xl mx-auto">
       <Card>
         <CardContent>
           <div className="flex flex-col lg:flex-row items-center justify-center gap-4">
             {/* Avatar */}
             <div className="relative">
-              {(isFac && facNivel) || (isStu && stuNivel) || (isDev && godMode && (simulatedRole === "facilitador" ? facNivel : stuNivel)) ? (
-                <div className={`p-1.5 rounded-full bg-gradient-to-br ${
-                  isDev && godMode 
-                    ? (simulatedRole === "facilitador" ? facNivel?.frame : stuNivel?.frame)
-                    : (isFac ? facNivel?.frame : stuNivel?.frame)
-                } ${
-                  isDev && godMode 
-                    ? (simulatedRole === "facilitador" ? facNivel?.glow : stuNivel?.glow)
-                    : (isFac ? facNivel?.glow : stuNivel?.glow)
-                } shadow-lg`}>
-                  <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white bg-white overflow-hidden cursor-pointer group" onClick={() => setShowModal(true)}>
-                    {avatarPreview ? (
-                      <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-luxor-primary/10 flex items-center justify-center">
-                        <span className="text-luxor-primary font-bold text-5xl">{user?.nombre?.charAt(0).toUpperCase() || "U"}</span>
+              {(showsFacNivel && facNivel) || (isStu && stuNivel) || (isDev && godMode && (simulatedRole === "facilitador" ? facNivel : stuNivel)) ? (
+                (() => {
+                  const activeNivel = (isDev && godMode) 
+                    ? (simulatedRole === "facilitador" ? facNivel : stuNivel)
+                    : (showsFacNivel ? facNivel : stuNivel)
+                  const frameUrl = activeNivel && "frame_url" in activeNivel ? (activeNivel as NivelInfo).frame_url : null
+                  const ax = (activeNivel && "avatar_x" in activeNivel) ? (activeNivel as NivelInfo).avatar_x ?? 50 : 50
+                  const ay = (activeNivel && "avatar_y" in activeNivel) ? (activeNivel as NivelInfo).avatar_y ?? 50 : 50
+                  const at = (activeNivel && "avatar_tamano" in activeNivel) ? (activeNivel as NivelInfo).avatar_tamano ?? 70 : 70
+                  const ft = (activeNivel && "frame_tamano" in activeNivel) ? (activeNivel as NivelInfo).frame_tamano ?? 100 : 100
+                  const ad = (activeNivel && "avatar_delante" in activeNivel) ? (activeNivel as NivelInfo).avatar_delante ?? true : true
+                  return frameUrl ? (
+                    <CompositeAvatar
+                      frameUrl={frameUrl}
+                      avatarSrc={avatarPreview || user?.avatar_url || null}
+                      initials={user?.nombre?.charAt(0).toUpperCase() || "U"}
+                      x={ax}
+                      y={ay}
+                      tamano={at}
+                      frameTamano={ft}
+                      avatarDelante={ad}
+                      onClick={() => setShowModal(true)}
+                    />
+                  ) : (
+                    <div className={`p-1.5 rounded-full bg-gradient-to-br ${
+                      isDev && godMode 
+                        ? (simulatedRole === "facilitador" ? facNivel?.frame : stuNivel?.frame)
+                        : (showsFacNivel ? facNivel?.frame : stuNivel?.frame)
+                    } ${
+                      isDev && godMode 
+                        ? (simulatedRole === "facilitador" ? facNivel?.glow : stuNivel?.glow)
+                        : (showsFacNivel ? facNivel?.glow : stuNivel?.glow)
+                    } shadow-lg`}>
+                      <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white bg-white overflow-hidden cursor-pointer group" onClick={() => setShowModal(true)}>
+                        {avatarPreview ? (
+                          <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-luxor-primary/10 flex items-center justify-center">
+                            <span className="text-luxor-primary font-bold text-5xl">{user?.nombre?.charAt(0).toUpperCase() || "U"}</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Camera className="w-8 h-8 text-white" />
+                        </div>
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Camera className="w-8 h-8 text-white" />
                     </div>
-                  </div>
-                </div>
+                  )
+                })()
               ) : (
                 <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white bg-white shadow-lg overflow-hidden cursor-pointer group" onClick={() => setShowModal(true)}>
                   {avatarPreview ? (
@@ -634,21 +891,6 @@ function PerfilContent() {
                   <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Camera className="w-8 h-8 text-white" />
                   </div>
-                </div>
-              )}
-              {(isFac && facNivel) && !godMode && (
-                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md">
-                  <span className="text-xl">{facNivel.i}</span>
-                </div>
-              )}
-              {(isStu && stuNivel) && !godMode && (
-                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md">
-                  <span className="text-xl">{stuNivel.i}</span>
-                </div>
-              )}
-              {isDev && godMode && (
-                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md">
-                  <span className="text-xl">{simulatedRole === "facilitador" ? facNivel?.i : stuNivel?.i}</span>
                 </div>
               )}
             </div>
@@ -667,12 +909,12 @@ function PerfilContent() {
             </div>
 
             {/* Level badge - tarjeta a la derecha */}
-            {((isFac || (isDev && godMode && simulatedRole === "facilitador")) && facNivel) || ((isStu || (isDev && godMode && simulatedRole === "estudiante")) && stuNivel) ? (
+            {((showsFacNivel || (isDev && godMode && simulatedRole === "facilitador")) && facNivel) || ((isStu || (isDev && godMode && simulatedRole === "estudiante")) && stuNivel) ? (
               <div className={`w-52 rounded-xl p-4 ${isDev && godMode ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50 border border-gray-200"}`}>
                 {(() => {
                   const nivel = isDev && godMode 
                     ? (simulatedRole === "facilitador" ? facNivel : stuNivel)
-                    : (isFac ? facNivel : stuNivel)
+                    : (showsFacNivel ? facNivel : stuNivel)
                   return (
                     <>
                       <div className="flex items-center gap-2 mb-3">
@@ -716,7 +958,7 @@ function PerfilContent() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">
                 Insignias <span className="text-xs font-normal text-gray-500">({isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.filter(b => b.ok).length : stuBadges.filter(b => b.ok).length) : isFac ? facUnlocked : stuUnlocked}/{isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.length : stuBadges.length) : isFac ? facBadges.length : stuBadges.length})</span>
               </h3>
-              <div className="badge-container flex flex-wrap gap-2">
+              <div className="badge-container flex flex-wrap justify-center gap-2">
                 {(isDev && godMode ? (simulatedRole === "facilitador" ? facBadges : stuBadges) : isFac ? facBadges : stuBadges).map((b) => (
                   <div key={b.id} className="relative group">
                     <button
@@ -725,13 +967,17 @@ function PerfilContent() {
                           setSelectedBadge(selectedBadge === b.id ? null : b.id)
                         }
                       }}
-                      className={`w-12 h-12 rounded-full flex items-center justify-center text-xl transition-all ${
+                      className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-all ${
                         b.ok 
                           ? `${b.bg} shadow-sm` 
                           : "bg-gray-100 opacity-40 grayscale"
                       } ${isDev && godMode ? "cursor-default" : "cursor-pointer"}`}
                     >
-                      {b.icon}
+                      {b.imagen_url ? (
+                        <img src={b.imagen_url} alt={b.nombre} className="w-full h-full object-cover" />
+                      ) : (
+                        b.icon
+                      )}
                     </button>
                     {/* Tooltip desktop (hover) */}
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 hidden sm:block">
@@ -776,6 +1022,7 @@ function PerfilContent() {
           )}
         </CardContent>
       </Card>
+      </div>
 
       <div className="w-full max-w-3xl mx-auto space-y-4">
           {/* Estudiante - Stats */}
