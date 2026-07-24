@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   cargo TEXT,
   sucursal TEXT,
   fecha_nacimiento DATE,
+  nivel_seleccionado_id UUID REFERENCES niveles(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -368,8 +368,10 @@ function PerfilContent() {
   const [stuStats, setStuStats] = useState<StudentStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
   const [selectedBadge, setSelectedBadge] = useState<string | null>(null)
+  const [showAvatarDialog, setShowAvatarDialog] = useState(false)
+  const [showPhotoView, setShowPhotoView] = useState(false)
   const [godMode, setGodMode] = useState(false)
-  const [godModeCollapsed, setGodModeCollapsed] = useState(false)
+  const [godModeCollapsed, setGodModeCollapsed] = useState(true)
   const [simulatedRole, setSimulatedRole] = useState<"facilitador" | "estudiante">("facilitador")
   const [facTab, setFacTab] = useState<"publicaciones" | "estadisticas" | "cursos">("estadisticas")
   const [facCursos, setFacCursos] = useState<any[]>([])
@@ -395,6 +397,7 @@ function PerfilContent() {
   })
   const [dbInsignias, setDbInsignias] = useState<DbInsignia[]>([])
   const [dbNiveles, setDbNiveles] = useState<DbNivel[]>([])
+  const [selectedNivelId, setSelectedNivelId] = useState<string | null>(null)
   const fetchedRef = useRef(false)
 
   const [modalForm, setModalForm] = useState({ nombre: "", bio: "", newPassword: "", confirmPassword: "" })
@@ -438,6 +441,10 @@ function PerfilContent() {
     ])
     setDbInsignias(insigniasRes.data || [])
     setDbNiveles(nivelesRes.data || [])
+    if (user) {
+      const { data: profile } = await supabase.from("profiles").select("nivel_seleccionado_id").eq("id", user.id).single()
+      if (profile?.nivel_seleccionado_id) setSelectedNivelId(profile.nivel_seleccionado_id)
+    }
   }
 
   async function fetchFacilitadorStats() {
@@ -603,231 +610,267 @@ function PerfilContent() {
       : []
   }
   
-  const facNivel = dbNiveles.length > 0
+  const baseFacNivel = dbNiveles.length > 0
     ? getDbNivel(facBadges, dbNiveles)
     : getNivel(facBadges)
-  const stuNivel = dbNiveles.length > 0
+  const baseStuNivel = dbNiveles.length > 0
     ? getDbStudentNivel(stuBadges, dbNiveles)
     : getStudentNivel(stuBadges)
   const facUnlocked = facBadges.filter((b) => b.ok).length
   const stuUnlocked = stuBadges.filter((b) => b.ok).length
 
+  const effectiveBadges = (isDev && godMode) ? (simulatedRole === "facilitador" ? facBadges : stuBadges) : (showsFacNivel ? facBadges : stuBadges)
+  const earnedXp = effectiveBadges.filter(b => b.ok).reduce((sum, b) => sum + b.xp, 0)
+  const userRole = (isDev && godMode) ? simulatedRole : (showsFacNivel ? "facilitador" : "estudiante")
+  const earnedNiveles = dbNiveles.filter(n =>
+    n.activo && (n.rol === userRole || n.rol === "ambos") && earnedXp >= n.xp_minimo
+  ).sort((a, b) => b.xp_minimo - a.xp_minimo)
+
+  const selectedDbNivel = selectedNivelId ? dbNiveles.find(n => n.id === selectedNivelId) : null
+  const overrideNivel: NivelInfo | null = selectedDbNivel ? {
+    ...getNivel(effectiveBadges),
+    n: selectedDbNivel.nombre,
+    i: selectedDbNivel.icono || "⭐",
+    frame_url: selectedDbNivel.imagen_url || null,
+    avatar_x: selectedDbNivel.avatar_x ?? 50,
+    avatar_y: selectedDbNivel.avatar_y ?? 50,
+    avatar_tamano: selectedDbNivel.avatar_tamano ?? 70,
+    frame_tamano: selectedDbNivel.frame_tamano ?? 100,
+    avatar_delante: selectedDbNivel.avatar_delante ?? true,
+  } : null
+
+  const facNivel = overrideNivel || baseFacNivel
+  const stuNivel = overrideNivel || baseStuNivel
+
+  async function saveNivelSelection(nivelId: string | null) {
+    setSelectedNivelId(nivelId)
+    if (user) {
+      await supabase.from("profiles").update({ nivel_seleccionado_id: nivelId }).eq("id", user.id)
+    }
+  }
+
   return (
     <div className="w-full space-y-4">
-      {/* God Mode Switch - Solo para Developer */}
+      {/* God Mode Floating Button + Panel - Solo para Developer */}
       {isDev && (
-        <Card>
-          <CardContent className={godModeCollapsed ? "p-3" : "p-4"}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setGodModeCollapsed(!godModeCollapsed)} className="shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <span className="text-xl">⚡</span>
+        <>
+          <button
+            onClick={() => setGodModeCollapsed(!godModeCollapsed)}
+            className={`fixed bottom-20 right-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all ${godMode ? "bg-gradient-to-br from-purple-500 to-pink-500 text-white scale-110" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}
+            title="Modo Dios"
+          >
+            <span className="text-xl">⚡</span>
+          </button>
+
+          {!godModeCollapsed && (
+            <div className="fixed bottom-36 right-4 z-50 w-72 max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200 p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <span className="text-sm">⚡</span>
                   </div>
-                </button>
-                <div>
-                  <div className="flex items-center gap-2">
+                  <div>
                     <h3 className="text-sm font-semibold text-gray-900">Modo Dios</h3>
-                    {godMode && godModeCollapsed && (
+                    {godMode && (
                       <span className="px-2 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 rounded-full">
                         {simulatedRole === "facilitador" ? "Facilitador" : "Estudiante"}
                       </span>
                     )}
                   </div>
-                  {!godModeCollapsed && <p className="text-xs text-gray-500">Simula marcos e insignias</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setGodMode(!godMode)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${godMode ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-gray-300"}`}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${godMode ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </button>
+                  <button onClick={() => setGodModeCollapsed(true)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors text-gray-400">
+                    <span className="text-sm">✕</span>
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setGodModeCollapsed(!godModeCollapsed)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                  {godModeCollapsed ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronUp className="w-4 h-4 text-gray-500" />}
-                </button>
-                <button
-                  onClick={() => setGodMode(!godMode)}
-                  className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${godMode ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-gray-300"}`}
-                >
-                  <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${godMode ? "translate-x-7" : "translate-x-1"}`} />
-                </button>
-              </div>
+
+              {godMode && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Simular como:</label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSimulatedRole("facilitador")}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${simulatedRole === "facilitador" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                      >
+                        Facilitador
+                      </button>
+                      <button
+                        onClick={() => setSimulatedRole("estudiante")}
+                        className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${simulatedRole === "estudiante" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                      >
+                        Estudiante
+                      </button>
+                    </div>
+                  </div>
+
+                  {simulatedRole === "estudiante" && (
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <h4 className="text-xs font-semibold text-gray-700 mb-2">Estadísticas de Estudiante</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Racha actual</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedStudentStats.rachaActual}
+                            onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, rachaActual: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Mejor racha</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedStudentStats.mejorRacha}
+                            onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, mejorRacha: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Promedio %</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={simulatedStudentStats.calificacionPromedio}
+                            onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, calificacionPromedio: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Cursos inscritos</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedStudentStats.cursosInscritos}
+                            onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, cursosInscritos: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Cursos completados</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedStudentStats.cursosCompletados}
+                            onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, cursosCompletados: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Módulos</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedStudentStats.modulosCompletados}
+                            onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, modulosCompletados: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Quizzes</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedStudentStats.quizzesAprobados}
+                            onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, quizzesAprobados: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {simulatedRole === "facilitador" && (
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <h4 className="text-xs font-semibold text-gray-700 mb-2">Estadísticas de Facilitador</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Estudiantes</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedFacStats.estudiantesCapacitados}
+                            onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, estudiantesCapacitados: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Calificación %</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={simulatedFacStats.calificacionPromedio}
+                            onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, calificacionPromedio: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Cursos creados</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedFacStats.cursosCreados}
+                            onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, cursosCreados: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Aprobados</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedFacStats.cursosAprobados}
+                            onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, cursosAprobados: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Pendientes</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedFacStats.cursosPendientes}
+                            onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, cursosPendientes: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-gray-500 mb-0.5">Rechazados</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={simulatedFacStats.cursosRechazados}
+                            onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, cursosRechazados: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-[10px] text-gray-400">Las insignias se marcan automáticamente según los datos simulados.</p>
+                </div>
+              )}
             </div>
-            {godMode && !godModeCollapsed && (
-              <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1.5">Simular como:</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setSimulatedRole("facilitador")}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${simulatedRole === "facilitador" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-                    >
-                      Facilitador
-                    </button>
-                    <button
-                      onClick={() => setSimulatedRole("estudiante")}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${simulatedRole === "estudiante" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-                    >
-                      Estudiante
-                    </button>
-                  </div>
-                </div>
-
-                {simulatedRole === "estudiante" && (
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <h4 className="text-xs font-semibold text-gray-700 mb-2">Estadísticas de Estudiante</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Racha actual</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedStudentStats.rachaActual}
-                          onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, rachaActual: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Mejor racha</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedStudentStats.mejorRacha}
-                          onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, mejorRacha: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Promedio %</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={simulatedStudentStats.calificacionPromedio}
-                          onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, calificacionPromedio: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Cursos inscritos</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedStudentStats.cursosInscritos}
-                          onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, cursosInscritos: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Cursos completados</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedStudentStats.cursosCompletados}
-                          onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, cursosCompletados: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Módulos</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedStudentStats.modulosCompletados}
-                          onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, modulosCompletados: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Quizzes</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedStudentStats.quizzesAprobados}
-                          onChange={(e) => setSimulatedStudentStats({ ...simulatedStudentStats, quizzesAprobados: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {simulatedRole === "facilitador" && (
-                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <h4 className="text-xs font-semibold text-gray-700 mb-2">Estadísticas de Facilitador</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Estudiantes</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedFacStats.estudiantesCapacitados}
-                          onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, estudiantesCapacitados: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Calificación %</label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={simulatedFacStats.calificacionPromedio}
-                          onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, calificacionPromedio: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Cursos creados</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedFacStats.cursosCreados}
-                          onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, cursosCreados: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Aprobados</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedFacStats.cursosAprobados}
-                          onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, cursosAprobados: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Pendientes</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedFacStats.cursosPendientes}
-                          onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, cursosPendientes: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-gray-500 mb-0.5">Rechazados</label>
-                        <input
-                          type="number"
-                          min="0"
-                          value={simulatedFacStats.cursosRechazados}
-                          onChange={(e) => setSimulatedFacStats({ ...simulatedFacStats, cursosRechazados: parseInt(e.target.value) || 0 })}
-                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <p className="text-xs text-gray-500">Las insignias se marcan automáticamente según los datos simulados.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </>
       )}
 
       {/* Profile Header */}
       <div className="w-full max-w-3xl mx-auto">
       <Card>
-        <CardContent>
+        <CardContent className="relative">
           <div className="flex flex-col lg:flex-row items-center justify-center gap-4">
             {/* Avatar */}
             <div className="relative">
@@ -852,7 +895,7 @@ function PerfilContent() {
                       tamano={at}
                       frameTamano={ft}
                       avatarDelante={ad}
-                      onClick={() => setShowModal(true)}
+                      onClick={() => setShowAvatarDialog(true)}
                     />
                   ) : (
                     <div className={`p-1.5 rounded-full bg-gradient-to-br ${
@@ -864,7 +907,7 @@ function PerfilContent() {
                         ? (simulatedRole === "facilitador" ? facNivel?.glow : stuNivel?.glow)
                         : (showsFacNivel ? facNivel?.glow : stuNivel?.glow)
                     } shadow-lg`}>
-                      <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white bg-white overflow-hidden cursor-pointer group" onClick={() => setShowModal(true)}>
+                      <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white bg-white overflow-hidden cursor-pointer group" onClick={() => setShowAvatarDialog(true)}>
                         {avatarPreview ? (
                           <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
@@ -880,7 +923,7 @@ function PerfilContent() {
                   )
                 })()
               ) : (
-                <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white bg-white shadow-lg overflow-hidden cursor-pointer group" onClick={() => setShowModal(true)}>
+                <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white bg-white shadow-lg overflow-hidden cursor-pointer group" onClick={() => setShowAvatarDialog(true)}>
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -895,62 +938,46 @@ function PerfilContent() {
               )}
             </div>
 
-            {/* Texto + Botón */}
+            {/* Texto */}
             <div className="min-w-0">
               <h1 className="text-2xl font-bold text-gray-900">{user?.nombre}</h1>
               <p className="text-sm text-gray-500">{rolL[user?.rol || ""]}</p>
               {user?.cargo && <p className="text-sm text-gray-400">{user.cargo}</p>}
               {user?.bio && <p className="text-sm text-gray-600 mt-2 leading-relaxed">{user.bio}</p>}
-              <div className="mt-3">
-                <Button onClick={() => setShowModal(true)} size="sm" variant="outline">
-                  <Pencil className="w-4 h-4 mr-2" /> Editar perfil
-                </Button>
-              </div>
             </div>
-
-            {/* Level badge - tarjeta a la derecha */}
-            {((showsFacNivel || (isDev && godMode && simulatedRole === "facilitador")) && facNivel) || ((isStu || (isDev && godMode && simulatedRole === "estudiante")) && stuNivel) ? (
-              <div className={`w-52 rounded-xl p-4 ${isDev && godMode ? "bg-purple-50/50 border border-purple-200" : "bg-gray-50 border border-gray-200"}`}>
-                {(() => {
-                  const nivel = isDev && godMode 
-                    ? (simulatedRole === "facilitador" ? facNivel : stuNivel)
-                    : (showsFacNivel ? facNivel : stuNivel)
-                  return (
-                    <>
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-lg">{nivel?.i}</span>
-                        <span className="text-sm font-semibold text-gray-900">{nivel?.n}</span>
-                      </div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className={`text-xs font-medium ${isDev && godMode ? "text-purple-600" : "text-gray-500"}`}>
-                          {isDev && godMode ? "Simulación" : "Puntos"}
-                        </span>
-                        <span className={`text-xs font-bold ${isDev && godMode ? "text-purple-600" : "text-gray-700"}`}>
-                          {nivel?.pct.toFixed(1)}%
-                        </span>
-                      </div>
-                      {nivel?.from !== nivel?.to && (
-                        <div className="w-full">
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div className={`h-2 rounded-full bg-gradient-to-r ${nivel?.bar}`} style={{ width: `${((nivel!.score - nivel!.from) / (nivel!.to - nivel!.from)) * 100}%` }} />
-                          </div>
-                          <div className="flex justify-between mt-1">
-                            <span className="text-[10px] text-gray-400">{nivel?.from}</span>
-                            <span className="text-[10px] text-gray-400">{nivel?.to}</span>
-                          </div>
-                        </div>
-                      )}
-                      {isDev && godMode && (
-                        <div className="mt-3 flex items-center gap-1">
-                          <span className="text-[10px] text-purple-600 font-medium">⚡ Modo Dios</span>
-                        </div>
-                      )}
-                    </>
-                  )
-                })()}
-              </div>
-            ) : null}
           </div>
+
+          {/* XP Bar - Borde inferior del contenedor */}
+          {((showsFacNivel || (isDev && godMode && simulatedRole === "facilitador")) && facNivel) || ((isStu || (isDev && godMode && simulatedRole === "estudiante")) && stuNivel) ? (
+            <div className="mt-4 pt-3 border-t border-gray-100">
+              {(() => {
+                const nivel = isDev && godMode 
+                  ? (simulatedRole === "facilitador" ? facNivel : stuNivel)
+                  : (showsFacNivel ? facNivel : stuNivel)
+                return (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{nivel?.i}</span>
+                        <span className="text-xs font-semibold text-gray-700">{nivel?.n}</span>
+                      </div>
+                      <span className="text-xs font-bold text-gray-500">{nivel?.pct.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full bg-gradient-to-r ${nivel?.bar}`}
+                        style={{ width: `${Math.min(((nivel!.score - nivel!.from) / Math.max(nivel!.to - nivel!.from, 1)) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[10px] text-gray-400">{nivel?.from}</span>
+                      <span className="text-[10px] text-gray-400">{nivel?.to}</span>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          ) : null}
 
           {/* Insignias - Dentro del contenedor principal */}
           {(isFac || isStu || (isDev && godMode)) && (
@@ -1293,6 +1320,61 @@ function PerfilContent() {
                             })()}
                           </div>
                         </div>
+
+                        {/* Opiniones */}
+                        <div className="border-t border-gray-200 pt-4">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Opiniones</h4>
+                          {loadingOpiniones ? (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader2 className="w-5 h-5 text-luxor-primary animate-spin" />
+                            </div>
+                          ) : (
+                            <div className="flex flex-col sm:flex-row items-center gap-6">
+                              {(() => {
+                                const totalOpiniones = opiniones.length
+                                const promedio = totalOpiniones > 0
+                                  ? Math.round((opiniones.reduce((sum, o) => sum + o.calificacion, 0) / totalOpiniones) * 10) / 10
+                                  : 0
+                                return (
+                                  <>
+                                    <div className="text-center">
+                                      <div className="text-3xl font-bold text-gray-900">{promedio.toFixed(1)}</div>
+                                      <div className="flex items-center justify-center gap-1 mt-2">
+                                        {[1, 2, 3, 4, 5].map(estrella => (
+                                          <Star
+                                            key={estrella}
+                                            className={`w-4 h-4 ${estrella <= Math.round(promedio) ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
+                                          />
+                                        ))}
+                                      </div>
+                                      <p className="text-xs text-gray-500 mt-1">{totalOpiniones} {totalOpiniones === 1 ? "opinión" : "opiniones"}</p>
+                                    </div>
+                                    <div className="flex-1 w-full">
+                                      <div className="space-y-1.5">
+                                        {[5, 4, 3, 2, 1].map(estrella => {
+                                          const count = opiniones.filter(o => o.calificacion === estrella).length
+                                          const maxCount = Math.max(...[5, 4, 3, 2, 1].map(e => opiniones.filter(o => o.calificacion === e).length), 1)
+                                          return (
+                                            <div key={estrella} className="flex items-center gap-2">
+                                              <span className="text-xs text-gray-500 w-3">{estrella}</span>
+                                              <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                                                <div
+                                                  className="h-1.5 rounded-full bg-amber-400 transition-all duration-500"
+                                                  style={{ width: `${(count / maxCount) * 100}%` }}
+                                                />
+                                              </div>
+                                              <span className="text-xs text-gray-500 w-3">{count}</span>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  </>
+                                )
+                              })()}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -1358,6 +1440,57 @@ function PerfilContent() {
           )}
       </div>
 
+      {/* Avatar Tap Dialog */}
+      {showAvatarDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAvatarDialog(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-xs p-5 shadow-xl space-y-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-center mb-1">
+              {avatarPreview || user?.avatar_url ? (
+                <img src={avatarPreview || user?.avatar_url || ""} alt="Avatar" className="w-16 h-16 rounded-full object-cover" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-luxor-primary/10 flex items-center justify-center">
+                  <span className="text-luxor-primary font-bold text-2xl">{user?.nombre?.charAt(0).toUpperCase() || "U"}</span>
+                </div>
+              )}
+            </div>
+            <h3 className="text-sm font-semibold text-gray-900 text-center">Foto de perfil</h3>
+            <div className="space-y-2">
+              {(avatarPreview || user?.avatar_url) && (
+                <button onClick={() => { setShowAvatarDialog(false); setShowPhotoView(true) }} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+                  <Eye className="w-4 h-4 text-gray-400" />
+                  Ver foto de perfil
+                </button>
+              )}
+              <button onClick={() => { setShowAvatarDialog(false); setShowModal(true) }} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+                <Pencil className="w-4 h-4 text-gray-400" />
+                Editar perfil
+              </button>
+            </div>
+            <button onClick={() => setShowAvatarDialog(false)} className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Photo View Modal */}
+      {showPhotoView && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setShowPhotoView(false)}>
+          <div className="relative max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowPhotoView(false)} className="absolute -top-10 right-0 text-white/70 hover:text-white">
+              <X className="w-6 h-6" />
+            </button>
+            {avatarPreview || user?.avatar_url ? (
+              <img src={avatarPreview || user?.avatar_url || ""} alt="Avatar" className="w-full rounded-2xl object-contain" />
+            ) : (
+              <div className="w-64 h-64 mx-auto rounded-full bg-white/10 flex items-center justify-center">
+                <span className="text-white font-bold text-7xl">{user?.nombre?.charAt(0).toUpperCase() || "U"}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
@@ -1392,6 +1525,38 @@ function PerfilContent() {
                 <textarea value={modalForm.bio} onChange={(e) => setModalForm({ ...modalForm, bio: e.target.value.slice(0, 500) })} rows={3} placeholder="Cuentanos sobre ti..." className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm resize-none" />
                 <p className={`text-xs text-right ${modalForm.bio.length >= 500 ? "text-red-500" : "text-gray-400"}`}>{modalForm.bio.length}/500</p>
               </div>
+              {earnedNiveles.length > 1 && (
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs font-medium text-gray-500">Seleccionar Marco</label>
+                    {selectedNivelId && (
+                      <button onClick={() => saveNivelSelection(null)} className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+                        Usar auto
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto pb-2">
+                    {earnedNiveles.map((nivel) => (
+                      <button
+                        key={nivel.id}
+                        type="button"
+                        onClick={() => saveNivelSelection(nivel.id)}
+                        className={`shrink-0 flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${selectedNivelId === nivel.id ? "bg-luxor-primary/10 ring-2 ring-luxor-primary" : "bg-gray-50 hover:bg-gray-100 ring-1 ring-gray-200"}`}
+                      >
+                        {nivel.imagen_url ? (
+                          <img src={nivel.imagen_url} alt={nivel.nombre} className="w-14 h-14 rounded-full object-contain" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl">
+                            {nivel.icono || "⭐"}
+                          </div>
+                        )}
+                        <span className="text-[10px] font-medium text-gray-700">{nivel.nombre}</span>
+                        <span className="text-[9px] text-gray-400">{nivel.xp_minimo} XP</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="border-t border-gray-200 pt-4">
                 <p className="text-xs font-medium text-gray-500 mb-3">Cambiar contrasena (opcional)</p>
                 <div className="space-y-3">
@@ -1420,68 +1585,10 @@ function PerfilContent() {
                   {saving ? "Guardando..." : "Guardar"}
                 </Button>
               </div>
-                          </div>
-                        </div>
-
-                        {/* Opiniones */}
-                        <div className="border-t border-gray-200 pt-4">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-3">Opiniones</h4>
-                          {loadingOpiniones ? (
-                            <div className="flex items-center justify-center py-4">
-                              <Loader2 className="w-5 h-5 text-luxor-primary animate-spin" />
-                            </div>
-                          ) : (
-                            <div className="flex flex-col sm:flex-row items-center gap-6">
-                              {(() => {
-                                const totalOpiniones = opiniones.length
-                                const promedio = totalOpiniones > 0 
-                                  ? Math.round((opiniones.reduce((sum, o) => sum + o.calificacion, 0) / totalOpiniones) * 10) / 10 
-                                  : 0
-                                return (
-                                  <>
-                                    {/* Promedio y estrellas */}
-                                    <div className="text-center">
-                                      <div className="text-3xl font-bold text-gray-900">{promedio.toFixed(1)}</div>
-                                      <div className="flex items-center justify-center gap-1 mt-2">
-                                        {[1, 2, 3, 4, 5].map(estrella => (
-                                          <Star
-                                            key={estrella}
-                                            className={`w-4 h-4 ${estrella <= Math.round(promedio) ? "fill-amber-400 text-amber-400" : "text-gray-300"}`}
-                                          />
-                                        ))}
-                                      </div>
-                                      <p className="text-xs text-gray-500 mt-1">{totalOpiniones} {totalOpiniones === 1 ? "opinión" : "opiniones"}</p>
-                                    </div>
-
-                                    {/* Distribución de estrellas */}
-                                    <div className="flex-1 w-full">
-                                      <div className="space-y-1.5">
-                                        {[5, 4, 3, 2, 1].map(estrella => {
-                                          const count = opiniones.filter(o => o.calificacion === estrella).length
-                                          const maxCount = Math.max(...[5, 4, 3, 2, 1].map(e => opiniones.filter(o => o.calificacion === e).length), 1)
-                                          return (
-                                            <div key={estrella} className="flex items-center gap-2">
-                                              <span className="text-xs text-gray-500 w-3">{estrella}</span>
-                                              <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                                                <div
-                                                  className="h-1.5 rounded-full bg-amber-400 transition-all duration-500"
-                                                  style={{ width: `${(count / maxCount) * 100}%` }}
-                                                />
-                                              </div>
-                                              <span className="text-xs text-gray-500 w-3">{count}</span>
-                                            </div>
-                                          )
-                                        })}
-                                      </div>
-                                    </div>
-                                  </>
-                                )
-                              })()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
