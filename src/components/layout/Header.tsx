@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
-import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Brain, Star } from "lucide-react"
+import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Star } from "lucide-react"
 import Link from "next/link"
 
 const navByRole = {
@@ -21,7 +21,6 @@ const navByRole = {
     { href: "/dashboard/cursos", label: "Gestionar Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
-    { href: "/dashboard/tests", label: "Tests", icon: Brain },
     { href: "/dashboard/insignias", label: "Experiencia", icon: Star },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
