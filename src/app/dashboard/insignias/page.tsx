@@ -475,7 +475,7 @@ export default function ExperienciaPage() {
                               )}
                             </div>
                           </div>
-                          <div className="text-lg font-bold mb-2" style={{ color: ins.color }}>{ins.xp} XP</div>
+                          <div className="text-lg font-bold mb-2 text-gray-900">{ins.xp} XP</div>
                           {ins.descripcion && (
                             <p className="text-xs text-gray-600 line-clamp-2">{ins.descripcion}</p>
                           )}
@@ -694,12 +694,12 @@ export default function ExperienciaPage() {
                 {tab === "categorias" && (
                   <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Orden</label><input type="number" min="0" value={formC.orden} onChange={e => setFormC({ ...formC, orden: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" /></div>
                 )}
-                {tab !== "niveles" && (
+                {tab === "categorias" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Color</label>
                   <div className="flex items-center gap-2">
-                    <input type="color" value={tab === "insignias" ? formI.color : formC.color} onChange={e => { if (tab === "insignias") setFormI({ ...formI, color: e.target.value }); else setFormC({ ...formC, color: e.target.value }) }} className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer" />
-                    <input type="text" value={tab === "insignias" ? formI.color : formC.color} onChange={e => { if (tab === "insignias") setFormI({ ...formI, color: e.target.value }); else setFormC({ ...formC, color: e.target.value }) }} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
+                    <input type="color" value={formC.color} onChange={e => setFormC({ ...formC, color: e.target.value })} className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer" />
+                    <input type="text" value={formC.color} onChange={e => setFormC({ ...formC, color: e.target.value })} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
                   </div>
                 </div>
                 )}
