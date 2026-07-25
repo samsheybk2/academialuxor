@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/useAuth"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { Header } from "@/components/layout/Header"
 import { MobileNav } from "@/components/layout/MobileNav"
-import { FloatingCalendar } from "@/components/ui/FloatingCalendar"
 import { LoadingBar } from "@/components/ui/LoadingBar"
 
 export default function DashboardLayout({
@@ -55,7 +54,6 @@ export default function DashboardLayout({
       <Header onMenuClick={() => setSidebarOpen(true)} />
       <main className="flex-1 mt-14 mb-16 lg:mb-0 overflow-y-auto overflow-x-hidden bg-[#F0F2F5] px-6">{children}</main>
       <MobileNav />
-      <FloatingCalendar />
     </div>
   )
 }

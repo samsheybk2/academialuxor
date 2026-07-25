@@ -613,11 +613,11 @@ CREATE POLICY "cursos_select_aprobados"
 
 CREATE POLICY "cursos_insert_facilitador"
   ON cursos FOR INSERT
-  WITH CHECK (public.get_my_role() = 'facilitador');
+  WITH CHECK (public.get_my_role() IN ('facilitador', 'decano', 'developer'));
 
 CREATE POLICY "cursos_update_facilitador"
   ON cursos FOR UPDATE
-  USING (facilitador_id = auth.uid());
+  USING (facilitador_id = auth.uid() OR public.get_my_role() IN ('decano', 'developer'));
 
 CREATE POLICY "cursos_update_decano"
   ON cursos FOR UPDATE
@@ -625,7 +625,7 @@ CREATE POLICY "cursos_update_decano"
 
 CREATE POLICY "cursos_delete_facilitador"
   ON cursos FOR DELETE
-  USING (facilitador_id = auth.uid());
+  USING (facilitador_id = auth.uid() OR public.get_my_role() IN ('decano', 'developer'));
 
 -- -------------------------------------------------
 -- 4.3 MODULOS
@@ -863,6 +863,24 @@ CREATE POLICY "cargo_elementos_all_admin"
   USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 
+-- 1.21b CATEGORIAS DE INSIGNIAS
+CREATE TABLE IF NOT EXISTS categoria_insignias (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL UNIQUE,
+  color TEXT DEFAULT '#6366f1',
+  icono TEXT DEFAULT '🏅',
+  orden INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE categoria_insignias ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "categoria_insignias_select_authenticated" ON categoria_insignias
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "categoria_insignias_all_developer" ON categoria_insignias
+  FOR ALL USING (public.get_my_role() = 'developer');
+
 -- 1.22 INSIGNIAS (Badges parametrizables por developer)
 CREATE TABLE IF NOT EXISTS insignias (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -870,6 +888,7 @@ CREATE TABLE IF NOT EXISTS insignias (
   descripcion TEXT,
   imagen_url TEXT,
   rol TEXT NOT NULL DEFAULT 'facilitador' CHECK (rol IN ('facilitador', 'estudiante', 'ambos')),
+  categoria_id UUID REFERENCES categoria_insignias(id) ON DELETE SET NULL,
   min_cursos_creados INTEGER DEFAULT 0,
   min_cursos_aprobados INTEGER DEFAULT 0,
   min_estudiantes_capacitados INTEGER DEFAULT 0,

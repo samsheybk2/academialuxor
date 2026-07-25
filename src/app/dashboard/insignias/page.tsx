@@ -5,14 +5,16 @@ import { createSupabaseClient } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
-import { Loader2, Plus, Pencil, Trash2, X, Award, Upload } from "lucide-react"
+import { Loader2, Plus, Pencil, Trash2, X, Award, Upload, MoreVertical } from "lucide-react"
 
 interface Insignia {
   id: string; nombre: string; descripcion: string | null; imagen_url: string | null; rol: string
+  categoria_id: string | null
   min_cursos_creados: number; min_cursos_aprobados: number; min_estudiantes_capacitados: number; min_calificacion_promedio: number
   min_cursos_inscritos: number; min_cursos_completados: number; min_modulos_completados: number; min_quizzes_aprobados: number; min_racha_dias: number
   xp: number; color: string; activa: boolean; created_at: string
 }
+interface CategoriaInsignia { id: string; nombre: string; color: string; icono: string; orden: number }
 interface Nivel { id: string; nombre: string; descripcion: string | null; imagen_url: string | null; icono: string; rol: string; xp_minimo: number; color: string; avatar_x: number; avatar_y: number; avatar_tamano: number; frame_tamano: number; avatar_delante: boolean; activo: boolean; created_at: string }
 interface Cargo { id: string; nombre: string }
 
@@ -37,8 +39,38 @@ const ROLES = [
 ]
 function getParamsByRol(rol: string) { if (rol === "facilitador") return PARAMS_FAC; if (rol === "estudiante") return PARAMS_EST; return [...PARAMS_FAC, ...PARAMS_EST] }
 
-const EMPTY_INSIGNIA = { nombre: "", descripcion: "", rol: "facilitador", min_cursos_creados: 0, min_cursos_aprobados: 0, min_estudiantes_capacitados: 0, min_calificacion_promedio: 0, min_cursos_inscritos: 0, min_cursos_completados: 0, min_modulos_completados: 0, min_quizzes_aprobados: 0, min_racha_dias: 0, xp: 10, color: "#6366f1", activa: true }
+function generateDescription(rol: string, params: any): string {
+  const requirements: string[] = []
+  
+  if (rol === "facilitador" || rol === "ambos") {
+    if (params.min_cursos_creados > 0) requirements.push(`crear ${params.min_cursos_creados} curso${params.min_cursos_creados > 1 ? 's' : ''}`)
+    if (params.min_cursos_aprobados > 0) requirements.push(`tener ${params.min_cursos_aprobados} curso${params.min_cursos_aprobados > 1 ? 's' : ''} aprobado${params.min_cursos_aprobados > 1 ? 's' : ''}`)
+    if (params.min_estudiantes_capacitados > 0) requirements.push(`capacitar ${params.min_estudiantes_capacitados} estudiante${params.min_estudiantes_capacitados > 1 ? 's' : ''}`)
+    if (params.min_calificacion_promedio > 0) requirements.push(`mantener una calificación promedio de ${params.min_calificacion_promedio}%`)
+  }
+  
+  if (rol === "estudiante" || rol === "ambos") {
+    if (params.min_cursos_inscritos > 0) requirements.push(`inscribirse en ${params.min_cursos_inscritos} curso${params.min_cursos_inscritos > 1 ? 's' : ''}`)
+    if (params.min_cursos_completados > 0) requirements.push(`completar ${params.min_cursos_completados} curso${params.min_cursos_completados > 1 ? 's' : ''}`)
+    if (params.min_modulos_completados > 0) requirements.push(`completar ${params.min_modulos_completados} módulo${params.min_modulos_completados > 1 ? 's' : ''}`)
+    if (params.min_quizzes_aprobados > 0) requirements.push(`aprobar ${params.min_quizzes_aprobados} quiz${params.min_quizzes_aprobados > 1 ? 'zes' : ''}`)
+    if (params.min_racha_dias > 0) requirements.push(`mantener una racha de ${params.min_racha_dias} día${params.min_racha_dias > 1 ? 's' : ''}`)
+    if (params.min_calificacion_promedio > 0 && rol === "estudiante") requirements.push(`mantener una calificación promedio de ${params.min_calificacion_promedio}%`)
+  }
+  
+  if (requirements.length === 0) return ""
+  
+  if (requirements.length === 1) {
+    return `Debes ${requirements[0]} para obtener esta insignia.`
+  }
+  
+  const lastReq = requirements.pop()
+  return `Debes ${requirements.join(', ')} y ${lastReq} para obtener esta insignia.`
+}
+
+const EMPTY_INSIGNIA = { nombre: "", descripcion: "", rol: "facilitador", categoria_id: null as string | null, min_cursos_creados: 0, min_cursos_aprobados: 0, min_estudiantes_capacitados: 0, min_calificacion_promedio: 0, min_cursos_inscritos: 0, min_cursos_completados: 0, min_modulos_completados: 0, min_quizzes_aprobados: 0, min_racha_dias: 0, xp: 10, color: "#6366f1", activa: true }
 const EMPTY_NIVEL = { nombre: "", descripcion: "", icono: "⭐", rol: "facilitador", xp_minimo: 0, color: "#6366f1", avatar_x: 50, avatar_y: 50, avatar_tamano: 70, frame_tamano: 100, avatar_delante: true, activo: true }
+const EMPTY_CATEGORIA = { nombre: "", color: "#6366f1", icono: "🏅", orden: 0 }
 
 // ── Frame Editor ───────────────────────────────────────────
 function FrameEditor({ imagenUrl, avatarX, avatarY, avatarTamano, frameTamano, onChange }: {
@@ -182,12 +214,14 @@ function FrameEditor({ imagenUrl, avatarX, avatarY, avatarTamano, frameTamano, o
 export default function ExperienciaPage() {
   const { user } = useAuth()
   const supabase = createSupabaseClient()
-  const [tab, setTab] = useState<"insignias" | "niveles">("insignias")
+  const [tab, setTab] = useState<"insignias" | "niveles" | "categorias">("insignias")
 
   const [insignias, setInsignias] = useState<Insignia[]>([])
   const [niveles, setNiveles] = useState<Nivel[]>([])
+  const [categorias, setCategorias] = useState<CategoriaInsignia[]>([])
   const [loading, setLoading] = useState(true)
   const [cargos, setCargos] = useState<Cargo[]>([])
+  const [categoriaFilter, setCategoriaFilter] = useState<string | null>(null)
 
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -199,39 +233,54 @@ export default function ExperienciaPage() {
   const [imagenFile, setImagenFile] = useState<File | null>(null)
   const [imagenPreview, setImagenPreview] = useState<string | null>(null)
   const [selectedCargos, setSelectedCargos] = useState<string[]>([])
+  const [descripcionManual, setDescripcionManual] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [formN, setFormN] = useState(EMPTY_NIVEL)
+  const [formC, setFormC] = useState(EMPTY_CATEGORIA)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
   useEffect(() => { if (user?.rol === "developer") { fetchAll(); fetchCargos() } }, [user])
 
+  useEffect(() => {
+    if (tab === "insignias" && !descripcionManual) {
+      const autoDesc = generateDescription(formI.rol, formI)
+      setFormI(prev => ({ ...prev, descripcion: autoDesc }))
+    }
+  }, [formI.rol, formI.min_cursos_creados, formI.min_cursos_aprobados, formI.min_estudiantes_capacitados, formI.min_calificacion_promedio, formI.min_cursos_inscritos, formI.min_cursos_completados, formI.min_modulos_completados, formI.min_quizzes_aprobados, formI.min_racha_dias, tab, descripcionManual])
+
   async function fetchAll() {
     setLoading(true)
-    const [i, n] = await Promise.all([
+    const [i, n, c] = await Promise.all([
       supabase.from("insignias").select("*").order("created_at", { ascending: false }),
       supabase.from("niveles").select("*").order("xp_minimo"),
+      supabase.from("categoria_insignias").select("*").order("orden"),
     ])
     setInsignias(i.data || [])
     setNiveles((n.data || []) as Nivel[])
+    setCategorias((c.data || []) as CategoriaInsignia[])
     setLoading(false)
   }
   async function fetchCargos() { const { data } = await supabase.from("cargos").select("id, nombre").order("nombre"); setCargos(data || []) }
   async function fetchCargosInsignia(id: string): Promise<string[]> { const { data } = await supabase.from("insignia_cargos").select("cargo_id").eq("insignia_id", id); return (data || []).map((r: any) => r.cargo_id) }
 
   function openCreate() {
-    setEditingId(null); setError(""); setImagenFile(null); setImagenPreview(null); setSelectedCargos([])
+    setEditingId(null); setError(""); setImagenFile(null); setImagenPreview(null); setSelectedCargos([]); setDescripcionManual(false)
     if (tab === "insignias") setFormI(EMPTY_INSIGNIA)
-    else setFormN(EMPTY_NIVEL)
+    else if (tab === "niveles") setFormN(EMPTY_NIVEL)
+    else setFormC(EMPTY_CATEGORIA)
     setShowModal(true)
   }
 
   async function openEdit(item: any) {
-    setEditingId(item.id); setError(""); setImagenFile(null); setSelectedCargos([]); setImagenPreview(item.imagen_url || null)
+    setEditingId(item.id); setError(""); setImagenFile(null); setSelectedCargos([]); setImagenPreview(item.imagen_url || null); setDescripcionManual(true)
     if (tab === "insignias") {
-      setFormI({ nombre: item.nombre, descripcion: item.descripcion || "", rol: item.rol, min_cursos_creados: item.min_cursos_creados, min_cursos_aprobados: item.min_cursos_aprobados, min_estudiantes_capacitados: item.min_estudiantes_capacitados, min_calificacion_promedio: item.min_calificacion_promedio, min_cursos_inscritos: item.min_cursos_inscritos, min_cursos_completados: item.min_cursos_completados, min_modulos_completados: item.min_modulos_completados, min_quizzes_aprobados: item.min_quizzes_aprobados, min_racha_dias: item.min_racha_dias, xp: item.xp, color: item.color, activa: item.activa })
+      setFormI({ nombre: item.nombre, descripcion: item.descripcion || "", rol: item.rol, categoria_id: item.categoria_id || null, min_cursos_creados: item.min_cursos_creados, min_cursos_aprobados: item.min_cursos_aprobados, min_estudiantes_capacitados: item.min_estudiantes_capacitados, min_calificacion_promedio: item.min_calificacion_promedio, min_cursos_inscritos: item.min_cursos_inscritos, min_cursos_completados: item.min_cursos_completados, min_modulos_completados: item.min_modulos_completados, min_quizzes_aprobados: item.min_quizzes_aprobados, min_racha_dias: item.min_racha_dias, xp: item.xp, color: item.color, activa: item.activa })
       setSelectedCargos(await fetchCargosInsignia(item.id))
-    } else {
+    } else if (tab === "niveles") {
       setFormN({ nombre: item.nombre, descripcion: item.descripcion || "", icono: item.icono || "⭐", rol: item.rol, xp_minimo: item.xp_minimo, color: item.color, avatar_x: item.avatar_x ?? 50, avatar_y: item.avatar_y ?? 50, avatar_tamano: item.avatar_tamano ?? 70, frame_tamano: item.frame_tamano ?? 100, avatar_delante: item.avatar_delante ?? true, activo: item.activo })
+    } else {
+      setFormC({ nombre: item.nombre, color: item.color || "#6366f1", icono: item.icono || "🏅", orden: item.orden ?? 0 })
     }
     setShowModal(true)
   }
@@ -267,12 +316,17 @@ export default function ExperienciaPage() {
         if (editingId) { const { error: e } = await supabase.from("insignias").update(data).eq("id", editingId); if (e) throw e }
         else { const { data: ins, error: e } = await supabase.from("insignias").insert(data).select("id").single(); if (e) throw e; id = ins.id }
         if (id) { await supabase.from("insignia_cargos").delete().eq("insignia_id", id); if (selectedCargos.length > 0) await supabase.from("insignia_cargos").insert(selectedCargos.map(c => ({ insignia_id: id!, cargo_id: c }))) }
-      } else {
+      } else if (tab === "niveles") {
         if (!formN.nombre.trim()) { setError("Nombre obligatorio"); setSaving(false); return }
         const url = await uploadImage()
         const data = { ...formN, imagen_url: url, nombre: formN.nombre.trim(), descripcion: formN.descripcion.trim() || null }
         if (editingId) { const { error: e } = await supabase.from("niveles").update(data).eq("id", editingId); if (e) throw e }
         else { const { error: e } = await supabase.from("niveles").insert(data); if (e) throw e }
+      } else {
+        if (!formC.nombre.trim()) { setError("Nombre obligatorio"); setSaving(false); return }
+        const data = { ...formC, nombre: formC.nombre.trim() }
+        if (editingId) { const { error: e } = await supabase.from("categoria_insignias").update(data).eq("id", editingId); if (e) throw e }
+        else { const { error: e } = await supabase.from("categoria_insignias").insert(data); if (e) throw e }
       }
       setShowModal(false); fetchAll()
     } catch (err: any) { setError(err.message || "Error") }
@@ -281,7 +335,10 @@ export default function ExperienciaPage() {
 
   async function handleDelete() {
     if (!deleteId) return; setSaving(true)
-    const table = tab === "insignias" ? "insignias" : "niveles"
+    const table = tab === "insignias" ? "insignias" : tab === "niveles" ? "niveles" : "categoria_insignias"
+    if (table === "niveles") {
+      await supabase.from("profiles").update({ nivel_seleccionado_id: null }).eq("nivel_seleccionado_id", deleteId)
+    }
     const { error: e } = await supabase.from(table).delete().eq("id", deleteId)
     if (e) setError(e.message); setDeleteId(null); setSaving(false); fetchAll()
   }
@@ -296,6 +353,7 @@ export default function ExperienciaPage() {
 
       <div className="flex border-b border-gray-200">
         <button onClick={() => setTab("insignias")} className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${tab === "insignias" ? "text-luxor-primary border-b-2 border-luxor-primary" : "text-gray-500 hover:text-gray-700"}`}>Insignias</button>
+        <button onClick={() => setTab("categorias")} className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${tab === "categorias" ? "text-luxor-primary border-b-2 border-luxor-primary" : "text-gray-500 hover:text-gray-700"}`}>Categorías</button>
         <button onClick={() => setTab("niveles")} className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${tab === "niveles" ? "text-luxor-primary border-b-2 border-luxor-primary" : "text-gray-500 hover:text-gray-700"}`}>Niveles</button>
       </div>
 
@@ -306,29 +364,117 @@ export default function ExperienciaPage() {
           {/* ─── INSIGNIAS ─── */}
           {tab === "insignias" && (
             <div className="space-y-3">
-              <div className="flex justify-end"><Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> Nueva</Button></div>
+              <div className="flex justify-between items-center gap-3 flex-wrap">
+                {categorias.length > 0 && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    <button onClick={() => setCategoriaFilter(null)} className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors ${!categoriaFilter ? "bg-luxor-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>Todas</button>
+                    {categorias.map(c => (
+                      <button key={c.id} onClick={() => setCategoriaFilter(categoriaFilter === c.id ? null : c.id)} className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors ${categoriaFilter === c.id ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`} style={categoriaFilter === c.id ? { backgroundColor: c.color } : {}}>{c.icono} {c.nombre}</button>
+                    ))}
+                  </div>
+                )}
+                <Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> Nueva</Button>
+              </div>
               {insignias.length === 0 ? (
                 <Card><CardContent className="text-center py-12"><Award className="w-12 h-12 text-gray-300 mx-auto mb-3" /><p className="text-gray-500">No hay insignias</p></CardContent></Card>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {insignias.map(ins => (
+                  {insignias.filter(ins => !categoriaFilter || ins.categoria_id === categoriaFilter).map(ins => {
+                    const cat = categorias.find(c => c.id === ins.categoria_id)
+                    return (
                     <Card key={ins.id}><CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ backgroundColor: ins.color + "20" }}>
-                          {ins.imagen_url ? <img src={ins.imagen_url} alt={ins.nombre} className="w-full h-full object-cover" /> : <Award className="w-8 h-8" style={{ color: ins.color }} />}
+                      <div className="flex items-start gap-4">
+                        <div className="w-32 h-32 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ backgroundColor: ins.color + "20" }}>
+                          {ins.imagen_url ? <img src={ins.imagen_url} alt={ins.nombre} className="w-full h-full object-cover" /> : <Award className="w-12 h-12" style={{ color: ins.color }} />}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-semibold text-gray-900 truncate">{ins.nombre}</h3>
-                            {!ins.activa && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-500 rounded">Inactiva</span>}
-                            <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${ins.rol === "facilitador" ? "bg-blue-100 text-blue-700" : ins.rol === "estudiante" ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700"}`}>{ROLES.find(r => r.value === ins.rol)?.label}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-semibold text-gray-900 truncate">{ins.nombre}</h3>
+                                {!ins.activa && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-500 rounded">Inactiva</span>}
+                                <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${ins.rol === "facilitador" ? "bg-blue-100 text-blue-700" : ins.rol === "estudiante" ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700"}`}>{ROLES.find(r => r.value === ins.rol)?.label}</span>
+                              </div>
+                              {cat && <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full" style={{ backgroundColor: cat.color + "20", color: cat.color }}>{cat.icono} {cat.nombre}</span>}
+                            </div>
+                            {/* Menú de 3 puntos */}
+                            <div className="relative z-10 shrink-0">
+                              <button
+                                onClick={() => setOpenMenuId(openMenuId === ins.id ? null : ins.id)}
+                                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                              >
+                                <MoreVertical className="w-4 h-4 text-gray-500" />
+                              </button>
+                              {openMenuId === ins.id && (
+                                <>
+                                  <div className="fixed inset-0 z-20" onClick={() => setOpenMenuId(null)} />
+                                  <div className="absolute top-full right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                                    <button
+                                      onClick={() => { openEdit(ins); setOpenMenuId(null) }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                      Editar
+                                    </button>
+                                    <button
+                                      onClick={() => { setDeleteId(ins.id); setOpenMenuId(null) }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      Eliminar
+                                    </button>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-gray-500"><span className="font-semibold" style={{ color: ins.color }}>{ins.xp} XP</span></div>
+                          <div className="text-lg font-bold mb-2" style={{ color: ins.color }}>{ins.xp} XP</div>
+                          {ins.descripcion && (
+                            <p className="text-xs text-gray-600 line-clamp-2">{ins.descripcion}</p>
+                          )}
                         </div>
                       </div>
-                      <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(ins)}><Pencil className="w-3.5 h-3.5 mr-1" /> Editar</Button>
-                        <Button size="sm" variant="outline" onClick={() => { setDeleteId(ins.id) }} className="text-red-600 hover:bg-red-50 hover:border-red-200"><Trash2 className="w-3.5 h-3.5 mr-1" /> Eliminar</Button>
+                    </CardContent></Card>
+                  )})}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── CATEGORIAS ─── */}
+          {tab === "categorias" && (
+            <div className="space-y-3">
+              <div className="flex justify-end"><Button onClick={openCreate}><Plus className="w-4 h-4 mr-2" /> Nueva</Button></div>
+              {categorias.length === 0 ? (
+                <Card><CardContent className="text-center py-12"><Award className="w-12 h-12 text-gray-300 mx-auto mb-3" /><p className="text-gray-500">No hay categorías</p></CardContent></Card>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {categorias.map(c => (
+                    <Card key={c.id}><CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-xl" style={{ backgroundColor: c.color + "20" }}>{c.icono}</div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 truncate">{c.nombre}</h3>
+                          <p className="text-xs text-gray-500">{insignias.filter(i => i.categoria_id === c.id).length} insignias</p>
+                        </div>
+                        <div className="relative z-10 shrink-0">
+                          <button onClick={() => setOpenMenuId(openMenuId === c.id ? null : c.id)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                            <MoreVertical className="w-4 h-4 text-gray-500" />
+                          </button>
+                          {openMenuId === c.id && (
+                            <>
+                              <div className="fixed inset-0 z-20" onClick={() => setOpenMenuId(null)} />
+                              <div className="absolute top-full right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                                <button onClick={() => { openEdit(c); setOpenMenuId(null) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                  <Pencil className="w-3.5 h-3.5" />Editar
+                                </button>
+                                <button onClick={() => { setDeleteId(c.id); setOpenMenuId(null) }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                  <Trash2 className="w-3.5 h-3.5" />Eliminar
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </CardContent></Card>
                   ))}
@@ -380,13 +526,14 @@ export default function ExperienciaPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold text-gray-900">{editingId ? "Editar" : "Nuevo"} {tab === "insignias" ? "Insignia" : "Nivel"}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{editingId ? "Editar" : "Nuevo"} {tab === "insignias" ? "Insignia" : tab === "niveles" ? "Nivel" : "Categoría"}</h2>
               <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {error && <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">{error}</div>}
 
-              {/* ── Imagen ── */}
+              {/* ── Imagen (solo insignias y niveles) ── */}
+              {tab !== "categorias" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Imagen (WebP)</label>
                 <div className="flex items-center gap-4">
@@ -396,6 +543,7 @@ export default function ExperienciaPage() {
                   <div><input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" /><Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()}>Seleccionar imagen</Button><p className="text-[10px] text-gray-400 mt-1">PNG, JPG, WebP — Max 4MB</p></div>
                 </div>
               </div>
+              )}
 
               {/* ── Frame Editor (solo niveles con imagen) ── */}
               {tab === "niveles" && (
@@ -412,24 +560,43 @@ export default function ExperienciaPage() {
               {/* ── Nombre ── */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre *</label>
-                <input type="text" value={tab === "insignias" ? formI.nombre : formN.nombre} onChange={e => { if (tab === "insignias") setFormI({ ...formI, nombre: e.target.value }); else setFormN({ ...formN, nombre: e.target.value }) }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
+                <input type="text" value={tab === "insignias" ? formI.nombre : tab === "niveles" ? formN.nombre : formC.nombre} onChange={e => { if (tab === "insignias") setFormI({ ...formI, nombre: e.target.value }); else if (tab === "niveles") setFormN({ ...formN, nombre: e.target.value }); else setFormC({ ...formC, nombre: e.target.value }) }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
               </div>
 
-              {/* ── Descripción ── */}
+              {/* ── Descripción (solo insignias y niveles) ── */}
+              {tab !== "categorias" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Descripción</label>
-                <textarea value={tab === "insignias" ? formI.descripcion : formN.descripcion} onChange={e => { if (tab === "insignias") setFormI({ ...formI, descripcion: e.target.value }); else setFormN({ ...formN, descripcion: e.target.value }) }} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
+                <textarea value={tab === "insignias" ? formI.descripcion : formN.descripcion} onChange={e => { if (tab === "insignias") { setFormI({ ...formI, descripcion: e.target.value }); setDescripcionManual(true) } else setFormN({ ...formN, descripcion: e.target.value }) }} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
+                {tab === "insignias" && descripcionManual && (
+                  <button type="button" onClick={() => { setDescripcionManual(false); const autoDesc = generateDescription(formI.rol, formI); setFormI({ ...formI, descripcion: autoDesc }) }} className="mt-1 text-xs text-luxor-primary hover:text-luxor-secondary transition-colors">
+                    Regenerar automáticamente
+                  </button>
+                )}
               </div>
+              )}
 
-              {/* ── Icono (solo niveles) ── */}
-              {tab === "niveles" && (
+              {/* ── Icono (niveles y categorias) ── */}
+              {(tab === "niveles" || tab === "categorias") && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Icono (emoji)</label>
-                  <input type="text" value={formN.icono} onChange={e => setFormN({ ...formN, icono: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" placeholder="⭐" />
+                  <input type="text" value={tab === "niveles" ? formN.icono : formC.icono} onChange={e => { if (tab === "niveles") setFormN({ ...formN, icono: e.target.value }); else setFormC({ ...formC, icono: e.target.value }) }} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" placeholder="⭐" />
                 </div>
               )}
 
-              {/* ── Rol ── */}
+              {/* ── Categoría (solo insignias) ── */}
+              {tab === "insignias" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Categoría <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <select value={formI.categoria_id || ""} onChange={e => setFormI({ ...formI, categoria_id: e.target.value || null })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm">
+                    <option value="">Sin categoría</option>
+                    {categorias.map(c => <option key={c.id} value={c.id}>{c.icono} {c.nombre}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {/* ── Rol (solo insignias y niveles) ── */}
+              {tab !== "categorias" && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Dirigido a *</label>
                 <div className="flex gap-2">
@@ -439,6 +606,7 @@ export default function ExperienciaPage() {
                   })}
                 </div>
               </div>
+              )}
 
               {/* ── Parámetros (solo insignias) ── */}
               {tab === "insignias" && (
@@ -461,16 +629,19 @@ export default function ExperienciaPage() {
                 </div>
               )}
 
-              {/* ── XP / Color ── */}
+              {/* ── XP / Color / Orden ── */}
               <div className="grid grid-cols-2 gap-4">
                 {tab === "insignias" && (
                   <div><label className="block text-sm font-medium text-gray-700 mb-1.5">XP *</label><input type="number" min="1" value={formI.xp} onChange={e => setFormI({ ...formI, xp: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" /></div>
                 )}
+                {tab === "categorias" && (
+                  <div><label className="block text-sm font-medium text-gray-700 mb-1.5">Orden</label><input type="number" min="0" value={formC.orden} onChange={e => setFormC({ ...formC, orden: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" /></div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Color</label>
                   <div className="flex items-center gap-2">
-                    <input type="color" value={tab === "insignias" ? formI.color : formN.color} onChange={e => { if (tab === "insignias") setFormI({ ...formI, color: e.target.value }); else setFormN({ ...formN, color: e.target.value }) }} className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer" />
-                    <input type="text" value={tab === "insignias" ? formI.color : formN.color} onChange={e => { if (tab === "insignias") setFormI({ ...formI, color: e.target.value }); else setFormN({ ...formN, color: e.target.value }) }} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
+                    <input type="color" value={tab === "insignias" ? formI.color : tab === "niveles" ? formN.color : formC.color} onChange={e => { if (tab === "insignias") setFormI({ ...formI, color: e.target.value }); else if (tab === "niveles") setFormN({ ...formN, color: e.target.value }); else setFormC({ ...formC, color: e.target.value }) }} className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer" />
+                    <input type="text" value={tab === "insignias" ? formI.color : tab === "niveles" ? formN.color : formC.color} onChange={e => { if (tab === "insignias") setFormI({ ...formI, color: e.target.value }); else if (tab === "niveles") setFormN({ ...formN, color: e.target.value }); else setFormC({ ...formC, color: e.target.value }) }} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
                   </div>
                 </div>
               </div>
@@ -484,13 +655,15 @@ export default function ExperienciaPage() {
                 </div>
               )}
 
-              {/* ── Activo ── */}
+              {/* ── Activo (solo insignias y niveles) ── */}
+              {tab !== "categorias" && (
               <div className="flex items-center gap-3">
                 <label className="text-sm font-medium text-gray-700">Activo</label>
                 <button type="button" onClick={() => { if (tab === "insignias") setFormI({ ...formI, activa: !formI.activa }); else setFormN({ ...formN, activo: !formN.activo }) }} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${(tab === "insignias" ? formI.activa : formN.activo) ? "bg-green-500" : "bg-gray-300"}`}>
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${(tab === "insignias" ? formI.activa : formN.activo) ? "translate-x-6" : "translate-x-1"}`} />
                 </button>
               </div>
+              )}
 
               {tab === "niveles" && (
                 <div className="flex items-center gap-3">

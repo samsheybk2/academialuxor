@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Modal } from "@/components/ui/Modal"
@@ -42,6 +43,7 @@ interface Usuario {
 
 function UsuariosContent() {
   const { user } = useAuth()
+  const router = useRouter()
   const supabase = createSupabaseClient()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [pendingUsers, setPendingUsers] = useState<Usuario[]>([])
@@ -428,7 +430,8 @@ function UsuariosContent() {
                 {filtered.map((u) => (
                   <tr
                     key={u.id}
-                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"
+                    onClick={() => canManage && router.push(`/dashboard/usuarios/${u.id}`)}
                   >
                     <td className="px-4 py-2">
                       <div className="flex items-center gap-2">
@@ -494,7 +497,7 @@ function UsuariosContent() {
                       )}
                     </td>
                     <td className="px-4 py-2">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         {!u.aprobado && canApprove && (
                           <button
                             onClick={() => handleApprove(u.id)}
