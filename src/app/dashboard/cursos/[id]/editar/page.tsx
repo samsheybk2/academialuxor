@@ -388,6 +388,13 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
     try {
       let imagenPortadaUrl = form.imagen_portada
       if (portadaFile) {
+        if (form.imagen_portada) {
+          const urlParts = form.imagen_portada.split("/curso-materiales/")
+          if (urlParts.length > 1) {
+            const oldPath = urlParts[1].split("?")[0]
+            await supabase.storage.from("curso-materiales").remove([oldPath])
+          }
+        }
         const ext = portadaFile.name.split(".").pop() || "jpg"
         const fileName = `portadas/${Date.now()}_portada.${ext}`
         const { data: uploadData, error: uploadError } = await supabase.storage
@@ -479,6 +486,13 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
         } else {
           let imagenPortadaUrl = mod.imagenPortada
           if (mod.imagenFile) {
+            if (mod.imagenPortada && !mod.imagenPortada.startsWith("http") || (mod.imagenPortada && !mod.imagenPortada.includes("youtube"))) {
+              const urlParts = mod.imagenPortada.split("/curso-materiales/")
+              if (urlParts.length > 1) {
+                const oldPath = urlParts[1].split("?")[0]
+                await supabase.storage.from("curso-materiales").remove([oldPath])
+              }
+            }
             const safeName = `${Date.now()}-${mod.imagenFile.name.replace(/\s+/g, "-")}`
             const filePath = `cursos/${id}/modulos/${safeName}`
             const { error: uploadError } = await supabase.storage

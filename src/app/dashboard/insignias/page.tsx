@@ -313,14 +313,38 @@ export default function ExperienciaPage() {
         const url = await uploadImage()
         const data: any = { ...formI, imagen_url: url, nombre: formI.nombre.trim(), descripcion: formI.descripcion.trim() || null }
         let id = editingId
-        if (editingId) { const { error: e } = await supabase.from("insignias").update(data).eq("id", editingId); if (e) throw e }
+        if (editingId) {
+          if (imagenFile) {
+            const oldItem = insignias.find(i => i.id === editingId)
+            if (oldItem?.imagen_url) {
+              const urlParts = oldItem.imagen_url.split("/configuraciones/")
+              if (urlParts.length > 1) {
+                const storagePath = urlParts[1].split("?")[0]
+                await supabase.storage.from("configuraciones").remove([storagePath])
+              }
+            }
+          }
+          const { error: e } = await supabase.from("insignias").update(data).eq("id", editingId); if (e) throw e
+        }
         else { const { data: ins, error: e } = await supabase.from("insignias").insert(data).select("id").single(); if (e) throw e; id = ins.id }
         if (id) { await supabase.from("insignia_cargos").delete().eq("insignia_id", id); if (selectedCargos.length > 0) await supabase.from("insignia_cargos").insert(selectedCargos.map(c => ({ insignia_id: id!, cargo_id: c }))) }
       } else if (tab === "niveles") {
         if (!formN.nombre.trim()) { setError("Nombre obligatorio"); setSaving(false); return }
         const url = await uploadImage()
         const data = { ...formN, imagen_url: url, nombre: formN.nombre.trim(), descripcion: formN.descripcion.trim() || null }
-        if (editingId) { const { error: e } = await supabase.from("niveles").update(data).eq("id", editingId); if (e) throw e }
+        if (editingId) {
+          if (imagenFile) {
+            const oldItem = niveles.find(n => n.id === editingId)
+            if (oldItem?.imagen_url) {
+              const urlParts = oldItem.imagen_url.split("/configuraciones/")
+              if (urlParts.length > 1) {
+                const storagePath = urlParts[1].split("?")[0]
+                await supabase.storage.from("configuraciones").remove([storagePath])
+              }
+            }
+          }
+          const { error: e } = await supabase.from("niveles").update(data).eq("id", editingId); if (e) throw e
+        }
         else { const { error: e } = await supabase.from("niveles").insert(data); if (e) throw e }
       } else {
         if (!formC.nombre.trim()) { setError("Nombre obligatorio"); setSaving(false); return }
@@ -336,6 +360,21 @@ export default function ExperienciaPage() {
   async function handleDelete() {
     if (!deleteId) return; setSaving(true)
     const table = tab === "insignias" ? "insignias" : tab === "niveles" ? "niveles" : "categoria_insignias"
+    
+    if (table === "insignias" || table === "niveles") {
+      const item = table === "insignias" 
+        ? insignias.find(i => i.id === deleteId)
+        : niveles.find(n => n.id === deleteId)
+      
+      if (item?.imagen_url) {
+        const urlParts = item.imagen_url.split("/configuraciones/")
+        if (urlParts.length > 1) {
+          const storagePath = urlParts[1].split("?")[0]
+          await supabase.storage.from("configuraciones").remove([storagePath])
+        }
+      }
+    }
+    
     if (table === "niveles") {
       await supabase.from("profiles").update({ nivel_seleccionado_id: null }).eq("nivel_seleccionado_id", deleteId)
     }

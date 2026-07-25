@@ -284,13 +284,13 @@ function groupBadgesByCategory(badges: Badge[]): BadgeGroup[] {
     group.badges.sort((a, b) => {
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
-      return dateB - dateA
+      return dateA - dateB
     })
   }
   sinCategoria.badges.sort((a, b) => {
     const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
     const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
-    return dateB - dateA
+    return dateA - dateB
   })
 
   const result: BadgeGroup[] = Array.from(groups.values())
@@ -559,6 +559,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
   const [stuStats, setStuStats] = useState<StudentStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
   const [detailBadge, setDetailBadge] = useState<Badge | null>(null)
+  const [showAllBadges, setShowAllBadges] = useState(false)
   const [showAvatarDialog, setShowAvatarDialog] = useState(false)
   const [showPhotoView, setShowPhotoView] = useState(false)
   const [godMode, setGodMode] = useState(false)
@@ -792,6 +793,14 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
     setSaving(true); setError(""); setSaved(false)
     let avatarUrl = user?.avatar_url || null
     if (avatarFile) {
+      const oldAvatarUrl = user?.avatar_url
+      if (oldAvatarUrl) {
+        const urlParts = oldAvatarUrl.split("/avatars/")
+        if (urlParts.length > 1) {
+          const oldPath = urlParts[1].split("?")[0]
+          await supabase.storage.from("avatars").remove([oldPath])
+        }
+      }
       const ext = avatarFile.name.split(".").pop() || "jpg"
       const filePath = `avatars/${user!.id}.${ext}`
       const { error: uploadErr } = await supabase.storage.from("avatars").upload(filePath, avatarFile, { upsert: true, contentType: avatarFile.type })
@@ -900,7 +909,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
         <>
           <button
             onClick={() => setGodModeCollapsed(!godModeCollapsed)}
-            className={`fixed bottom-4 right-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all ${
+            className={`fixed bottom-16 sm:bottom-4 right-4 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all ${
               godModeCollapsed 
                 ? "bg-gradient-to-br from-purple-500 to-pink-500 text-white opacity-50 hover:opacity-75" 
                 : "bg-gradient-to-br from-purple-500 to-pink-500 text-white scale-110 opacity-100"
@@ -911,7 +920,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
           </button>
 
           {!godModeCollapsed && (
-            <div className="fixed bottom-20 right-4 z-50 w-72 max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200 p-4 space-y-4">
+            <div className="fixed bottom-32 sm:bottom-20 right-4 z-50 w-72 max-h-[70vh] overflow-y-auto bg-white rounded-xl shadow-2xl border border-gray-200 p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
@@ -1231,12 +1240,22 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
               {/* Insignias */}
               {(isFac || (isDev && godMode)) && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                    Insignias <span className="text-xs font-normal text-gray-500">({isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.filter(b => b.ok).length : stuBadges.filter(b => b.ok).length) : facUnlocked}/{isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.length : stuBadges.length) : facBadges.length})</span>
-                  </h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Insignias <span className="text-xs font-normal text-gray-500">({isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.filter(b => b.ok).length : stuBadges.filter(b => b.ok).length) : facUnlocked}/{isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.length : stuBadges.length) : facBadges.length})</span>
+                    </h3>
+                    <button
+                      onClick={() => setShowAllBadges(!showAllBadges)}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                      title={showAllBadges ? "Ver solo ganadas" : "Ver todas"}
+                    >
+                      {showAllBadges ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
+                    </button>
+                  </div>
                   {(() => {
                     const currentBadges = isDev && godMode ? (simulatedRole === "facilitador" ? facBadges : stuBadges) : facBadges
-                    const groups = groupBadgesByCategory(currentBadges)
+                    const filteredBadges = showAllBadges ? currentBadges : currentBadges.filter(b => b.ok)
+                    const groups = groupBadgesByCategory(filteredBadges)
                     return groups.map((group, gi) => (
                       <div key={gi} className="mb-3 last:mb-0">
                         {group.categoria && (
@@ -1418,12 +1437,22 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                     {/* Insignias */}
                     {(isFac || (isDev && godMode)) && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                          Insignias <span className="text-xs font-normal text-gray-500">({isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.filter(b => b.ok).length : stuBadges.filter(b => b.ok).length) : facUnlocked}/{isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.length : stuBadges.length) : facBadges.length})</span>
-                        </h3>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-semibold text-gray-900">
+                            Insignias <span className="text-xs font-normal text-gray-500">({isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.filter(b => b.ok).length : stuBadges.filter(b => b.ok).length) : facUnlocked}/{isDev && godMode ? (simulatedRole === "facilitador" ? facBadges.length : stuBadges.length) : facBadges.length})</span>
+                          </h3>
+                          <button
+                            onClick={() => setShowAllBadges(!showAllBadges)}
+                            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                            title={showAllBadges ? "Ver solo ganadas" : "Ver todas"}
+                          >
+                            {showAllBadges ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
+                          </button>
+                        </div>
                         {(() => {
                           const currentBadges = isDev && godMode ? (simulatedRole === "facilitador" ? facBadges : stuBadges) : facBadges
-                          const groups = groupBadgesByCategory(currentBadges)
+                          const filteredBadges = showAllBadges ? currentBadges : currentBadges.filter(b => b.ok)
+                          const groups = groupBadgesByCategory(filteredBadges)
                           return groups.map((group, gi) => (
                             <div key={gi} className="mb-3 last:mb-0">
                               {group.categoria && (
@@ -1677,12 +1706,22 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
               {/* Insignias */}
               {(isStu || (isDev && godMode)) && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                    Insignias <span className="text-xs font-normal text-gray-500">({isDev && godMode ? (simulatedRole === "estudiante" ? stuBadges.filter(b => b.ok).length : facBadges.filter(b => b.ok).length) : stuUnlocked}/{isDev && godMode ? (simulatedRole === "estudiante" ? stuBadges.length : facBadges.length) : stuBadges.length})</span>
-                  </h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Insignias <span className="text-xs font-normal text-gray-500">({isDev && godMode ? (simulatedRole === "estudiante" ? stuBadges.filter(b => b.ok).length : facBadges.filter(b => b.ok).length) : stuUnlocked}/{isDev && godMode ? (simulatedRole === "estudiante" ? stuBadges.length : facBadges.length) : stuBadges.length})</span>
+                    </h3>
+                    <button
+                      onClick={() => setShowAllBadges(!showAllBadges)}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                      title={showAllBadges ? "Ver solo ganadas" : "Ver todas"}
+                    >
+                      {showAllBadges ? <EyeOff className="w-4 h-4 text-gray-500" /> : <Eye className="w-4 h-4 text-gray-500" />}
+                    </button>
+                  </div>
                   {(() => {
                     const currentBadges = isDev && godMode ? (simulatedRole === "estudiante" ? stuBadges : facBadges) : stuBadges
-                    const groups = groupBadgesByCategory(currentBadges)
+                    const filteredBadges = showAllBadges ? currentBadges : currentBadges.filter(b => b.ok)
+                    const groups = groupBadgesByCategory(filteredBadges)
                     return groups.map((group, gi) => (
                       <div key={gi} className="mb-3 last:mb-0">
                         {group.categoria && (

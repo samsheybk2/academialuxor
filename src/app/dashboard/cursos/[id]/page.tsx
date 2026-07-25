@@ -428,6 +428,58 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
 
   async function handleDelete() {
     if (!curso) return
+    
+    const pathsToRemove: string[] = []
+    
+    if (curso.imagen_portada) {
+      const urlParts = curso.imagen_portada.split("/curso-materiales/")
+      if (urlParts.length > 1) {
+        pathsToRemove.push(urlParts[1].split("?")[0])
+      }
+    }
+    
+    if (curso.video_bienvenida) {
+      const urlParts = curso.video_bienvenida.split("/curso-materiales/")
+      if (urlParts.length > 1) {
+        pathsToRemove.push(urlParts[1].split("?")[0])
+      }
+    }
+    
+    for (const mod of modulos) {
+      if (mod.imagen_portada) {
+        const urlParts = mod.imagen_portada.split("/curso-materiales/")
+        if (urlParts.length > 1) {
+          pathsToRemove.push(urlParts[1].split("?")[0])
+        }
+      }
+      if (mod.video_url) {
+        const urlParts = mod.video_url.split("/curso-materiales/")
+        if (urlParts.length > 1) {
+          pathsToRemove.push(urlParts[1].split("?")[0])
+        }
+      }
+    }
+    
+    const { data: materiales } = await supabase
+      .from("material_pdf")
+      .select("archivo_url")
+      .in("modulo_id", modulos.map(m => m.id))
+    
+    if (materiales) {
+      for (const mat of materiales) {
+        if (mat.archivo_url) {
+          const urlParts = mat.archivo_url.split("/curso-materiales/")
+          if (urlParts.length > 1) {
+            pathsToRemove.push(urlParts[1].split("?")[0])
+          }
+        }
+      }
+    }
+    
+    if (pathsToRemove.length > 0) {
+      await supabase.storage.from("curso-materiales").remove(pathsToRemove)
+    }
+    
     await supabase.from("cursos").delete().eq("id", curso.id)
     router.push("/dashboard/cursos")
   }
