@@ -318,13 +318,7 @@ export default function ExperienciaPage() {
         if (editingId) {
           if (imagenFile) {
             const oldItem = insignias.find(i => i.id === editingId)
-            if (oldItem?.imagen_url) {
-              const urlParts = oldItem.imagen_url.split("/configuraciones/")
-              if (urlParts.length > 1) {
-                const storagePath = urlParts[1].split("?")[0]
-                await supabase.storage.from("configuraciones").remove([storagePath])
-              }
-            }
+            await deleteStorageImage(oldItem?.imagen_url || null)
           }
           const { error: e } = await supabase.from("insignias").update(data).eq("id", editingId); if (e) throw e
         }
@@ -343,13 +337,7 @@ export default function ExperienciaPage() {
         if (editingId) {
           if (imagenFile) {
             const oldItem = niveles.find(n => n.id === editingId)
-            if (oldItem?.imagen_url) {
-              const urlParts = oldItem.imagen_url.split("/configuraciones/")
-              if (urlParts.length > 1) {
-                const storagePath = urlParts[1].split("?")[0]
-                await supabase.storage.from("configuraciones").remove([storagePath])
-              }
-            }
+            await deleteStorageImage(oldItem?.imagen_url || null)
           }
           const { error: e } = await supabase.from("niveles").update(data).eq("id", editingId); if (e) throw e
         }
@@ -365,6 +353,16 @@ export default function ExperienciaPage() {
     setSaving(false)
   }
 
+  async function deleteStorageImage(imagenUrl: string | null) {
+    if (!imagenUrl) return
+    const urlParts = imagenUrl.split("/configuraciones/")
+    if (urlParts.length > 1) {
+      const storagePath = urlParts[1].split("?")[0]
+      const { error } = await supabase.storage.from("configuraciones").remove([storagePath])
+      if (error) console.error("Error borrando imagen:", storagePath, error.message)
+    }
+  }
+
   async function handleDelete() {
     if (!deleteId) return; setSaving(true)
     const table = tab === "insignias" ? "insignias" : tab === "niveles" ? "niveles" : "categoria_insignias"
@@ -373,14 +371,7 @@ export default function ExperienciaPage() {
       const item = table === "insignias" 
         ? insignias.find(i => i.id === deleteId)
         : niveles.find(n => n.id === deleteId)
-      
-      if (item?.imagen_url) {
-        const urlParts = item.imagen_url.split("/configuraciones/")
-        if (urlParts.length > 1) {
-          const storagePath = urlParts[1].split("?")[0]
-          await supabase.storage.from("configuraciones").remove([storagePath])
-        }
-      }
+      await deleteStorageImage(item?.imagen_url || null)
     }
     
     if (table === "niveles") {
