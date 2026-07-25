@@ -590,7 +590,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
   const [dbInsignias, setDbInsignias] = useState<DbInsignia[]>([])
   const [dbNiveles, setDbNiveles] = useState<DbNivel[]>([])
   const [dbCategorias, setDbCategorias] = useState<DbCategoria[]>([])
-  const [selectedNivelId, setSelectedNivelId] = useState<string | null>(null)
+  const [selectedMarcoId, setSelectedMarcoId] = useState<string | null>(null)
   const fetchedRef = useRef(false)
 
   const [modalForm, setModalForm] = useState({ nombre: "", bio: "", newPassword: "", confirmPassword: "" })
@@ -649,8 +649,8 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
     setDbNiveles(nivelesRes.data || [])
     setDbCategorias(categoriasRes.data || [])
     if (effectiveUser) {
-      const { data: profile } = await supabase.from("profiles").select("nivel_seleccionado_id").eq("id", effectiveUser.id).single()
-      if (profile?.nivel_seleccionado_id) setSelectedNivelId(profile.nivel_seleccionado_id)
+      const { data: profile } = await supabase.from("profiles").select("marco_seleccionado_id").eq("id", effectiveUser.id).single()
+      if (profile?.marco_seleccionado_id) setSelectedMarcoId(profile.marco_seleccionado_id)
     }
   }
 
@@ -871,26 +871,24 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
     n.activo && (n.rol === userRole || n.rol === "ambos") && earnedXp >= n.xp_minimo
   ).sort((a, b) => b.xp_minimo - a.xp_minimo)
 
-  const selectedDbNivel = selectedNivelId ? dbNiveles.find(n => n.id === selectedNivelId) : null
-  const overrideNivel: NivelInfo | null = selectedDbNivel ? {
-    ...getNivel(effectiveBadges),
-    n: selectedDbNivel.nombre,
-    i: selectedDbNivel.icono || "⭐",
-    frame_url: selectedDbNivel.imagen_url || null,
-    avatar_x: selectedDbNivel.avatar_x ?? 50,
-    avatar_y: selectedDbNivel.avatar_y ?? 50,
-    avatar_tamano: selectedDbNivel.avatar_tamano ?? 70,
-    frame_tamano: selectedDbNivel.frame_tamano ?? 100,
-    avatar_delante: selectedDbNivel.avatar_delante ?? true,
+  const selectedMarcoDb = selectedMarcoId ? dbNiveles.find(n => n.id === selectedMarcoId) : null
+  const overrideFrame: NivelInfo | null = selectedMarcoDb ? {
+    ...((userRole === "facilitador") ? baseFacNivel : baseStuNivel),
+    frame_url: selectedMarcoDb.imagen_url || null,
+    avatar_x: selectedMarcoDb.avatar_x ?? 50,
+    avatar_y: selectedMarcoDb.avatar_y ?? 50,
+    avatar_tamano: selectedMarcoDb.avatar_tamano ?? 70,
+    frame_tamano: selectedMarcoDb.frame_tamano ?? 100,
+    avatar_delante: selectedMarcoDb.avatar_delante ?? true,
   } : null
 
-  const facNivel = overrideNivel || baseFacNivel
-  const stuNivel = overrideNivel || baseStuNivel
+  const facNivel = overrideFrame ? { ...baseFacNivel, ...overrideFrame, n: baseFacNivel.n, i: baseFacNivel.i, score: baseFacNivel.score, from: baseFacNivel.from, to: baseFacNivel.to, pct: baseFacNivel.pct } : baseFacNivel
+  const stuNivel = overrideFrame ? { ...baseStuNivel, ...overrideFrame, n: baseStuNivel.n, i: baseStuNivel.i, score: baseStuNivel.score, from: baseStuNivel.from, to: baseStuNivel.to, pct: baseStuNivel.pct } : baseStuNivel
 
-  async function saveNivelSelection(nivelId: string | null) {
-    setSelectedNivelId(nivelId)
+  async function saveMarcoSelection(marcoId: string | null) {
+    setSelectedMarcoId(marcoId)
     if (user) {
-      await supabase.from("profiles").update({ nivel_seleccionado_id: nivelId }).eq("id", user.id)
+      await supabase.from("profiles").update({ marco_seleccionado_id: marcoId }).eq("id", user.id)
     }
   }
 
@@ -1978,8 +1976,8 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-xs font-medium text-gray-500">Seleccionar Marco</label>
-                    {selectedNivelId && (
-                      <button onClick={() => saveNivelSelection(null)} className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+                    {selectedMarcoId && (
+                      <button onClick={() => saveMarcoSelection(null)} className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
                         Usar auto
                       </button>
                     )}
@@ -1989,8 +1987,8 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                       <button
                         key={nivel.id}
                         type="button"
-                        onClick={() => saveNivelSelection(nivel.id)}
-                        className={`shrink-0 flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${selectedNivelId === nivel.id ? "bg-luxor-primary/10 ring-2 ring-luxor-primary" : "bg-gray-50 hover:bg-gray-100 ring-1 ring-gray-200"}`}
+                        onClick={() => saveMarcoSelection(nivel.id)}
+                        className={`shrink-0 flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all ${selectedMarcoId === nivel.id ? "bg-luxor-primary/10 ring-2 ring-luxor-primary" : "bg-gray-50 hover:bg-gray-100 ring-1 ring-gray-200"}`}
                       >
                         {nivel.imagen_url ? (
                           <img src={nivel.imagen_url} alt={nivel.nombre} className="w-14 h-14 rounded-full object-contain" />

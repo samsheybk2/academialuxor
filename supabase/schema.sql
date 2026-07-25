@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   cargo TEXT,
   sucursal TEXT,
   fecha_nacimiento DATE,
-  nivel_seleccionado_id UUID REFERENCES niveles(id),
+  marco_seleccionado_id UUID REFERENCES niveles(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -982,6 +982,7 @@ CREATE TABLE IF NOT EXISTS niveles (
   avatar_tamano INTEGER DEFAULT 70,
   frame_tamano INTEGER DEFAULT 100,
   avatar_delante BOOLEAN DEFAULT true,
+  cargos_aplican TEXT[] DEFAULT '{}',
   activo BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

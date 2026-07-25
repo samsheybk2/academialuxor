@@ -15,7 +15,7 @@ interface Insignia {
   xp: number; color: string; activa: boolean; created_at: string
 }
 interface CategoriaInsignia { id: string; nombre: string; color: string; icono: string; orden: number }
-interface Nivel { id: string; nombre: string; descripcion: string | null; imagen_url: string | null; icono: string; rol: string; xp_minimo: number; color: string; avatar_x: number; avatar_y: number; avatar_tamano: number; frame_tamano: number; avatar_delante: boolean; activo: boolean; created_at: string }
+interface Nivel { id: string; nombre: string; descripcion: string | null; imagen_url: string | null; icono: string; rol: string; xp_minimo: number; color: string; avatar_x: number; avatar_y: number; avatar_tamano: number; frame_tamano: number; avatar_delante: boolean; cargos_aplican: string[]; activo: boolean; created_at: string }
 interface Cargo { id: string; nombre: string }
 
 const PARAMS_FAC = [
@@ -69,7 +69,7 @@ function generateDescription(rol: string, params: any): string {
 }
 
 const EMPTY_INSIGNIA = { nombre: "", descripcion: "", rol: "facilitador", categoria_id: null as string | null, min_cursos_creados: 0, min_cursos_aprobados: 0, min_estudiantes_capacitados: 0, min_calificacion_promedio: 0, min_cursos_inscritos: 0, min_cursos_completados: 0, min_modulos_completados: 0, min_quizzes_aprobados: 0, min_racha_dias: 0, xp: 10, color: "#6366f1", activa: true }
-const EMPTY_NIVEL = { nombre: "", descripcion: "", icono: "⭐", rol: "facilitador", xp_minimo: 0, color: "#6366f1", avatar_x: 50, avatar_y: 50, avatar_tamano: 70, frame_tamano: 100, avatar_delante: true, activo: true }
+const EMPTY_NIVEL = { nombre: "", descripcion: "", icono: "⭐", rol: "facilitador", xp_minimo: 0, color: "#6366f1", avatar_x: 50, avatar_y: 50, avatar_tamano: 70, frame_tamano: 100, avatar_delante: true, cargos_aplican: [] as string[], activo: true }
 const EMPTY_CATEGORIA = { nombre: "", color: "#6366f1", icono: "🏅", orden: 0 }
 
 // ── Frame Editor ───────────────────────────────────────────
@@ -233,6 +233,7 @@ export default function ExperienciaPage() {
   const [imagenFile, setImagenFile] = useState<File | null>(null)
   const [imagenPreview, setImagenPreview] = useState<string | null>(null)
   const [selectedCargos, setSelectedCargos] = useState<string[]>([])
+  const [selectedCargosNivel, setSelectedCargosNivel] = useState<string[]>([])
   const [descripcionManual, setDescripcionManual] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -265,7 +266,7 @@ export default function ExperienciaPage() {
   async function fetchCargosInsignia(id: string): Promise<string[]> { const { data } = await supabase.from("insignia_cargos").select("cargo_id").eq("insignia_id", id); return (data || []).map((r: any) => r.cargo_id) }
 
   function openCreate() {
-    setEditingId(null); setError(""); setImagenFile(null); setImagenPreview(null); setSelectedCargos([]); setDescripcionManual(false)
+    setEditingId(null); setError(""); setImagenFile(null); setImagenPreview(null); setSelectedCargos([]); setSelectedCargosNivel([]); setDescripcionManual(false)
     if (tab === "insignias") setFormI(EMPTY_INSIGNIA)
     else if (tab === "niveles") setFormN(EMPTY_NIVEL)
     else setFormC(EMPTY_CATEGORIA)
@@ -278,7 +279,8 @@ export default function ExperienciaPage() {
       setFormI({ nombre: item.nombre, descripcion: item.descripcion || "", rol: item.rol, categoria_id: item.categoria_id || null, min_cursos_creados: item.min_cursos_creados, min_cursos_aprobados: item.min_cursos_aprobados, min_estudiantes_capacitados: item.min_estudiantes_capacitados, min_calificacion_promedio: item.min_calificacion_promedio, min_cursos_inscritos: item.min_cursos_inscritos, min_cursos_completados: item.min_cursos_completados, min_modulos_completados: item.min_modulos_completados, min_quizzes_aprobados: item.min_quizzes_aprobados, min_racha_dias: item.min_racha_dias, xp: item.xp, color: item.color, activa: item.activa })
       setSelectedCargos(await fetchCargosInsignia(item.id))
     } else if (tab === "niveles") {
-      setFormN({ nombre: item.nombre, descripcion: item.descripcion || "", icono: item.icono || "⭐", rol: item.rol, xp_minimo: item.xp_minimo, color: item.color, avatar_x: item.avatar_x ?? 50, avatar_y: item.avatar_y ?? 50, avatar_tamano: item.avatar_tamano ?? 70, frame_tamano: item.frame_tamano ?? 100, avatar_delante: item.avatar_delante ?? true, activo: item.activo })
+      setFormN({ nombre: item.nombre, descripcion: item.descripcion || "", icono: item.icono || "⭐", rol: item.rol, xp_minimo: item.xp_minimo, color: item.color, avatar_x: item.avatar_x ?? 50, avatar_y: item.avatar_y ?? 50, avatar_tamano: item.avatar_tamano ?? 70, frame_tamano: item.frame_tamano ?? 100, avatar_delante: item.avatar_delante ?? true, cargos_aplican: item.cargos_aplican || [], activo: item.activo })
+      setSelectedCargosNivel(item.cargos_aplican || [])
     } else {
       setFormC({ nombre: item.nombre, color: item.color || "#6366f1", icono: item.icono || "🏅", orden: item.orden ?? 0 })
     }
@@ -331,7 +333,13 @@ export default function ExperienciaPage() {
       } else if (tab === "niveles") {
         if (!formN.nombre.trim()) { setError("Nombre obligatorio"); setSaving(false); return }
         const url = await uploadImage()
-        const data = { ...formN, imagen_url: url, nombre: formN.nombre.trim(), descripcion: formN.descripcion.trim() || null }
+        const sameRolNiveles = niveles.filter(n => n.activo && (n.rol === formN.rol || n.rol === "ambos") && n.id !== editingId).sort((a, b) => a.xp_minimo - b.xp_minimo)
+        const totalXP = insignias.filter(i => i.activa && (i.rol === formN.rol || i.rol === "ambos")).reduce((s, i) => s + i.xp, 0)
+        const numNiveles = sameRolNiveles.length + 1
+        const xpPorNivel = Math.round(totalXP / numNiveles)
+        const insertIdx = editingId ? sameRolNiveles.findIndex(n => n.xp_minimo > xpPorNivel * sameRolNiveles.length) : sameRolNiveles.length
+        const xpMinimo = xpPorNivel * Math.max(insertIdx < 0 ? sameRolNiveles.length : insertIdx, 0)
+        const data = { ...formN, imagen_url: url, nombre: formN.nombre.trim(), descripcion: formN.descripcion.trim() || null, cargos_aplican: selectedCargosNivel, xp_minimo: xpMinimo }
         if (editingId) {
           if (imagenFile) {
             const oldItem = niveles.find(n => n.id === editingId)
@@ -376,7 +384,7 @@ export default function ExperienciaPage() {
     }
     
     if (table === "niveles") {
-      await supabase.from("profiles").update({ nivel_seleccionado_id: null }).eq("nivel_seleccionado_id", deleteId)
+      await supabase.from("profiles").update({ marco_seleccionado_id: null }).eq("marco_seleccionado_id", deleteId)
     }
     const { error: e } = await supabase.from(table).delete().eq("id", deleteId)
     if (e) setError(e.message); setDeleteId(null); setSaving(false); fetchAll()
@@ -660,13 +668,23 @@ export default function ExperienciaPage() {
                 </div>
               )}
 
-              {/* ── XP mínimo (solo niveles) ── */}
-              {tab === "niveles" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">XP Mínimo *</label>
-                  <input type="number" min="0" value={formN.xp_minimo} onChange={e => setFormN({ ...formN, xp_minimo: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
-                </div>
-              )}
+              {/* ── XP mínimo calculado (solo niveles) ── */}
+              {tab === "niveles" && (() => {
+                const totalXP = insignias.filter(i => i.activa && (i.rol === formN.rol || i.rol === "ambos")).reduce((s, i) => s + i.xp, 0)
+                const numNiveles = Math.max(niveles.filter(n => n.activo && (n.rol === formN.rol || n.rol === "ambos")).length || 1, 1)
+                const xpPorNivel = Math.round(totalXP / numNiveles)
+                const idx = editingId ? niveles.filter(n => n.activo && (n.rol === formN.rol || n.rol === "ambos")).sort((a, b) => a.xp_minimo - b.xp_minimo).findIndex(n => n.id === editingId) : niveles.filter(n => n.activo && (n.rol === formN.rol || n.rol === "ambos")).length
+                const xpCalculado = xpPorNivel * Math.max(idx, 0)
+                return (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">XP Mínimo (calculado automáticamente)</label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-luxor-primary">{xpCalculado.toLocaleString()} XP</span>
+                      <span className="text-xs text-gray-400">= {totalXP.toLocaleString()} XP total ÷ {numNiveles} niveles × posición {idx + 1}</span>
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* ── XP / Color / Orden ── */}
               <div className="grid grid-cols-2 gap-4">
@@ -710,6 +728,15 @@ export default function ExperienciaPage() {
                   <button type="button" onClick={() => setFormN({ ...formN, avatar_delante: !formN.avatar_delante })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formN.avatar_delante ? "bg-luxor-primary" : "bg-gray-300"}`}>
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formN.avatar_delante ? "translate-x-6" : "translate-x-1"}`} />
                   </button>
+                </div>
+              )}
+
+              {/* ── Cargos (solo niveles) ── */}
+              {tab === "niveles" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Cargos <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <p className="text-[10px] text-gray-400 mb-2">Sin selección = aplica para todos los cargos de este rol</p>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">{cargos.map(c => <button key={c.id} type="button" onClick={() => setSelectedCargosNivel(p => p.includes(c.id) ? p.filter(x => x !== c.id) : [...p, c.id])} className={`px-2 py-1 text-[11px] font-medium rounded-lg transition-colors ${selectedCargosNivel.includes(c.id) ? "bg-luxor-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{c.nombre}</button>)}</div>
                 </div>
               )}
             </div>
