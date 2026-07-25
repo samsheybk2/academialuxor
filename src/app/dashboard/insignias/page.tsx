@@ -431,7 +431,7 @@ export default function ExperienciaPage() {
                     return (
                     <Card key={ins.id}><CardContent className="p-4">
                       <div className="flex items-start gap-4">
-                        <div className="w-32 h-32 rounded-full overflow-hidden flex items-center justify-center shrink-0" style={{ backgroundColor: ins.color + "20" }}>
+                        <div className="w-32 h-32 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ backgroundColor: ins.color + "20" }}>
                           {ins.imagen_url ? <img src={ins.imagen_url} alt={ins.nombre} className="w-full h-full object-cover" /> : <Award className="w-12 h-12" style={{ color: ins.color }} />}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -584,8 +584,8 @@ export default function ExperienciaPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Imagen (WebP)</label>
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center shrink-0 border-2 border-dashed border-gray-300" style={{ backgroundColor: (tab === "insignias" ? formI.color : formN.color) + "15" }}>
-                    {imagenPreview ? <img src={imagenPreview} alt="Preview" className="w-full h-full rounded-full object-cover" /> : <Upload className="w-5 h-5 text-gray-400" />}
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 border-2 border-dashed border-gray-300" style={{ backgroundColor: (tab === "insignias" ? formI.color : formN.color) + "15" }}>
+                    {imagenPreview ? <img src={imagenPreview} alt="Preview" className="w-full h-full rounded-xl object-cover" /> : <Upload className="w-5 h-5 text-gray-400" />}
                   </div>
                   <div><input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} className="hidden" /><Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()}>Seleccionar imagen</Button><p className="text-[10px] text-gray-400 mt-1">PNG, JPG, WebP — Max 4MB</p></div>
                 </div>
