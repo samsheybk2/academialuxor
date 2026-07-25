@@ -1266,7 +1266,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                             <div key={b.id} className="relative group">
                               <button
                                 onClick={() => setDetailBadge(b)}
-                                className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-all ${
+                                className={`w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center transition-all ${
                                   b.ok 
                                     ? `${b.bg} shadow-sm` 
                                     : "bg-gray-100 opacity-40 grayscale"
@@ -1463,7 +1463,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                                   <div key={b.id} className="relative group">
                                     <button
                                       onClick={() => setDetailBadge(b)}
-                                      className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-all ${
+                                      className={`w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center transition-all ${
                                         b.ok 
                                           ? `${b.bg} shadow-sm` 
                                           : "bg-gray-100 opacity-40 grayscale"
@@ -1732,7 +1732,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                             <div key={b.id} className="relative group">
                               <button
                                 onClick={() => setDetailBadge(b)}
-                                className={`w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-all ${
+                                className={`w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center transition-all ${
                                   b.ok 
                                     ? `${b.bg} shadow-sm` 
                                     : "bg-gray-100 opacity-40 grayscale"
@@ -2042,7 +2042,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="relative flex flex-col items-center pt-6 pb-4 px-6">
               <button onClick={() => setDetailBadge(null)} className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-gray-100"><X className="w-5 h-5 text-gray-500" /></button>
-              <div className={`w-28 h-28 rounded-full overflow-hidden flex items-center justify-center mb-4 ${detailBadge.ok ? "shadow-lg" : "grayscale opacity-50"}`} style={detailBadge.ok ? { backgroundColor: detailBadge.color?.replace("text-[", "").replace("]", "") + "20" } : {}}>
+                <div className={`w-28 h-28 rounded-xl overflow-hidden flex items-center justify-center mb-4 ${detailBadge.ok ? "shadow-lg" : "grayscale opacity-50"}`} style={detailBadge.ok ? { backgroundColor: detailBadge.color?.replace("text-[", "").replace("]", "") + "20" } : {}}>
                 {detailBadge.imagen_url ? (
                   <img src={detailBadge.imagen_url} alt={detailBadge.nombre} className="w-full h-full object-cover" />
                 ) : (
