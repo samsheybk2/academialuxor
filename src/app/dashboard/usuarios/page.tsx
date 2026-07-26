@@ -73,6 +73,7 @@ function UsuariosContent() {
   const [facilitadorCargos, setFacilitadorCargos] = useState<string[]>([])
   const [facCargoSearch, setFacCargoSearch] = useState("")
   const [showCargoModal, setShowCargoModal] = useState(false)
+  const [cargoFacilitadores, setCargoFacilitadores] = useState<Record<string, string>>({})
 
   const canApprove = user?.rol === "facilitador"
   const canManage = user?.rol === "decano" || user?.rol === "developer"
@@ -206,7 +207,20 @@ function UsuariosContent() {
     setForm({ nombre: "", email: "", cedula: "", rol: "estudiante", cargo: "", nivel: "operadores" })
     setCargoSearch("")
     setFacilitadorCargos([])
+    // Load cargo-facilitador mapping
+    loadCargoFacilitadores()
     setShowModal(true)
+  }
+
+  async function loadCargoFacilitadores() {
+    const { data: fcData } = await supabase
+      .from("facilitador_cargos")
+      .select("cargo_id, profiles!inner(nombre)")
+    const map: Record<string, string> = {}
+    for (const fc of fcData || []) {
+      map[fc.cargo_id] = (fc.profiles as any)?.nombre || "Otro facilitador"
+    }
+    setCargoFacilitadores(map)
   }
 
   async function openEdit(user: Usuario) {
@@ -229,6 +243,8 @@ function UsuariosContent() {
     } else {
       setFacilitadorCargos([])
     }
+    // Load cargo-facilitador mapping
+    await loadCargoFacilitadores()
     setShowModal(true)
   }
 
@@ -251,6 +267,9 @@ function UsuariosContent() {
       if (form.rol === "facilitador") {
         await supabase.from("facilitador_cargos").delete().eq("facilitador_id", editingUser.id)
         if (facilitadorCargos.length > 0) {
+          // Remove these cargos from other facilitadores first
+          await supabase.from("facilitador_cargos").delete().in("cargo_id", facilitadorCargos)
+          // Then insert for this facilitador
           await supabase.from("facilitador_cargos").insert(
             facilitadorCargos.map((cargo_id) => ({ facilitador_id: editingUser.id, cargo_id }))
           )
@@ -283,6 +302,9 @@ function UsuariosContent() {
         })
 
         if (form.rol === "facilitador" && facilitadorCargos.length > 0) {
+          // Remove these cargos from other facilitadores first
+          await supabase.from("facilitador_cargos").delete().in("cargo_id", facilitadorCargos)
+          // Then insert for this facilitador
           await supabase.from("facilitador_cargos").insert(
             facilitadorCargos.map((cargo_id) => ({ facilitador_id: authData.user.id, cargo_id }))
           )
@@ -779,6 +801,7 @@ function UsuariosContent() {
                     .map(c => {
                       const selected = facilitadorCargos.includes(c.id)
                       const unidad = unidades.find(d => d.id === c.unidad_id)
+                      const assignedTo = cargoFacilitadores[c.id]
                       return (
                         <button
                           key={c.id}
@@ -802,14 +825,21 @@ function UsuariosContent() {
                             {unidad && (
                               <p className="text-[10px] text-gray-400 truncate">{unidad.nombre}</p>
                             )}
+                            {assignedTo && !selected && (
+                              <p className="text-[10px] text-amber-600 truncate">Asignado a: {assignedTo}</p>
+                            )}
                           </div>
-                          {selected && (
+                          {selected ? (
                             <span className="w-5 h-5 rounded-full bg-luxor-primary flex items-center justify-center shrink-0">
                               <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
                                 <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>
                             </span>
-                          )}
+                          ) : assignedTo ? (
+                            <span className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center shrink-0" title={`Reasignar desde ${assignedTo}`}>
+                              <AlertCircle className="w-3 h-3 text-amber-600" />
+                            </span>
+                          ) : null}
                         </button>
                       )
                     })
