@@ -527,7 +527,7 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
             <p className="text-gray-500">{curso.facilitador_nombre} &bull; {curso.duracion}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-            {isFacilitador && curso.estado === "borrador" && (
+            {(isFacilitador || user?.rol === "developer") && curso.estado === "borrador" && (
               <button
                 onClick={handleEnviarRevision}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"

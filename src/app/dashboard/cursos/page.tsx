@@ -358,7 +358,7 @@ function CursosContent() {
                         </button>
                       </>
                     )}
-                    {isFacilitador && curso.estado === "borrador" && (
+                    {(isFacilitador || user?.rol === "developer") && curso.estado === "borrador" && (
                       <button
                         onClick={(e) => {
                           e.preventDefault()
