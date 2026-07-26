@@ -60,6 +60,7 @@ interface CursoData {
   titulo: string
   nivel: string[] | string
   tipo?: string
+  facilitador_id: string
   facilitador_nombre: string
   descripcion: string
   duracion: string
@@ -774,7 +775,8 @@ function CursoContent({ id }: { id: string }) {
   const [intentosByModulo, setIntentosByModulo] = useState<Record<string, number>>({})
   const [vistaEstudiante, setVistaEstudiante] = useState(false)
 
-  const isDecanoEff = isDecano && !vistaEstudiante
+  const canPreview = isDecano || curso?.facilitador_id === user?.id
+  const isDecanoEff = canPreview && !vistaEstudiante
   const isEstudianteEff = isEstudiante || vistaEstudiante
   const inscritoEff = vistaEstudiante ? false : inscrito
 
@@ -1128,7 +1130,7 @@ function CursoContent({ id }: { id: string }) {
   return (
     <ProtectedRoute>
       <div className="space-y-6 pb-20 px-4 sm:px-6">
-        {isDecano && !vistaEstudiante && (
+        {canPreview && !vistaEstudiante && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Eye className="w-5 h-5 text-blue-600" />
@@ -1138,8 +1140,7 @@ function CursoContent({ id }: { id: string }) {
                 Modo Solo Lectura
               </p>
               <p className="text-sm text-blue-600">
-                Como Decano, puedes revisar el contenido del curso pero
-                no participar en evaluaciones
+                Puedes revisar el contenido del curso como lo vería un estudiante
               </p>
             </div>
             <button
