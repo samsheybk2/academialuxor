@@ -836,7 +836,7 @@ function CursoContent({ id }: { id: string }) {
         setModulos(modulosConPreguntas)
       }
 
-      if (isEstudiante) {
+      if (user) {
         const { data: inscripcion } = await supabase
           .from("inscripciones")
           .select("id, estado, fecha_limite")
