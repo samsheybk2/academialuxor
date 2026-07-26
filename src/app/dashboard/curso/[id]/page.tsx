@@ -778,7 +778,7 @@ function CursoContent({ id }: { id: string }) {
   const canPreview = isDecano || curso?.facilitador_id === user?.id
   const isDecanoEff = canPreview && !vistaEstudiante
   const isEstudianteEff = isEstudiante || vistaEstudiante
-  const inscritoEff = vistaEstudiante ? false : inscrito
+  const inscritoEff = inscrito
 
   useEffect(() => {
     async function fetchCurso() {
