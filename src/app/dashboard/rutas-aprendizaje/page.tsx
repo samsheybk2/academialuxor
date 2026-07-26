@@ -50,6 +50,7 @@ interface CargoData {
     competencia: Competencia
     nivel_requerido: number
   }>
+  elementos_count?: number
   created_at: string
 }
 
@@ -69,6 +70,8 @@ function RutasContent() {
   const [cargos, setCargos] = useState<CargoData[]>([])
   const [unidades, setUnidades] = useState<UnidadOrganizacional[]>([])
   const [competencias, setCompetencias] = useState<Competencia[]>([])
+  const [facilitadores, setFacilitadores] = useState<{ id: string; nombre: string; email: string }[]>([])
+  const [facilitadorCargos, setFacilitadorCargos] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -244,6 +247,42 @@ function RutasContent() {
     }))
 
     setCargos(cargosConCompetencias)
+
+    const { data: facilitadoresData } = await supabase
+      .from("profiles")
+      .select("id, nombre, email")
+      .eq("rol", "facilitador")
+
+    setFacilitadores(facilitadoresData || [])
+
+    const { data: fcData } = await supabase
+      .from("facilitador_cargos")
+      .select("facilitador_id, cargo_id")
+
+    const fcMap: Record<string, string[]> = {}
+    for (const fc of fcData || []) {
+      if (!fcMap[fc.facilitador_id]) fcMap[fc.facilitador_id] = []
+      fcMap[fc.facilitador_id].push(fc.cargo_id)
+    }
+    setFacilitadorCargos(fcMap)
+
+    if (cargoIds.length > 0) {
+      const { data: elementosData } = await supabase
+        .from("cargo_elementos")
+        .select("cargo_id")
+        .in("cargo_id", cargoIds)
+
+      const countMap: Record<string, number> = {}
+      for (const el of elementosData || []) {
+        countMap[el.cargo_id] = (countMap[el.cargo_id] || 0) + 1
+      }
+
+      setCargos(cargosConCompetencias.map((c: CargoData) => ({
+        ...c,
+        elementos_count: countMap[c.id] || 0
+      })))
+    }
+
     setLoading(false)
   }
 
@@ -953,7 +992,8 @@ function RutasContent() {
                 <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs">Cargo</th>
                 <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs hidden sm:table-cell">Nivel</th>
                 <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs hidden md:table-cell">Unidad</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs hidden lg:table-cell">Jefe Inmediato</th>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs hidden lg:table-cell">Facilitador</th>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs hidden lg:table-cell">Progreso</th>
                 <th className="text-right px-4 py-2.5 font-medium text-gray-500 text-xs">Acciones</th>
               </tr>
             </thead>
@@ -971,7 +1011,7 @@ function RutasContent() {
                   return (
                     <Fragment key={unidad.id}>
                       <tr className="bg-gray-50/80">
-                        <td colSpan={5} className="px-4 py-2">
+                        <td colSpan={6} className="px-4 py-2">
                           <div className="flex items-center gap-2">
                             <div
                               className="w-6 h-6 rounded flex items-center justify-center border"
@@ -1047,12 +1087,36 @@ function RutasContent() {
                               })()}
                             </td>
                             <td className="px-4 py-2.5 hidden lg:table-cell">
-                              {jefe ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                                  <UserCog className="w-3 h-3" />
-                                  {jefe.nombre}
-                                </span>
-                              ) : <span className="text-xs text-gray-400">-</span>}
+                              {(() => {
+                                const facs = facilitadores.filter(f => facilitadorCargos[f.id]?.includes(cargo.id))
+                                if (facs.length === 0) return <span className="text-xs text-gray-400">Sin asignar</span>
+                                return (
+                                  <div className="flex flex-wrap gap-1">
+                                    {facs.map(f => (
+                                      <span key={f.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                        <GraduationCap className="w-3 h-3" />
+                                        {f.nombre.split(" ")[0]}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )
+                              })()}
+                            </td>
+                            <td className="px-4 py-2.5 hidden lg:table-cell">
+                              {(() => {
+                                const elementos = cargo.elementos_count || 0
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[80px]">
+                                      <div
+                                        className={`h-full rounded-full transition-all ${elementos > 0 ? "bg-luxor-primary" : "bg-gray-200"}`}
+                                        style={{ width: elementos > 0 ? "100%" : "0%" }}
+                                      />
+                                    </div>
+                                    <span className="text-xs text-gray-500">{elementos} elem.</span>
+                                  </div>
+                                )
+                              })()}
                             </td>
                             <td className="px-4 py-2.5 text-right">
                               {(isDecano || isFacilitador) && (
@@ -1088,7 +1152,7 @@ function RutasContent() {
               {filtered.some((c) => !c.unidad_id) && (
                 <>
                   <tr className="bg-amber-50/80">
-                    <td colSpan={5} className="px-4 py-2">
+                    <td colSpan={6} className="px-4 py-2">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded flex items-center justify-center border border-amber-300 bg-amber-100">
                           <FolderOpen className="w-3.5 h-3.5 text-amber-600" />
@@ -1145,12 +1209,36 @@ function RutasContent() {
                           <span className="text-xs text-amber-600 font-medium">Sin asignar</span>
                         </td>
                         <td className="px-4 py-2.5 hidden lg:table-cell">
-                          {jefe ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                              <UserCog className="w-3 h-3" />
-                              {jefe.nombre}
-                            </span>
-                          ) : <span className="text-xs text-gray-400">-</span>}
+                          {(() => {
+                            const facs = facilitadores.filter(f => facilitadorCargos[f.id]?.includes(cargo.id))
+                            if (facs.length === 0) return <span className="text-xs text-gray-400">Sin asignar</span>
+                            return (
+                              <div className="flex flex-wrap gap-1">
+                                {facs.map(f => (
+                                  <span key={f.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                    <GraduationCap className="w-3 h-3" />
+                                    {f.nombre.split(" ")[0]}
+                                  </span>
+                                ))}
+                              </div>
+                            )
+                          })()}
+                        </td>
+                        <td className="px-4 py-2.5 hidden lg:table-cell">
+                          {(() => {
+                            const elementos = cargo.elementos_count || 0
+                            return (
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden max-w-[80px]">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${elementos > 0 ? "bg-luxor-primary" : "bg-gray-200"}`}
+                                    style={{ width: elementos > 0 ? "100%" : "0%" }}
+                                  />
+                                </div>
+                                <span className="text-xs text-gray-500">{elementos} elem.</span>
+                              </div>
+                            )
+                          })()}
                         </td>
                         <td className="px-4 py-2.5 text-right">
                           {(isDecano || isFacilitador) && (

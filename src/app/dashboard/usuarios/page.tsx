@@ -70,6 +70,8 @@ function UsuariosContent() {
     cargo: "",
     nivel: "operadores",
   })
+  const [facilitadorCargos, setFacilitadorCargos] = useState<string[]>([])
+  const [facCargoSearch, setFacCargoSearch] = useState("")
 
   const canApprove = user?.rol === "facilitador"
   const canManage = user?.rol === "decano" || user?.rol === "developer"
@@ -202,10 +204,11 @@ function UsuariosContent() {
     setEditingUser(null)
     setForm({ nombre: "", email: "", cedula: "", rol: "estudiante", cargo: "", nivel: "operadores" })
     setCargoSearch("")
+    setFacilitadorCargos([])
     setShowModal(true)
   }
 
-  function openEdit(user: Usuario) {
+  async function openEdit(user: Usuario) {
     setEditingUser(user)
     setForm({
       nombre: user.nombre,
@@ -216,6 +219,15 @@ function UsuariosContent() {
       nivel: user.nivel || "operadores",
     })
     setCargoSearch("")
+    if (user.rol === "facilitador") {
+      const { data } = await supabase
+        .from("facilitador_cargos")
+        .select("cargo_id")
+        .eq("facilitador_id", user.id)
+      setFacilitadorCargos((data || []).map((r: any) => r.cargo_id))
+    } else {
+      setFacilitadorCargos([])
+    }
     setShowModal(true)
   }
 
@@ -234,6 +246,17 @@ function UsuariosContent() {
           nivel: form.nivel,
         })
         .eq("id", editingUser.id)
+
+      if (form.rol === "facilitador") {
+        await supabase.from("facilitador_cargos").delete().eq("facilitador_id", editingUser.id)
+        if (facilitadorCargos.length > 0) {
+          await supabase.from("facilitador_cargos").insert(
+            facilitadorCargos.map((cargo_id) => ({ facilitador_id: editingUser.id, cargo_id }))
+          )
+        }
+      } else {
+        await supabase.from("facilitador_cargos").delete().eq("facilitador_id", editingUser.id)
+      }
     } else {
       const { data: authData, error } = await supabase.auth.signUp({
         email: form.email,
@@ -257,6 +280,12 @@ function UsuariosContent() {
           nivel: form.nivel,
           aprobado: true,
         })
+
+        if (form.rol === "facilitador" && facilitadorCargos.length > 0) {
+          await supabase.from("facilitador_cargos").insert(
+            facilitadorCargos.map((cargo_id) => ({ facilitador_id: authData.user.id, cargo_id }))
+          )
+        }
       }
     }
 
@@ -668,6 +697,86 @@ function UsuariosContent() {
               )}
             </div>
           </div>
+          {form.rol === "facilitador" && (
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Cargos asignados <span className="text-gray-400 font-normal">(rutas de aprendizaje a cargo)</span>
+              </label>
+              <p className="text-[10px] text-gray-400 mb-2">Selecciona los cargos para los cuales este facilitador creará y dará seguimiento a las rutas de aprendizaje</p>
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <div className="p-2.5 border-b border-gray-100">
+                  <div className="flex items-center gap-2 bg-gray-50 rounded-full px-4 py-2">
+                    <Search className="w-4 h-4 text-gray-400 shrink-0" />
+                    <input
+                      type="text"
+                      value={facCargoSearch}
+                      onChange={(e) => setFacCargoSearch(e.target.value)}
+                      placeholder="Buscar cargo..."
+                      className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+                    />
+                    {facCargoSearch && (
+                      <button type="button" onClick={() => setFacCargoSearch("")} className="text-gray-400 hover:text-gray-600">
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {facilitadorCargos.length > 0 && (
+                  <div className="px-4 py-2 bg-luxor-primary/5 border-b border-gray-100 flex items-center justify-between">
+                    <span className="text-xs font-medium text-luxor-primary">{facilitadorCargos.length} cargo(s) asignado(s)</span>
+                    <button type="button" onClick={() => setFacilitadorCargos([])} className="text-xs text-gray-400 hover:text-red-500 transition-colors">Limpiar</button>
+                  </div>
+                )}
+                <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                  {cargosList
+                    .filter(c => c.nombre.toLowerCase().includes(facCargoSearch.toLowerCase()))
+                    .length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-6">No se encontraron cargos</p>
+                  ) : (
+                    cargosList
+                      .filter(c => c.nombre.toLowerCase().includes(facCargoSearch.toLowerCase()))
+                      .map(c => {
+                        const selected = facilitadorCargos.includes(c.id)
+                        const unidad = unidades.find(d => d.id === c.unidad_id)
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setFacilitadorCargos(prev =>
+                                prev.includes(c.id) ? prev.filter(x => x !== c.id) : [...prev, c.id]
+                              )
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 transition-colors ${
+                              selected ? "bg-luxor-primary/10" : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              selected ? "bg-luxor-primary text-white" : "bg-gray-100 text-gray-500"
+                            }`}>
+                              <Briefcase className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 text-left min-w-0">
+                              <p className={`text-sm font-medium truncate ${selected ? "text-luxor-primary" : "text-gray-900"}`}>{c.nombre}</p>
+                              {unidad && (
+                                <p className="text-[10px] text-gray-400 truncate">{unidad.nombre}</p>
+                              )}
+                            </div>
+                            {selected && (
+                              <span className="w-5 h-5 rounded-full bg-luxor-primary flex items-center justify-center shrink-0">
+                                <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                                  <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" onClick={() => setShowModal(false)} className="flex-1">
               Cancelar

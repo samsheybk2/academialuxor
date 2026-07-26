@@ -255,6 +255,28 @@ CREATE TABLE IF NOT EXISTS cargos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 1.11B FACILITADOR-CARGOS (asignación de cargos a facilitadores)
+CREATE TABLE IF NOT EXISTS facilitador_cargos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  facilitador_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  cargo_id TEXT NOT NULL REFERENCES cargos(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(facilitador_id, cargo_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_facilitador_cargos_facilitador ON facilitador_cargos(facilitador_id);
+CREATE INDEX IF NOT EXISTS idx_facilitador_cargos_cargo ON facilitador_cargos(cargo_id);
+
+ALTER TABLE facilitador_cargos ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "facilitador_cargos_select_authenticated"
+  ON facilitador_cargos FOR SELECT
+  USING (auth.role() = 'authenticated');
+
+CREATE POLICY "facilitador_cargos_all_admin"
+  ON facilitador_cargos FOR ALL
+  USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
 -- 1.12 ELEMENTOS DE CARGO
 CREATE TABLE IF NOT EXISTS cargo_elementos (
   id TEXT PRIMARY KEY,
