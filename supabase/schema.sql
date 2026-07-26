@@ -511,6 +511,9 @@ CREATE POLICY "actividad_select_own" ON actividad_usuario
 CREATE POLICY "actividad_insert_own" ON actividad_usuario
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+CREATE POLICY "actividad_update_own" ON actividad_usuario
+  FOR UPDATE USING (auth.uid() = user_id);
+
 
 -- ============================================================
 -- 3. TRIGGERS

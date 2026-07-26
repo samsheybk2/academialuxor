@@ -919,12 +919,17 @@ function CursoContent({ id }: { id: string }) {
     if (!user || !curso) return
     setInscribiendo(true)
 
-    await supabase.from("inscripciones").insert({
+    const { error } = await supabase.from("inscripciones").insert({
       user_id: user.id,
       curso_id: curso.id,
       estado: "activa",
       fecha_limite: null,
     })
+
+    if (error && error.code !== "23505") {
+      setInscribiendo(false)
+      return
+    }
 
     await supabase.from("actividad_usuario").upsert(
       {
