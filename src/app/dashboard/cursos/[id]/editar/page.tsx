@@ -75,6 +75,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
   const [saved, setSaved] = useState(false)
   const [facilitadores, setFacilitadores] = useState<Facilitador[]>([])
   const [modulos, setModulos] = useState<ModuloForm[]>([])
+  const [initialModulos, setInitialModulos] = useState<string[]>([])
   const [modulosExpandidos, setModulosExpandidos] = useState<string[]>([])
   const [materialPdf, setMaterialPdf] = useState<MaterialPDF[]>([])
   const [initialMaterialPdf, setInitialMaterialPdf] = useState<MaterialPDF[]>([])
@@ -164,6 +165,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
             })
           )
           setModulos(modulosConPreguntas as ModuloForm[])
+          setInitialModulos(modulosConPreguntas.map((m: { id: string }) => m.id))
         }
 
         const { data: materialData } = await supabase
@@ -173,12 +175,13 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
           .order("orden")
 
         if (materialData) {
-          const materials = materialData.map((m: { id: string; nombre: string; url: string; modulo_id?: string | null; tipo?: string; storage_path?: string }) => ({
+          const materials = materialData.map((m: { id: string; nombre: string; url: string; modulo_id?: string | null; tipo?: string; icono?: string; storage_path?: string }) => ({
             id: m.id,
             nombre: m.nombre,
             url: m.url,
             modulo_id: m.modulo_id || null,
-            tipo: m.tipo || "curso",
+            tipo: m.tipo || "enlace",
+            icono: m.icono || "link",
             storagePath: m.storage_path || undefined,
           }))
           setMaterialPdf(materials)
@@ -442,6 +445,12 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
           facilitador_id: cursoOriginal.facilitador_id,
           fecha_fin: new Date().toISOString(),
         })
+      }
+
+      const currentModuloIds = new Set(modulos.map((m) => m.id).filter((id) => id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)))
+      const removedModulos = initialModulos.filter((id) => !currentModuloIds.has(id))
+      for (const removedId of removedModulos) {
+        await supabase.from("modulos").delete().eq("id", removedId)
       }
 
       const moduloIdsPorLocalId = new Map<string, string>()
