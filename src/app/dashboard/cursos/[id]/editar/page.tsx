@@ -598,7 +598,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-24">
       <Link
         href={`/dashboard/cursos/${id}`}
         className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
@@ -795,7 +795,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
 
       {/* Módulos */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between sticky top-0 bg-white z-30 -mx-6 px-6 py-3 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900">Módulos ({modulos.length})</h2>
           <button
             onClick={addModulo}
@@ -1254,8 +1254,8 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
         )}
       </div>
 
-      {/* Botones */}
-      <div className="flex gap-3 pb-8">
+      {/* Botones sticky */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 -mx-4 px-4 py-4 flex gap-3 shadow-lg z-40">
         <Link
           href={`/dashboard/cursos/${id}`}
           className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-center"
