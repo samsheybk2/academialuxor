@@ -1282,6 +1282,28 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
           )}
         </button>
       </div>
+
+      {/* Overlay con blur al guardar */}
+      {(saving || saved) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/40 animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-300">
+            {saving && (
+              <>
+                <div className="w-16 h-16 rounded-full border-4 border-luxor-primary/20 border-t-luxor-primary animate-spin" />
+                <p className="text-lg font-semibold text-gray-800">Guardando cambios...</p>
+              </>
+            )}
+            {saved && (
+              <>
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center animate-in zoom-in duration-500">
+                  <CheckCircle2 className="w-10 h-10 text-green-600" />
+                </div>
+                <p className="text-lg font-semibold text-green-700">¡Guardado exitosamente!</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
