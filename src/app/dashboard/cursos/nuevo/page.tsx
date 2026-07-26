@@ -43,7 +43,7 @@ interface MaterialPDF {
   url: string
   modulo_id: string | null
   tipo: string
-  file?: File
+  icono: string
 }
 
 interface ModuloForm {
@@ -405,29 +405,18 @@ function NuevoCursoContent() {
 
       for (let index = 0; index < materialPdf.length; index++) {
         const material = materialPdf[index]
+        if (!material.url.trim()) continue
         const moduloId = material.modulo_id ? moduloIdsPorLocalId.get(material.modulo_id) || null : null
 
-        if (material.file) {
-          const safeName = `${Date.now()}-${material.file.name.replace(/\s+/g, "-")}`
-          const filePath = `cursos/${curso.id}/${safeName}`
-          const { error: uploadError } = await supabase.storage
-            .from("curso-materiales")
-            .upload(filePath, material.file, { upsert: true, contentType: "application/pdf" })
-
-          if (uploadError) {
-            throw new Error(uploadError.message)
-          }
-
-          const { data: urlData } = supabase.storage.from("curso-materiales").getPublicUrl(filePath)
-          await supabase.from("material_pdf").insert({
-            curso_id: curso.id,
-            modulo_id: moduloId,
-            nombre: material.nombre || material.file.name.replace(/\.pdf$/i, ""),
-            url: urlData.publicUrl,
-            tipo: material.tipo,
-            orden: index + 1,
-          })
-        }
+        await supabase.from("material_pdf").insert({
+          curso_id: curso.id,
+          modulo_id: moduloId,
+          nombre: material.nombre || "Recurso",
+          url: material.url,
+          tipo: material.tipo,
+          icono: material.icono,
+          orden: index + 1,
+        })
       }
 
       setSaved(true)
@@ -954,55 +943,97 @@ function NuevoCursoContent() {
                         </div>
                       </div>
                     ))}
-                    {/* Material PDF */}
+                    {/* Recursos URL */}
                     <div className="pt-4 border-t border-gray-100 space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium text-gray-900 flex items-center gap-2">
                           <FileText className="w-4 h-4 text-gray-400" />
-                          Material de apoyo (PDF)
+                          Recursos de descarga
                         </h4>
-                        <label className="text-sm text-luxor-primary hover:text-luxor-secondary cursor-pointer flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMaterialPdf((prev) => [
+                              ...prev,
+                              {
+                                id: Date.now().toString(),
+                                nombre: "",
+                                url: "",
+                                modulo_id: modulo.id,
+                                tipo: "enlace",
+                                icono: "link",
+                              },
+                            ])
+                          }}
+                          className="text-sm text-luxor-primary hover:text-luxor-secondary flex items-center gap-1"
+                        >
                           <Plus className="w-3.5 h-3.5" />
-                          Subir PDF
-                          <input
-                            type="file"
-                            accept="application/pdf"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (!file) return
-                              setMaterialPdf((prev) => [
-                                ...prev,
-                                {
-                                  id: Date.now().toString(),
-                                  nombre: file.name.replace(/\.pdf$/i, ""),
-                                  url: "",
-                                  modulo_id: modulo.id,
-                                  tipo: "modulo",
-                                  file,
-                                },
-                              ])
-                              e.target.value = ""
-                            }}
-                          />
-                        </label>
+                          Agregar recurso
+                        </button>
                       </div>
                       {materialPdf.filter((m) => m.modulo_id === modulo.id).length === 0 ? (
-                        <p className="text-sm text-gray-400">Sin material de apoyo para este módulo</p>
+                        <p className="text-sm text-gray-400">Sin recursos para este módulo</p>
                       ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {materialPdf.filter((m) => m.modulo_id === modulo.id).map((m) => (
-                            <div key={m.id} className="flex items-center justify-between rounded-lg border border-gray-200 bg-violet-50 px-3 py-2">
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <FileText className="w-4 h-4 text-violet-600 flex-shrink-0" />
-                                <span className="text-sm text-violet-700 truncate">{m.nombre}</span>
+                            <div key={m.id} className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Título del recurso"
+                                  value={m.nombre}
+                                  onChange={(e) =>
+                                    setMaterialPdf((prev) =>
+                                      prev.map((item) =>
+                                        item.id === m.id ? { ...item, nombre: e.target.value } : item
+                                      )
+                                    )
+                                  }
+                                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                                />
+                                <select
+                                  value={m.tipo}
+                                  onChange={(e) => {
+                                    const tipo = e.target.value
+                                    const iconoMap: Record<string, string> = {
+                                      pdf: "file-text",
+                                      video: "video",
+                                      documento: "file",
+                                      enlace: "link",
+                                    }
+                                    setMaterialPdf((prev) =>
+                                      prev.map((item) =>
+                                        item.id === m.id ? { ...item, tipo, icono: iconoMap[tipo] || "link" } : item
+                                      )
+                                    )
+                                  }}
+                                  className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                                >
+                                  <option value="pdf">PDF</option>
+                                  <option value="video">Video</option>
+                                  <option value="documento">Documento</option>
+                                  <option value="enlace">Enlace</option>
+                                </select>
+                                <button
+                                  onClick={() => setMaterialPdf((prev) => prev.filter((item) => item.id !== m.id))}
+                                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
                               </div>
-                              <button
-                                onClick={() => setMaterialPdf((prev) => prev.filter((item) => item.id !== m.id))}
-                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <input
+                                type="url"
+                                placeholder="URL del recurso (https://...)"
+                                value={m.url}
+                                onChange={(e) =>
+                                  setMaterialPdf((prev) =>
+                                    prev.map((item) =>
+                                      item.id === m.id ? { ...item, url: e.target.value } : item
+                                    )
+                                  )
+                                }
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
+                              />
                             </div>
                           ))}
                         </div>

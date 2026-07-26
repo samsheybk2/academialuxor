@@ -159,14 +159,15 @@ CREATE POLICY "historial_select_decano_developer" ON historial_creadores
 CREATE POLICY "historial_insert_decano_developer" ON historial_creadores
   FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'developer'));
 
--- 1.8 MATERIALES PDF
+-- 1.8 MATERIALES / RECURSOS
 CREATE TABLE IF NOT EXISTS material_pdf (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   curso_id UUID NOT NULL REFERENCES cursos(id) ON DELETE CASCADE,
   modulo_id UUID REFERENCES modulos(id) ON DELETE CASCADE,
   nombre TEXT NOT NULL,
   url TEXT NOT NULL,
-  tipo TEXT NOT NULL DEFAULT 'curso' CHECK (tipo IN ('curso', 'modulo')),
+  tipo TEXT NOT NULL DEFAULT 'enlace' CHECK (tipo IN ('curso', 'modulo', 'pdf', 'video', 'documento', 'enlace')),
+  icono TEXT DEFAULT 'link',
   storage_path TEXT,
   orden INTEGER DEFAULT 1,
   created_at TIMESTAMPTZ DEFAULT NOW()

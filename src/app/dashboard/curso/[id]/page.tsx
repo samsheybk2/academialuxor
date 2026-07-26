@@ -30,6 +30,7 @@ import {
   RotateCcw,
   CalendarClock,
   AlertTriangle,
+  FileText,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -52,6 +53,7 @@ interface MaterialPDF {
   nombre: string
   url: string
   tipo: string
+  icono?: string
   orden: number
 }
 
@@ -580,25 +582,49 @@ function TabContenido({
           ).length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-100">
               <p className="text-xs font-medium text-gray-500 uppercase mb-2">
-                Material de apoyo
+                Recursos de descarga
               </p>
-              <div className="flex gap-2 flex-wrap">
+              <div className="space-y-2">
                 {materialPdf
                   .filter(
                     (m) =>
                       m.modulo_id === modulo.id || m.modulo_id === null
                   )
-                  .map((m) => (
-                    <a
-                      key={m.id}
-                      href={m.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-violet-50 border border-violet-200 text-violet-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-violet-100 transition-colors"
-                    >
-                      {m.nombre}
-                    </a>
-                  ))}
+                  .map((m) => {
+                    const iconoTipo = m.icono || "link"
+                    const colorMap: Record<string, string> = {
+                      "file-text": "bg-red-50 border-red-200 text-red-700",
+                      video: "bg-blue-50 border-blue-200 text-blue-700",
+                      file: "bg-amber-50 border-amber-200 text-amber-700",
+                      link: "bg-violet-50 border-violet-200 text-violet-700",
+                    }
+                    const labelMap: Record<string, string> = {
+                      "file-text": "PDF",
+                      video: "Video",
+                      file: "Doc",
+                      link: "Link",
+                    }
+                    return (
+                      <a
+                        key={m.id}
+                        href={m.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-sm font-medium hover:opacity-80 transition-opacity ${colorMap[iconoTipo] || colorMap.link}`}
+                      >
+                        <span className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/60 shrink-0">
+                          {iconoTipo === "file-text" && <FileText className="w-4 h-4" />}
+                          {iconoTipo === "video" && <Play className="w-4 h-4" />}
+                          {iconoTipo === "file" && <BookOpen className="w-4 h-4" />}
+                          {iconoTipo === "link" && <Globe className="w-4 h-4" />}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="truncate">{m.nombre}</p>
+                          <p className="text-[10px] opacity-60">{labelMap[iconoTipo] || "Recurso"}</p>
+                        </div>
+                      </a>
+                    )
+                  })}
               </div>
             </div>
           )}
