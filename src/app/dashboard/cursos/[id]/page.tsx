@@ -29,6 +29,7 @@ import {
   Globe,
   Zap,
   Unlock,
+  Eye,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -580,6 +581,16 @@ function CursoDetalleContent({ params }: { params: Promise<{ id: string }> }) {
               >
                 <Edit3 className="w-4 h-4" />
                 Editar
+              </Link>
+            )}
+            {(isFacilitador || isDecano) && (
+              <Link
+                href={`/dashboard/curso/${curso.id}`}
+                target="_blank"
+                className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition-colors flex items-center gap-2 text-sm"
+              >
+                <Eye className="w-4 h-4" />
+                Ver como Estudiante
               </Link>
             )}
             {(isFacilitador || isDecano) && (
