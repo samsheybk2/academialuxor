@@ -5,18 +5,19 @@ import { createSupabaseClient } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
-import { Loader2, Plus, Pencil, Trash2, X, Award, Upload, MoreVertical } from "lucide-react"
+import { Loader2, Plus, Pencil, Trash2, X, Award, Upload, MoreVertical, Briefcase, ChevronRight, ChevronLeft, Search } from "lucide-react"
 
 interface Insignia {
   id: string; nombre: string; descripcion: string | null; imagen_url: string | null; rol: string
   categoria_id: string | null
   min_cursos_creados: number; min_cursos_aprobados: number; min_estudiantes_capacitados: number; min_calificacion_promedio: number
   min_cursos_inscritos: number; min_cursos_completados: number; min_modulos_completados: number; min_quizzes_aprobados: number; min_racha_dias: number
-  xp: number; color: string; activa: boolean; created_at: string
+  xp: number; color: string; activa: boolean; curso_id: string | null; created_at: string
 }
 interface CategoriaInsignia { id: string; nombre: string; color: string; icono: string; orden: number }
 interface Nivel { id: string; nombre: string; descripcion: string | null; imagen_url: string | null; icono: string; rol: string; xp_minimo: number; color: string; avatar_x: number; avatar_y: number; avatar_tamano: number; frame_tamano: number; avatar_delante: boolean; cargos_aplican: string[]; activo: boolean; created_at: string }
 interface Cargo { id: string; nombre: string }
+interface Curso { id: string; titulo: string }
 
 const PARAMS_FAC = [
   { key: "min_cursos_creados", label: "Cursos Creados" },
@@ -37,6 +38,17 @@ const ROLES = [
   { value: "estudiante", label: "Estudiante" },
   { value: "ambos", label: "Ambos" },
 ]
+const hoverColors = [
+  "hover:!bg-blue-100",
+  "hover:!bg-green-100",
+  "hover:!bg-yellow-100",
+  "hover:!bg-purple-100",
+  "hover:!bg-pink-100",
+  "hover:!bg-indigo-100",
+  "hover:!bg-teal-100",
+  "hover:!bg-orange-100",
+]
+function getHoverColor(index: number): string { return hoverColors[index % hoverColors.length] }
 function getParamsByRol(rol: string) { if (rol === "facilitador") return PARAMS_FAC; if (rol === "estudiante") return PARAMS_EST; return [...PARAMS_FAC, ...PARAMS_EST] }
 
 function generateDescription(rol: string, params: any): string {
@@ -68,7 +80,7 @@ function generateDescription(rol: string, params: any): string {
   return `Debes ${requirements.join(', ')} y ${lastReq} para obtener esta insignia.`
 }
 
-const EMPTY_INSIGNIA = { nombre: "", descripcion: "", rol: "facilitador", categoria_id: null as string | null, min_cursos_creados: 0, min_cursos_aprobados: 0, min_estudiantes_capacitados: 0, min_calificacion_promedio: 0, min_cursos_inscritos: 0, min_cursos_completados: 0, min_modulos_completados: 0, min_quizzes_aprobados: 0, min_racha_dias: 0, xp: 10, color: "#6366f1", activa: true }
+const EMPTY_INSIGNIA = { nombre: "", descripcion: "", rol: "facilitador", categoria_id: null as string | null, min_cursos_creados: 0, min_cursos_aprobados: 0, min_estudiantes_capacitados: 0, min_calificacion_promedio: 0, min_cursos_inscritos: 0, min_cursos_completados: 0, min_modulos_completados: 0, min_quizzes_aprobados: 0, min_racha_dias: 0, xp: 10, color: "#6366f1", activa: true, curso_id: null as string | null }
 const EMPTY_NIVEL = { nombre: "", descripcion: "", icono: "⭐", rol: "facilitador", xp_minimo: 0, color: "#6366f1", avatar_x: 50, avatar_y: 50, avatar_tamano: 70, frame_tamano: 100, avatar_delante: true, cargos_aplican: [] as string[], activo: true }
 const EMPTY_CATEGORIA = { nombre: "", color: "#6366f1", icono: "🏅", orden: 0 }
 
@@ -221,6 +233,7 @@ export default function ExperienciaPage() {
   const [categorias, setCategorias] = useState<CategoriaInsignia[]>([])
   const [loading, setLoading] = useState(true)
   const [cargos, setCargos] = useState<Cargo[]>([])
+  const [cursos, setCursos] = useState<Curso[]>([])
   const [categoriaFilter, setCategoriaFilter] = useState<string | null>(null)
 
   const [showModal, setShowModal] = useState(false)
@@ -228,6 +241,8 @@ export default function ExperienciaPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [showCargoModal, setShowCargoModal] = useState<"insignia" | "nivel" | null>(null)
+  const [cargoSearch, setCargoSearch] = useState("")
 
   const [formI, setFormI] = useState(EMPTY_INSIGNIA)
   const [imagenFile, setImagenFile] = useState<File | null>(null)
@@ -241,7 +256,7 @@ export default function ExperienciaPage() {
   const [formC, setFormC] = useState(EMPTY_CATEGORIA)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
-  useEffect(() => { if (user?.rol === "developer") { fetchAll(); fetchCargos() } }, [user])
+  useEffect(() => { if (user?.rol === "developer") { fetchAll(); fetchCargos(); fetchCursos() } }, [user])
 
   useEffect(() => {
     if (tab === "insignias" && !descripcionManual) {
@@ -263,6 +278,7 @@ export default function ExperienciaPage() {
     setLoading(false)
   }
   async function fetchCargos() { const { data } = await supabase.from("cargos").select("id, nombre").order("nombre"); setCargos(data || []) }
+  async function fetchCursos() { const { data } = await supabase.from("cursos").select("id, titulo").order("titulo"); setCursos(data || []) }
   async function fetchCargosInsignia(id: string): Promise<string[]> { const { data } = await supabase.from("insignia_cargos").select("cargo_id").eq("insignia_id", id); return (data || []).map((r: any) => r.cargo_id) }
 
   function openCreate() {
@@ -276,7 +292,7 @@ export default function ExperienciaPage() {
   async function openEdit(item: any) {
     setEditingId(item.id); setError(""); setImagenFile(null); setSelectedCargos([]); setImagenPreview(item.imagen_url || null); setDescripcionManual(true)
     if (tab === "insignias") {
-      setFormI({ nombre: item.nombre, descripcion: item.descripcion || "", rol: item.rol, categoria_id: item.categoria_id || null, min_cursos_creados: item.min_cursos_creados, min_cursos_aprobados: item.min_cursos_aprobados, min_estudiantes_capacitados: item.min_estudiantes_capacitados, min_calificacion_promedio: item.min_calificacion_promedio, min_cursos_inscritos: item.min_cursos_inscritos, min_cursos_completados: item.min_cursos_completados, min_modulos_completados: item.min_modulos_completados, min_quizzes_aprobados: item.min_quizzes_aprobados, min_racha_dias: item.min_racha_dias, xp: item.xp, color: item.color, activa: item.activa })
+      setFormI({ nombre: item.nombre, descripcion: item.descripcion || "", rol: item.rol, categoria_id: item.categoria_id || null, min_cursos_creados: item.min_cursos_creados, min_cursos_aprobados: item.min_cursos_aprobados, min_estudiantes_capacitados: item.min_estudiantes_capacitados, min_calificacion_promedio: item.min_calificacion_promedio, min_cursos_inscritos: item.min_cursos_inscritos, min_cursos_completados: item.min_cursos_completados, min_modulos_completados: item.min_modulos_completados, min_quizzes_aprobados: item.min_quizzes_aprobados, min_racha_dias: item.min_racha_dias, xp: item.xp, color: item.color, activa: item.activa, curso_id: item.curso_id || null })
       setSelectedCargos(await fetchCargosInsignia(item.id))
     } else if (tab === "niveles") {
       setFormN({ nombre: item.nombre, descripcion: item.descripcion || "", icono: item.icono || "⭐", rol: item.rol, xp_minimo: item.xp_minimo, color: item.color, avatar_x: item.avatar_x ?? 50, avatar_y: item.avatar_y ?? 50, avatar_tamano: item.avatar_tamano ?? 70, frame_tamano: item.frame_tamano ?? 100, avatar_delante: item.avatar_delante ?? true, cargos_aplican: item.cargos_aplican || [], activo: item.activo })
@@ -295,7 +311,7 @@ export default function ExperienciaPage() {
     const reader = new FileReader(); reader.onload = (ev) => setImagenPreview(ev.target?.result as string); reader.readAsDataURL(file)
   }
 
-  function toggleCargo(id: string) { setSelectedCargos(p => p.includes(id) ? p.filter(c => c !== id) : [...p, id]) }
+
 
   async function uploadImage(): Promise<string | null> {
     if (!imagenFile) return imagenPreview
@@ -417,10 +433,10 @@ export default function ExperienciaPage() {
                 <Card><CardContent className="text-center py-12"><Award className="w-12 h-12 text-gray-300 mx-auto mb-3" /><p className="text-gray-500">No hay insignias</p></CardContent></Card>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {insignias.filter(ins => !categoriaFilter || ins.categoria_id === categoriaFilter).map(ins => {
+                  {insignias.filter(ins => !categoriaFilter || ins.categoria_id === categoriaFilter).map((ins, index) => {
                     const cat = categorias.find(c => c.id === ins.categoria_id)
                     return (
-                    <Card key={ins.id}><CardContent className="p-4">
+                    <Card key={ins.id} className={`!bg-transparent !border-transparent !shadow-none ${getHoverColor(index)} transition-colors cursor-pointer rounded-xl`}><CardContent className="p-4">
                       <div className="flex items-start gap-4">
                         <div className="w-32 h-32 rounded-xl overflow-hidden flex items-center justify-center shrink-0" style={{ backgroundColor: ins.color + "20" }}>
                           {ins.imagen_url ? <img src={ins.imagen_url} alt={ins.nombre} className="w-full h-full object-cover" /> : <Award className="w-12 h-12" style={{ color: ins.color }} />}
@@ -434,6 +450,7 @@ export default function ExperienciaPage() {
                                 <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${ins.rol === "facilitador" ? "bg-blue-100 text-blue-700" : ins.rol === "estudiante" ? "bg-green-100 text-green-700" : "bg-purple-100 text-purple-700"}`}>{ROLES.find(r => r.value === ins.rol)?.label}</span>
                               </div>
                               {cat && <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full" style={{ backgroundColor: cat.color + "20", color: cat.color }}>{cat.icono} {cat.nombre}</span>}
+                              {ins.curso_id && (() => { const curso = cursos.find(c => c.id === ins.curso_id); return curso ? <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-100 text-amber-700">📚 {curso.titulo}</span> : null })()}
                             </div>
                             {/* Menú de 3 puntos */}
                             <div className="relative z-10 shrink-0">
@@ -633,6 +650,20 @@ export default function ExperienciaPage() {
                 </div>
               )}
 
+              {/* ── Curso Vinculado (solo insignias) ── */}
+              {tab === "insignias" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Curso Vinculado <span className="text-gray-400 font-normal">(opcional)</span></label>
+                  <select value={formI.curso_id || ""} onChange={e => setFormI({ ...formI, curso_id: e.target.value || null })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm">
+                    <option value="">Ninguno (insignia por parámetros)</option>
+                    {cursos.map(c => <option key={c.id} value={c.id}>{c.titulo}</option>)}
+                  </select>
+                  {formI.curso_id && (
+                    <p className="text-[10px] text-amber-600 mt-1">Esta insignia se otorga automáticamente al completar el curso seleccionado. Los parámetros se ignoran.</p>
+                  )}
+                </div>
+              )}
+
               {/* ── Rol (solo insignias y niveles) ── */}
               {tab !== "categorias" && (
               <div>
@@ -701,7 +732,11 @@ export default function ExperienciaPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Cargos <span className="text-gray-400 font-normal">(opcional)</span></label>
                   <p className="text-[10px] text-gray-400 mb-2">Sin selección = aplica para todos</p>
-                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">{cargos.map(c => <button key={c.id} type="button" onClick={() => toggleCargo(c.id)} className={`px-2 py-1 text-[11px] font-medium rounded-lg transition-colors ${selectedCargos.includes(c.id) ? "bg-luxor-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{c.nombre}</button>)}</div>
+                  <button type="button" onClick={() => { setCargoSearch(""); setShowCargoModal("insignia") }} className="w-full flex items-center gap-2 px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white hover:border-gray-400 transition-colors text-left">
+                    <Briefcase className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="flex-1 text-gray-500">{selectedCargos.length === 0 ? "Seleccionar cargos..." : `${selectedCargos.length} cargo${selectedCargos.length > 1 ? "s" : ""} seleccionado${selectedCargos.length > 1 ? "s" : ""}`}</span>
+                    <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                  </button>
                 </div>
               )}
 
@@ -729,7 +764,11 @@ export default function ExperienciaPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Cargos <span className="text-gray-400 font-normal">(opcional)</span></label>
                   <p className="text-[10px] text-gray-400 mb-2">Sin selección = aplica para todos los cargos de este rol</p>
-                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">{cargos.map(c => <button key={c.id} type="button" onClick={() => setSelectedCargosNivel(p => p.includes(c.id) ? p.filter(x => x !== c.id) : [...p, c.id])} className={`px-2 py-1 text-[11px] font-medium rounded-lg transition-colors ${selectedCargosNivel.includes(c.id) ? "bg-luxor-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{c.nombre}</button>)}</div>
+                  <button type="button" onClick={() => { setCargoSearch(""); setShowCargoModal("nivel") }} className="w-full flex items-center gap-2 px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white hover:border-gray-400 transition-colors text-left">
+                    <Briefcase className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="flex-1 text-gray-500">{selectedCargosNivel.length === 0 ? "Seleccionar cargos..." : `${selectedCargosNivel.length} cargo${selectedCargosNivel.length > 1 ? "s" : ""} seleccionado${selectedCargosNivel.length > 1 ? "s" : ""}`}</span>
+                    <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                  </button>
                 </div>
               )}
             </div>
@@ -750,6 +789,111 @@ export default function ExperienciaPage() {
             <div className="flex gap-3 justify-end">
               <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
               <Button onClick={handleDelete} disabled={saving} className="bg-red-600 hover:bg-red-700">{saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Eliminar</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL SELECCIONAR CARGOS ─── */}
+      {showCargoModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCargoModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 shrink-0">
+              <button onClick={() => setShowCargoModal(null)} className="p-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <h3 className="text-base font-bold text-gray-900">Seleccionar cargos</h3>
+            </div>
+
+            <div className="px-5 pt-4 pb-2 shrink-0">
+              <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2.5">
+                <Search className="w-4 h-4 text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  value={cargoSearch}
+                  onChange={(e) => setCargoSearch(e.target.value)}
+                  placeholder="Buscar cargo..."
+                  className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+                />
+                {cargoSearch && (
+                  <button type="button" onClick={() => setCargoSearch("")} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {(showCargoModal === "insignia" ? selectedCargos : selectedCargosNivel).length > 0 && (
+              <div className="px-5 py-2 bg-luxor-primary/5 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <span className="text-xs font-medium text-luxor-primary">
+                  {(showCargoModal === "insignia" ? selectedCargos : selectedCargosNivel).length} seleccionado(s)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => showCargoModal === "insignia" ? setSelectedCargos([]) : setSelectedCargosNivel([])}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  Limpiar
+                </button>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2">
+              {cargos
+                .filter(c => c.nombre.toLowerCase().includes(cargoSearch.toLowerCase()))
+                .length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">No se encontraron cargos</p>
+              ) : (
+                cargos
+                  .filter(c => c.nombre.toLowerCase().includes(cargoSearch.toLowerCase()))
+                  .map(c => {
+                    const isSelected = showCargoModal === "insignia"
+                      ? selectedCargos.includes(c.id)
+                      : selectedCargosNivel.includes(c.id)
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          if (showCargoModal === "insignia") {
+                            setSelectedCargos(p => p.includes(c.id) ? p.filter(x => x !== c.id) : [...p, c.id])
+                          } else {
+                            setSelectedCargosNivel(p => p.includes(c.id) ? p.filter(x => x !== c.id) : [...p, c.id])
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors ${
+                          isSelected ? "bg-luxor-primary/10" : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          isSelected ? "bg-luxor-primary text-white" : "bg-gray-100 text-gray-500"
+                        }`}>
+                          <Briefcase className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 text-left min-w-0">
+                          <p className={`text-sm font-medium truncate ${isSelected ? "text-luxor-primary" : "text-gray-900"}`}>{c.nombre}</p>
+                        </div>
+                        {isSelected && (
+                          <span className="w-5 h-5 rounded-full bg-luxor-primary flex items-center justify-center shrink-0">
+                            <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                              <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })
+              )}
+            </div>
+
+            <div className="px-5 py-3 border-t border-gray-100 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowCargoModal(null)}
+                className="w-full py-2.5 bg-luxor-primary text-white text-sm font-semibold rounded-xl hover:bg-luxor-secondary transition-colors"
+              >
+                Listo
+              </button>
             </div>
           </div>
         </div>

@@ -78,6 +78,7 @@ interface FacilitadorStats {
 interface StudentStats {
   cursosInscritos: number
   cursosCompletados: number
+  cursosCompletadosIds: string[]
   modulosCompletados: number
   quizzesAprobados: number
   calificacionPromedio: number
@@ -102,6 +103,7 @@ interface Badge {
   categoria_nombre?: string
   categoria_color?: string
   categoria_icono?: string
+  curso_nombre?: string
   created_at?: string
 }
 
@@ -124,6 +126,7 @@ interface DbInsignia {
   xp: number
   color: string
   activa: boolean
+  curso_id: string | null
   created_at: string
 }
 
@@ -148,6 +151,10 @@ function evaluateFacilitadorBadge(ins: DbInsignia, stats: FacilitadorStats): { o
 }
 
 function evaluateEstudianteBadge(ins: DbInsignia, stats: StudentStats): { ok: boolean; progress: number; total: number } {
+  if (ins.curso_id) {
+    const ok = stats.cursosCompletadosIds.includes(ins.curso_id)
+    return { ok, progress: ok ? 1 : 0, total: 1 }
+  }
   const checks: { current: number; min: number }[] = []
   if (ins.min_cursos_inscritos > 0) checks.push({ current: stats.cursosInscritos, min: ins.min_cursos_inscritos })
   if (ins.min_cursos_completados > 0) checks.push({ current: stats.cursosCompletados, min: ins.min_cursos_completados })
@@ -186,10 +193,11 @@ function getDbFacilitadorBadges(insignias: DbInsignia[], stats: FacilitadorStats
   })
 }
 
-function getDbEstudianteBadges(insignias: DbInsignia[], stats: StudentStats, categorias: DbCategoria[]): Badge[] {
+function getDbEstudianteBadges(insignias: DbInsignia[], stats: StudentStats, categorias: DbCategoria[], cursos: { id: string; titulo: string }[]): Badge[] {
   return insignias.filter(i => i.activa && (i.rol === "estudiante" || i.rol === "ambos")).map((ins) => {
     const { ok, progress, total } = evaluateEstudianteBadge(ins, stats)
     const cat = categorias.find(c => c.id === ins.categoria_id)
+    const curso = ins.curso_id ? cursos.find(c => c.id === ins.curso_id) : null
     return {
       id: ins.id,
       nombre: ins.nombre,
@@ -205,6 +213,7 @@ function getDbEstudianteBadges(insignias: DbInsignia[], stats: StudentStats, cat
       categoria_nombre: cat?.nombre,
       categoria_color: cat?.color,
       categoria_icono: cat?.icono,
+      curso_nombre: curso?.titulo,
       created_at: ins.created_at,
     }
   })
@@ -576,6 +585,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
     calificacionPromedio: 0,
     cursosInscritos: 0,
     cursosCompletados: 0,
+    cursosCompletadosIds: [] as string[],
     modulosCompletados: 0,
     quizzesAprobados: 0,
   })
@@ -590,6 +600,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
   const [dbInsignias, setDbInsignias] = useState<DbInsignia[]>([])
   const [dbNiveles, setDbNiveles] = useState<DbNivel[]>([])
   const [dbCategorias, setDbCategorias] = useState<DbCategoria[]>([])
+  const [dbCursos, setDbCursos] = useState<{ id: string; titulo: string }[]>([])
   const [selectedMarcoId, setSelectedMarcoId] = useState<string | null>(null)
   const fetchedRef = useRef(false)
 
@@ -640,14 +651,16 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
   }, [godMode, simulatedRole])
 
   async function fetchDbInsignias() {
-    const [insigniasRes, nivelesRes, categoriasRes] = await Promise.all([
+    const [insigniasRes, nivelesRes, categoriasRes, cursosRes] = await Promise.all([
       supabase.from("insignias").select("*").eq("activa", true),
       supabase.from("niveles").select("*").order("xp_minimo"),
       supabase.from("categoria_insignias").select("*").order("orden"),
+      supabase.from("cursos").select("id, titulo"),
     ])
     setDbInsignias(insigniasRes.data || [])
     setDbNiveles(nivelesRes.data || [])
     setDbCategorias(categoriasRes.data || [])
+    setDbCursos(cursosRes.data || [])
     if (effectiveUser) {
       const { data: profile } = await supabase.from("profiles").select("marco_seleccionado_id").eq("id", effectiveUser.id).single()
       if (profile?.marco_seleccionado_id) setSelectedMarcoId(profile.marco_seleccionado_id)
@@ -738,6 +751,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
     const { data: inscripciones } = await supabase.from("inscripciones").select("id, curso_id, estado, fecha_inscripcion").eq("user_id", effectiveUser!.id)
     const cursoIds = (inscripciones || []).map((i: { curso_id: string }) => i.curso_id)
     const cursosCompletados = (inscripciones || []).filter((i: { estado: string }) => i.estado === "completada").length
+    const cursosCompletadosIds = (inscripciones || []).filter((i: { estado: string }) => i.estado === "completada").map((i: { curso_id: string }) => i.curso_id)
 
     let modulosCompletados = 0
     let quizzesAprobados = 0
@@ -767,6 +781,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
     setStuStats({
       cursosInscritos: inscripciones?.length || 0,
       cursosCompletados,
+      cursosCompletadosIds,
       modulosCompletados,
       quizzesAprobados,
       calificacionPromedio,
@@ -834,7 +849,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
   
   const effectiveStuStats = isDev && godMode
     ? { ...simulatedStudentStats, puntosTotales: 0, ultimaActividad: null }
-    : stuStats || { cursosInscritos: 0, cursosCompletados: 0, modulosCompletados: 0, quizzesAprobados: 0, calificacionPromedio: 0, puntosTotales: 0, rachaActual: 0, mejorRacha: 0, ultimaActividad: null }
+    : stuStats || { cursosInscritos: 0, cursosCompletados: 0, cursosCompletadosIds: [], modulosCompletados: 0, quizzesAprobados: 0, calificacionPromedio: 0, puntosTotales: 0, rachaActual: 0, mejorRacha: 0, ultimaActividad: null }
   
   // En Modo Dios, calcular insignias automáticamente según datos simulados
   let facBadges: Badge[]
@@ -844,14 +859,14 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
       ? getDbFacilitadorBadges(dbInsignias, simulatedFacStats, dbCategorias)
       : getBadges(simulatedFacStats)
     stuBadges = dbInsignias.length > 0
-      ? getDbEstudianteBadges(dbInsignias, effectiveStuStats, dbCategorias)
+      ? getDbEstudianteBadges(dbInsignias, effectiveStuStats, dbCategorias, dbCursos)
       : getStudentBadges(effectiveStuStats)
   } else {
     facBadges = facStats
       ? (dbInsignias.length > 0 ? getDbFacilitadorBadges(dbInsignias, facStats, dbCategorias) : getBadges(facStats))
       : []
     stuBadges = stuStats
-      ? (dbInsignias.length > 0 ? getDbEstudianteBadges(dbInsignias, stuStats, dbCategorias) : getStudentBadges(stuStats))
+      ? (dbInsignias.length > 0 ? getDbEstudianteBadges(dbInsignias, stuStats, dbCategorias, dbCursos) : getStudentBadges(stuStats))
       : []
   }
   
@@ -1280,6 +1295,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                               </button>
                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 hidden sm:block">
                                 <p className="font-semibold">{b.nombre}</p>
+                                {b.curso_nombre && <p className="text-amber-400 mt-0.5">📚 {b.curso_nombre}</p>}
                                 <p className="opacity-75 mt-0.5">{b.desc}</p>
                                 <div className="mt-1.5">
                                   <div className="w-full bg-white/20 rounded-full h-1">
@@ -1475,9 +1491,10 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                                         b.icon
                                       )}
                                     </button>
-                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 hidden sm:block">
-                                      <p className="font-semibold">{b.nombre}</p>
-                                      <p className="opacity-75 mt-0.5">{b.desc}</p>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 hidden sm:block">
+                                <p className="font-semibold">{b.nombre}</p>
+                                {b.curso_nombre && <p className="text-amber-400 mt-0.5">📚 {b.curso_nombre}</p>}
+                                <p className="opacity-75 mt-0.5">{b.desc}</p>
                                       <div className="mt-1.5">
                                         <div className="w-full bg-white/20 rounded-full h-1">
                                           <div className={`h-1 rounded-full ${b.ok ? "bg-green-400" : "bg-gray-500"}`} style={{ width: `${(b.p / b.t) * 100}%` }} />
@@ -1746,6 +1763,7 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                               </button>
                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-44 p-2.5 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 hidden sm:block">
                                 <p className="font-semibold">{b.nombre}</p>
+                                {b.curso_nombre && <p className="text-amber-400 mt-0.5">📚 {b.curso_nombre}</p>}
                                 <p className="opacity-75 mt-0.5">{b.desc}</p>
                                 <div className="mt-1.5">
                                   <div className="w-full bg-white/20 rounded-full h-1">
@@ -2051,6 +2069,9 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
               </div>
               {detailBadge.categoria_nombre && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full mb-2" style={{ backgroundColor: (detailBadge.categoria_color || "#6366f1") + "20", color: detailBadge.categoria_color || "#6366f1" }}>{detailBadge.categoria_icono} {detailBadge.categoria_nombre}</span>
+              )}
+              {detailBadge.curso_nombre && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full mb-2 bg-amber-100 text-amber-700">📚 {detailBadge.curso_nombre}</span>
               )}
               <h3 className="text-lg font-bold text-gray-900 text-center">{detailBadge.nombre}</h3>
               <p className="text-sm text-gray-500 text-center mt-1">{detailBadge.desc}</p>

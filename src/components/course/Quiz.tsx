@@ -3,14 +3,16 @@
 import { useState } from "react"
 import type { Pregunta } from "@/lib/cursos-detalle"
 import { Button } from "@/components/ui/Button"
-import { CheckCircle2, XCircle, ChevronRight } from "lucide-react"
+import { CheckCircle2, XCircle, ChevronRight, AlertTriangle } from "lucide-react"
 
 interface QuizProps {
   preguntas: Pregunta[]
   onCompletar: (aprobado: boolean, respuestas: { pregunta_id: string; seleccionada: number | null; libre: string | null }[]) => void
+  intentosUsados?: number
+  maxIntentos?: number
 }
 
-export function Quiz({ preguntas, onCompletar }: QuizProps) {
+export function Quiz({ preguntas, onCompletar, intentosUsados = 0, maxIntentos = 3 }: QuizProps) {
   const [current, setCurrent] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [libre, setLibre] = useState("")
@@ -113,9 +115,20 @@ export function Quiz({ preguntas, onCompletar }: QuizProps) {
           </p>
         )}
         {!aprobado && (
+          <p className="text-xs text-gray-500">
+            Intento {intentosUsados} de {maxIntentos}
+          </p>
+        )}
+        {!aprobado && intentosUsados < maxIntentos && (
           <Button onClick={() => { setCurrent(0); setSelected(null); setLibre(""); setRespuestas([]); setRespuestasLibres([]); setFinalizado(false); setShowResult(false) }}>
             Intentar de Nuevo
           </Button>
+        )}
+        {!aprobado && intentosUsados >= maxIntentos && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
+            <p className="text-sm text-red-700">Sin intentos restantes. Contacta a tu facilitador.</p>
+          </div>
         )}
       </div>
     )

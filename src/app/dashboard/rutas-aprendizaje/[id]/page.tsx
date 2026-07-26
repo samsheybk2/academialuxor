@@ -67,6 +67,7 @@ function CargoContent({ id }: { id: string }) {
   const [cargoName, setCargoName] = useState("")
   const [cargoDesc, setCargoDesc] = useState("")
   const [cargoNivel, setCargoNivel] = useState("")
+  const [diasContinuos, setDiasContinuos] = useState<number | null>(null)
   const [isCustom, setIsCustom] = useState(id.startsWith("custom_"))
   const [elementos, setElementos] = useState<ElementoRuta[]>([])
   const [cursosDisponibles, setCursosDisponibles] = useState<{ id: string; titulo: string; descripcion: string; introduccion?: string; duracion: string }[]>([])
@@ -92,6 +93,7 @@ function CargoContent({ id }: { id: string }) {
         setCargoName(nombre)
         setCargoDesc(data.descripcion || "Define la ruta de aprendizaje para este cargo")
         setCargoNivel(nivel)
+        setDiasContinuos(data.dias_continuos ?? null)
       }
 
       const { data: cursosAll } = await supabase
@@ -264,6 +266,11 @@ function CargoContent({ id }: { id: string }) {
     setForm(emptyForm)
   }
 
+  async function saveDiasContinuos(value: number | null) {
+    setDiasContinuos(value)
+    await supabase.from("cargos").update({ dias_continuos: value }).eq("id", id)
+  }
+
   if (!loading && !cargoName) {
     return (
       <div className="text-center py-20">
@@ -309,6 +316,28 @@ function CargoContent({ id }: { id: string }) {
           </div>
 
           <div className="flex flex-wrap gap-2 mt-4">
+            {isDecano && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-sm font-medium">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Días continuos:</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={diasContinuos ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value ? parseInt(e.target.value) : null
+                    saveDiasContinuos(val)
+                  }}
+                  placeholder="Sin límite"
+                  className="w-16 px-1.5 py-0.5 text-xs bg-white border border-purple-200 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-400 text-center"
+                />
+              </div>
+            )}
+            {!isDecano && diasContinuos && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-100 text-purple-700 text-sm font-medium">
+                <Clock className="w-3.5 h-3.5" /> {diasContinuos} días continuos
+              </span>
+            )}
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">
               <Users className="w-3.5 h-3.5" /> {totalStudents} Estudiantes
             </span>

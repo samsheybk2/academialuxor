@@ -55,6 +55,7 @@ interface ModuloForm {
   duracion: string
   preguntas: Pregunta[]
   imagenFile?: File
+  maxIntentos: string
 }
 
 interface Facilitador {
@@ -86,6 +87,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
     introduccion: "",
     video_bienvenida: "",
     imagen_portada: "",
+    max_intentos: "3" as string,
   })
   const [portadaFile, setPortadaFile] = useState<File | null>(null)
   const [portadaPreview, setPortadaPreview] = useState<string>("")
@@ -109,6 +111,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
           introduccion: curso.introduccion || "",
           video_bienvenida: curso.video_bienvenida || "",
           imagen_portada: curso.imagen_portada || "",
+          max_intentos: curso.max_intentos?.toString() || "3",
         })
         if (curso.imagen_portada) {
           setPortadaPreview(curso.imagen_portada)
@@ -122,7 +125,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
 
         if (modulosData) {
           const modulosConPreguntas = await Promise.all(
-            modulosData.map(async (mod: { id: string; titulo?: string; introduccion?: string; video_url?: string; imagen_portada?: string; duracion?: string }) => {
+            modulosData.map(async (mod: { id: string; titulo?: string; introduccion?: string; video_url?: string; imagen_portada?: string; duracion?: string; max_intentos?: number }) => {
               const { data: preguntasData, error: preguntasError } = await supabase
                 .from("preguntas")
                 .select("*")
@@ -146,6 +149,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
                 videoUrl: mod.video_url || "",
                 imagenPortada: mod.imagen_portada || "",
                 duracion: mod.duracion || "",
+                maxIntentos: mod.max_intentos?.toString() || "",
                 preguntas: (preguntasData || []).map((p: any) => ({
                   id: p.id,
                   pregunta: p.pregunta,
@@ -231,6 +235,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
       imagenPortada: "",
       duracion: "",
       preguntas: [],
+      maxIntentos: "",
     }
     setModulos([...modulos, newModulo])
     setModulosExpandidos([...modulosExpandidos, newModulo.id])
@@ -422,6 +427,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
           video_bienvenida: form.video_bienvenida,
           imagen_portada: imagenPortadaUrl || null,
           duracion: formatMinutesToHHMM(duracionCalculada),
+          max_intentos: form.max_intentos ? parseInt(form.max_intentos) : 3,
           modulos_count: modulos.length,
         })
         .eq("id", id)
@@ -474,6 +480,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
               imagen_portada: imagenPortadaUrl || null,
               duracion: mod.duracion,
               orden: i + 1,
+              max_intentos: mod.maxIntentos ? parseInt(mod.maxIntentos) : null,
             })
             .select()
             .single()
@@ -517,6 +524,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
               imagen_portada: imagenPortadaUrl || null,
               duracion: mod.duracion,
               orden: i + 1,
+              max_intentos: mod.maxIntentos ? parseInt(mod.maxIntentos) : null,
             })
             .eq("id", mod.id)
 
@@ -687,18 +695,24 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
           </div>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">Facilitador *</label>
-            <select
-              value={form.facilitador_id}
-              onChange={(e) => setForm({ ...form, facilitador_id: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-            >
-              <option value="">Seleccionar facilitador</option>
-              {facilitadores.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.nombre} ({f.email})
-                </option>
-              ))}
-            </select>
+            {user?.rol === "decano" || user?.rol === "developer" ? (
+              <select
+                value={form.facilitador_id}
+                onChange={(e) => setForm({ ...form, facilitador_id: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+              >
+                <option value="">Seleccionar facilitador</option>
+                {facilitadores.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.nombre} ({f.email})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm">
+                {facilitadores.find(f => f.id === form.facilitador_id)?.nombre || user?.nombre || "Cargando..."}
+              </div>
+            )}
           </div>
         </div>
 
@@ -786,6 +800,12 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
             })()}
           </div>
         </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Máx. intentos por módulo</label>
+          <input type="number" min="1" value={form.max_intentos} onChange={e => setForm({ ...form, max_intentos: e.target.value })} className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary" />
+          <p className="text-[10px] text-gray-400">Los módulos pueden sobreescribir este valor</p>
+        </div>
       </div>
 
       {/* Módulos */}
@@ -844,7 +864,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
 
                 {expandido && (
                   <div className="p-4 space-y-4 border-t border-gray-100">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div className="space-y-1.5">
                         <label className="block text-sm font-medium text-gray-700">Título del Módulo</label>
                         <input
@@ -861,6 +881,17 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
                           value={modulo.duracion}
                           onChange={(val) => updateModulo(modulo.id, "duracion", val)}
                           placeholder="00:15"
+                          className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-sm font-medium text-gray-700">Máx. Intentos <span className="text-gray-400 font-normal">(opcional)</span></label>
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder={`Curso: ${form.max_intentos}`}
+                          value={modulo.maxIntentos}
+                          onChange={(e) => updateModulo(modulo.id, "maxIntentos", e.target.value)}
                           className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
                         />
                       </div>

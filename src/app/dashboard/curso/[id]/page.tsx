@@ -28,6 +28,8 @@ import {
   Globe,
   Zap,
   RotateCcw,
+  CalendarClock,
+  AlertTriangle,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -40,6 +42,7 @@ interface ModuloData {
   duracion: string
   orden: number
   preguntas: Pregunta[]
+  max_intentos?: number
 }
 
 interface MaterialPDF {
@@ -64,6 +67,8 @@ interface CursoData {
   video_bienvenida?: string
   introduccion?: string
   imagen_portada?: string
+  duracion_dias?: number | null
+  max_intentos?: number
 }
 
 type Pestaña = "informacion" | "contenido" | "opiniones"
@@ -402,7 +407,7 @@ function TabInformacion({
               </button>
             </div>
           )}
-          {isEstudiante && inscrito && modoRepaso && (
+        {isEstudiante && inscrito && modoRepaso && (
             <div className="flex items-center gap-3 mt-6 pt-4 border-t border-gray-100">
               <div className="flex-1">
                 <p className="text-sm font-medium text-blue-800">Modo repaso activo</p>
@@ -432,12 +437,14 @@ function TabContenido({
   isDecano,
   inscrito,
   materialPdf,
+  curso,
   setModuloActual,
   showQuiz,
   setShowQuiz,
   videoCompletado,
   setVideoCompletado,
   modoRepaso,
+  intentosByModulo,
   onModuloCompletado,
 }: {
   modulos: ModuloData[]
@@ -446,12 +453,14 @@ function TabContenido({
   isDecano: boolean
   inscrito: boolean
   materialPdf: MaterialPDF[]
+  curso: CursoData
   setModuloActual: (i: number) => void
   showQuiz: boolean
   setShowQuiz: (v: boolean) => void
   videoCompletado: boolean
   setVideoCompletado: (v: boolean) => void
   modoRepaso: boolean
+  intentosByModulo: Record<string, number>
   onModuloCompletado: (
     aprobado: boolean,
     respuestas: {
@@ -495,6 +504,8 @@ function TabContenido({
             <Quiz
               preguntas={modulo.preguntas}
               onCompletar={onModuloCompletado}
+              intentosUsados={intentosByModulo[modulo.id] || 0}
+              maxIntentos={modulo.max_intentos || curso?.max_intentos || 3}
             />
           </div>
         ) : (
@@ -597,31 +608,51 @@ function TabContenido({
             !showQuiz && (
                   <div className="fixed bottom-16 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-lg lg:bottom-0">
                     <div className="max-w-2xl mx-auto">
-                      <button
-                        onClick={() => {
-                          setShowQuiz(true)
-                          window.scrollTo({ top: 0, behavior: "smooth" })
-                        }}
-                        disabled={!modoRepaso && (!!embedUrl && !videoCompletado)}
-                        className={`w-full px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                          modoRepaso || !embedUrl || videoCompletado
-                            ? "bg-luxor-primary text-white hover:bg-luxor-secondary"
-                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        }`}
-                      >
-                        {modoRepaso || !embedUrl || videoCompletado ? (
-                          <>
-                            <Play className="w-4 h-4" />
-                            Iniciar Evaluacion del Modulo
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-4 h-4" />
-                            Mira el video completo para desbloquear la
-                            evaluacion
-                          </>
-                        )}
-                      </button>
+                      {(() => {
+                        const moduloMaxIntentos = modulo.max_intentos || curso?.max_intentos || 3
+                        const intentosUsados = intentosByModulo[modulo.id] || 0
+                        const sinIntentos = !modoRepaso && intentosUsados >= moduloMaxIntentos
+                        const videoBloqueado = !modoRepaso && !!embedUrl && !videoCompletado
+
+                        return (
+                          <button
+                            onClick={() => {
+                              setShowQuiz(true)
+                              window.scrollTo({ top: 0, behavior: "smooth" })
+                            }}
+                            disabled={videoBloqueado || sinIntentos}
+                            className={`w-full px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                              sinIntentos
+                                ? "bg-red-100 text-red-500 cursor-not-allowed"
+                                : videoBloqueado
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-luxor-primary text-white hover:bg-luxor-secondary"
+                            }`}
+                          >
+                            {sinIntentos ? (
+                              <>
+                                <Lock className="w-4 h-4" />
+                                Sin intentos restantes ({moduloMaxIntentos}/{moduloMaxIntentos})
+                              </>
+                            ) : videoBloqueado ? (
+                              <>
+                                <Lock className="w-4 h-4" />
+                                Mira el video completo para desbloquear la evaluacion
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4" />
+                                Iniciar Evaluacion del Modulo
+                                {intentosUsados > 0 && !modoRepaso && (
+                                  <span className="text-xs opacity-75 ml-1">
+                                    (Intento {intentosUsados + 1} de {moduloMaxIntentos})
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </button>
+                        )
+                      })()}
                     </div>
                   </div>
             )}
@@ -738,6 +769,14 @@ function CursoContent({ id }: { id: string }) {
   const [videoCompletado, setVideoCompletado] = useState(false)
   const [materialPdf, setMaterialPdf] = useState<MaterialPDF[]>([])
   const [modoRepaso, setModoRepaso] = useState(false)
+  const [fechaLimite, setFechaLimite] = useState<string | null>(null)
+  const [cursoExpirado, setCursoExpirado] = useState(false)
+  const [intentosByModulo, setIntentosByModulo] = useState<Record<string, number>>({})
+  const [vistaEstudiante, setVistaEstudiante] = useState(false)
+
+  const isDecanoEff = isDecano && !vistaEstudiante
+  const isEstudianteEff = isEstudiante || vistaEstudiante
+  const inscritoEff = vistaEstudiante ? false : inscrito
 
   useEffect(() => {
     async function fetchCurso() {
@@ -763,7 +802,7 @@ function CursoContent({ id }: { id: string }) {
 
       if (modulosData) {
         const modulosConPreguntas = await Promise.all(
-          modulosData.map(async (mod: { id: string; titulo: string; descripcion?: string; video_url?: string; duracion?: string; orden: number }) => {
+          modulosData.map(async (mod: { id: string; titulo: string; descripcion?: string; video_url?: string; duracion?: string; orden: number; max_intentos?: number }) => {
             const { data: preguntasData } = await supabase
               .from("preguntas")
               .select("*")
@@ -787,6 +826,7 @@ function CursoContent({ id }: { id: string }) {
               video_url: mod.video_url || "",
               duracion: mod.duracion || "",
               orden: mod.orden,
+              max_intentos: mod.max_intentos,
               preguntas,
             }
           })
@@ -797,7 +837,7 @@ function CursoContent({ id }: { id: string }) {
       if (isEstudiante) {
         const { data: inscripcion } = await supabase
           .from("inscripciones")
-          .select("id, estado")
+          .select("id, estado, fecha_limite")
           .eq("user_id", user?.id)
           .eq("curso_id", id)
           .maybeSingle()
@@ -808,16 +848,37 @@ function CursoContent({ id }: { id: string }) {
           setCursoCompletado(true)
         }
 
+        if (inscripcion?.fecha_limite) {
+          setFechaLimite(inscripcion.fecha_limite)
+          if (new Date(inscripcion.fecha_limite) < new Date()) {
+            setCursoExpirado(true)
+          }
+        }
+
         if (inscripcion) {
           const { data: progreso } = await supabase
             .from("progreso_modulos")
-            .select("modulo_id")
+            .select("modulo_id, intentos")
             .eq("user_id", user?.id)
             .eq("curso_id", id)
             .eq("completado", true)
 
           if (progreso) {
             setModuloCompletados(progreso.map((p: { modulo_id: string }) => p.modulo_id))
+          }
+
+          const { data: todoProgreso } = await supabase
+            .from("progreso_modulos")
+            .select("modulo_id, intentos")
+            .eq("user_id", user?.id)
+            .eq("curso_id", id)
+
+          if (todoProgreso) {
+            const map: Record<string, number> = {}
+            todoProgreso.forEach((p: { modulo_id: string; intentos: number }) => {
+              map[p.modulo_id] = p.intentos || 0
+            })
+            setIntentosByModulo(map)
           }
         }
 
@@ -855,10 +916,12 @@ function CursoContent({ id }: { id: string }) {
   async function handleInscribirse() {
     if (!user || !curso) return
     setInscribiendo(true)
+
     await supabase.from("inscripciones").insert({
       user_id: user.id,
       curso_id: curso.id,
       estado: "activa",
+      fecha_limite: null,
     })
 
     await supabase.from("actividad_usuario").upsert(
@@ -1008,6 +1071,30 @@ function CursoContent({ id }: { id: string }) {
         if (nextIndex !== -1) setModuloActual(nextIndex)
       }
     } else {
+      if (user && curso && modulo && !modoRepaso) {
+        const { data: existing } = await supabase
+          .from("progreso_modulos")
+          .select("intentos")
+          .eq("user_id", user.id)
+          .eq("modulo_id", modulo.id)
+          .maybeSingle()
+
+        const nuevosIntentos = (existing?.intentos || 0) + 1
+
+        await supabase.from("progreso_modulos").upsert(
+          {
+            user_id: user.id,
+            modulo_id: modulo.id,
+            curso_id: curso.id,
+            completado: false,
+            quiz_aprobado: false,
+            intentos: nuevosIntentos,
+          },
+          { onConflict: "user_id,modulo_id" }
+        )
+
+        setIntentosByModulo(prev => ({ ...prev, [modulo.id]: nuevosIntentos }))
+      }
       setShowQuiz(false)
     }
   }
@@ -1041,12 +1128,12 @@ function CursoContent({ id }: { id: string }) {
   return (
     <ProtectedRoute>
       <div className="space-y-6 pb-20 px-4 sm:px-6">
-        {isDecano && (
+        {isDecano && !vistaEstudiante && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Eye className="w-5 h-5 text-blue-600" />
             </div>
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-blue-800">
                 Modo Solo Lectura
               </p>
@@ -1055,10 +1142,39 @@ function CursoContent({ id }: { id: string }) {
                 no participar en evaluaciones
               </p>
             </div>
+            <button
+              onClick={() => setVistaEstudiante(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shrink-0"
+            >
+              <Eye className="w-4 h-4" />
+              Ver como Estudiante
+            </button>
           </div>
         )}
 
-        {isEstudiante && !inscrito && curso.imagen_portada && (
+        {vistaEstudiante && (
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Eye className="w-5 h-5 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-purple-800">
+                Vista Previa - Modo Estudiante
+              </p>
+              <p className="text-sm text-purple-600">
+                Estas viendo el curso como lo veria un estudiante inscrito
+              </p>
+            </div>
+            <button
+              onClick={() => setVistaEstudiante(false)}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors shrink-0"
+            >
+              Salir de Vista Estudiante
+            </button>
+          </div>
+        )}
+
+        {isEstudianteEff && !inscritoEff && curso.imagen_portada && (
           <div className="flex justify-center">
             <div className="w-48 rounded-xl overflow-hidden border border-gray-200">
               <img
@@ -1070,7 +1186,7 @@ function CursoContent({ id }: { id: string }) {
           </div>
         )}
 
-        {isEstudiante && !inscrito && (
+        {isEstudianteEff && !inscritoEff && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
             <p className="text-amber-800 font-medium mb-3">
               Necesitas inscribirte para acceder al curso
@@ -1111,6 +1227,38 @@ function CursoContent({ id }: { id: string }) {
           </div>
         )}
 
+        {isEstudiante && inscrito && cursoExpirado && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <p className="text-red-800 font-semibold mb-1">Tiempo agotado</p>
+            <p className="text-red-600 text-sm mb-1">
+              El plazo para completar este curso expiro el {fechaLimite ? new Date(fechaLimite + "T00:00:00").toLocaleDateString("es-DO") : ""}.
+            </p>
+            <p className="text-red-500 text-xs">Contacta a tu facilitador para mas informacion.</p>
+          </div>
+        )}
+
+        {isEstudiante && inscrito && !cursoExpirado && fechaLimite && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+              <CalendarClock className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-amber-800 font-medium text-sm">Fecha limite: {new Date(fechaLimite + "T00:00:00").toLocaleDateString("es-DO")}</p>
+              <p className="text-amber-600 text-xs">
+                {(() => {
+                  const diasRestantes = Math.ceil((new Date(fechaLimite + "T00:00:00").getTime() - Date.now()) / 86400000)
+                  return diasRestantes <= 3
+                    ? `Quedan ${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""}. ¡Apurate!`
+                    : `${diasRestantes} dias restantes para completar el curso.`
+                })()}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 -mt-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 ml-2">
             <h1 className="text-2xl font-bold text-gray-900">
@@ -1142,19 +1290,19 @@ function CursoContent({ id }: { id: string }) {
             </div>
           </div>
 
-          {(isDecano || inscrito) && (
+          {(isDecanoEff || inscritoEff) && (
             <Pestañas activa={pestaña} onChange={setPestaña} />
           )}
         </div>
 
-        {(isDecano || inscrito) && (
+        {(isDecanoEff || inscritoEff) && (
           <>
             {pestaña === "informacion" && (
               <TabInformacion
                 curso={curso}
                 modulos={modulos}
-                isEstudiante={isEstudiante}
-                inscrito={inscrito}
+                isEstudiante={isEstudianteEff}
+                inscrito={inscritoEff}
                 cursoCompletado={cursoCompletado}
                 modoRepaso={modoRepaso}
                 setModoRepaso={setModoRepaso}
@@ -1171,15 +1319,17 @@ function CursoContent({ id }: { id: string }) {
                 modulos={modulos}
                 moduloActual={moduloActual}
                 moduloCompletados={moduloCompletados}
-                isDecano={isDecano}
-                inscrito={inscrito}
+                isDecano={isDecanoEff}
+                inscrito={inscritoEff}
                 materialPdf={materialPdf}
+                curso={curso!}
                 setModuloActual={setModuloActual}
                 showQuiz={showQuiz}
                 setShowQuiz={setShowQuiz}
                 videoCompletado={videoCompletado}
                 setVideoCompletado={setVideoCompletado}
                 modoRepaso={modoRepaso}
+                intentosByModulo={intentosByModulo}
                 onModuloCompletado={handleModuloCompletado}
               />
             )}
@@ -1187,7 +1337,7 @@ function CursoContent({ id }: { id: string }) {
             {pestaña === "opiniones" && (
               <OpinionesCurso
                 cursoId={curso.id}
-                inscrito={!!inscrito}
+                inscrito={!!inscritoEff}
                 cursoCompletado={cursoCompletado}
               />
             )}
