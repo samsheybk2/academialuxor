@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
 import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Star, LayoutGrid, ArrowUpRight, X } from "lucide-react"
 import Link from "next/link"
+import { CourseTimer } from "./CourseTimer"
 
 const navByRole = {
   decano: [
@@ -313,6 +314,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       </nav>
 
       <div className="flex items-center gap-3 ml-auto shrink-0">
+        <CourseTimer />
         <div className="relative" ref={bellRef}>
           <button
             onClick={() => setShowNotif(!showNotif)}

@@ -71,6 +71,8 @@ export interface Publicacion {
   imagen_url?: string
   enlace_url?: string
   enlace_titulo?: string
+  tipo?: "insignia" | "nivel" | "curso"
+  es_sistema?: boolean
   anclado_hasta?: string
   sucursales_destino?: string[]
   created_at: string

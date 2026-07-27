@@ -939,6 +939,23 @@ CREATE POLICY "insignias_fac_select_authenticated" ON insignias_facilitadores
 CREATE POLICY "insignias_fac_insert_system" ON insignias_facilitadores
   FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'developer'));
 
+-- 1.24 INSIGNIAS ASIGNADAS A ESTUDIANTES
+CREATE TABLE IF NOT EXISTS insignias_estudiantes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  insignia_id UUID NOT NULL REFERENCES insignias(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  fecha_otorgada TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(insignia_id, user_id)
+);
+
+ALTER TABLE insignias_estudiantes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "insignias_est_select_authenticated" ON insignias_estudiantes
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "insignias_est_insert_system" ON insignias_estudiantes
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'developer'));
+
 -- 1.13 EVALUACIONES DE TALLERES
 CREATE TABLE IF NOT EXISTS evaluacion_talleres (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -986,6 +1003,8 @@ CREATE TABLE IF NOT EXISTS publicaciones (
   imagen_url TEXT,
   enlace_url TEXT,
   enlace_titulo TEXT,
+  tipo TEXT CHECK (tipo IN ('insignia', 'nivel', 'curso', NULL)),
+  es_sistema BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -1001,6 +1020,16 @@ CREATE POLICY "publicaciones_insert_facilitador" ON publicaciones
   FOR INSERT WITH CHECK (
     public.get_my_role() IN ('decano', 'facilitador', 'developer')
     AND autor_id = auth.uid()
+  );
+
+CREATE POLICY "publicaciones_insert_system" ON publicaciones
+  FOR INSERT WITH CHECK (
+    public.get_my_role() IN ('decano', 'developer')
+  );
+
+CREATE POLICY "publicaciones_update_system" ON publicaciones
+  FOR UPDATE USING (
+    public.get_my_role() IN ('decano', 'developer')
   );
 
 CREATE POLICY "publicaciones_delete_own" ON publicaciones

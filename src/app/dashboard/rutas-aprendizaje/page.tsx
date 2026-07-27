@@ -36,6 +36,7 @@ import {
   Users,
   Zap,
   Star,
+  Filter,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -83,6 +84,7 @@ function RutasContent() {
   const [editCargoCompetencias, setEditCargoCompetencias] = useState<Array<{ competencia_id: string; nivel_requerido: number }>>([])
   const [filtroNivel, setFiltroNivel] = useState<string>("todos")
   const [filtroUnidad, setFiltroUnidad] = useState<string>("todos")
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false)
 
   const [pestaña, setPestaña] = useState<"obligatoria" | "selectiva">("obligatoria")
   const [studentCargo, setStudentCargo] = useState<EstudianteCargoInfo | null>(null)
@@ -719,72 +721,85 @@ function RutasContent() {
         </span>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar cargo..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
-          />
-        </div>
-        {(isDecano || isFacilitador) && (
-          <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="px-4 py-2.5 bg-luxor-primary text-white rounded-lg font-medium hover:bg-luxor-secondary transition-colors text-sm flex items-center gap-2 self-start"
-          >
-            <Plus className="w-4 h-4" />
-            Crear Cargo
-          </button>
-        )}
-      </div>
-
-      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {[
-          { id: "todos", label: "Todos" },
-          { id: "gerentes", label: "Gerentes" },
-          { id: "coordinadores", label: "Coordinadores" },
-          { id: "administrativos", label: "Administrativos" },
-          { id: "operadores", label: "Operadores" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFiltroNivel(tab.id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-              filtroNivel === tab.id
-                ? "border-luxor-primary text-luxor-primary"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab.label}
-            {tab.id !== "todos" && (
-              <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-100 rounded-full">
-                {cargos.filter((c) => c.nivel === tab.id).length}
-              </span>
+      <div className="flex justify-center">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar cargo..."
+              className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm"
+            />
+            <button
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-gray-100 transition-colors"
+            >
+              <Filter className="w-4 h-4 text-gray-400" />
+              {(filtroNivel !== "todos" || filtroUnidad !== "todos") && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-luxor-primary rounded-full" />
+              )}
+            </button>
+            {showFilterDropdown && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowFilterDropdown(false)} />
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                  <div className="p-3 border-b border-gray-100">
+                    <label className="block text-xs font-medium text-gray-500 mb-1.5">Nivel</label>
+                    <select
+                      value={filtroNivel}
+                      onChange={(e) => setFiltroNivel(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                    >
+                      <option value="todos">Todos los niveles</option>
+                      <option value="gerentes">Gerentes</option>
+                      <option value="coordinadores">Coordinadores</option>
+                      <option value="administrativos">Administrativos</option>
+                      <option value="operadores">Operadores</option>
+                    </select>
+                  </div>
+                  {unidades.length > 0 && (
+                    <div className="p-3">
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5">Unidad</label>
+                      <select
+                        value={filtroUnidad}
+                        onChange={(e) => setFiltroUnidad(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                      >
+                        <option value="todos">Todas las unidades</option>
+                        {unidadesOrdenadas.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.tipo === "direccion" ? "🏢 " : u.tipo === "gerencia" ? "🏬 " : " "}
+                            {u.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {(filtroNivel !== "todos" || filtroUnidad !== "todos") && (
+                    <button
+                      onClick={() => { setFiltroNivel("todos"); setFiltroUnidad("todos"); setShowFilterDropdown(false) }}
+                      className="w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100 transition-colors"
+                    >
+                      Limpiar filtros
+                    </button>
+                  )}
+                </div>
+              </>
             )}
-          </button>
-        ))}
-      </div>
-
-      {unidades.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <select
-            value={filtroUnidad}
-            onChange={(e) => setFiltroUnidad(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
-          >
-            <option value="todos">Todas las unidades</option>
-            {unidadesOrdenadas.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.tipo === "direccion" ? "🏢 " : u.tipo === "gerencia" ? "🏬 " : " "}
-                {u.nombre}
-              </option>
-            ))}
-          </select>
+          </div>
+          {(isDecano || isFacilitador) && (
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="px-4 py-2.5 bg-luxor-primary text-white rounded-lg font-medium hover:bg-luxor-secondary transition-colors text-sm flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Crear Cargo
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setShowCreateForm(false); setNewCargo({ nombre: "", descripcion: "", nivel: "operadores", unidad_id: "", jefe_id: "" }); setNewCargoCompetencias([]) }}>

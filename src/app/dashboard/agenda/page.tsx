@@ -132,27 +132,37 @@ function AgendaContent() {
 
   useEffect(() => {
     const fetchCumpleaneros = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, nombre, apellido, fecha_nacimiento")
-        .not("fecha_nacimiento", "is", null)
-      if (data) {
-        const mapped = data.map((p: { id: string; nombre: string; apellido?: string; fecha_nacimiento: string }) => {
-          const bd = new Date(p.fecha_nacimiento + "T12:00:00")
-          return {
-            id: p.id,
-            nombre: p.nombre,
-            apellido: p.apellido || "",
-            fecha_nacimiento: p.fecha_nacimiento,
-            mes: bd.getUTCMonth(),
-            dia: bd.getUTCDate(),
-          }
-        })
-        setCumpleaneros(mapped)
+      // Solo decano, developer y facilitador pueden ver todos los perfiles
+      if (user?.rol === "estudiante") return
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, nombre, apellido, fecha_nacimiento")
+          .not("fecha_nacimiento", "is", null)
+        if (error) {
+          console.warn("No se pudieron cargar los cumpleañeros:", error.message)
+          return
+        }
+        if (data) {
+          const mapped = data.map((p: { id: string; nombre: string; apellido?: string; fecha_nacimiento: string }) => {
+            const bd = new Date(p.fecha_nacimiento + "T12:00:00")
+            return {
+              id: p.id,
+              nombre: p.nombre,
+              apellido: p.apellido || "",
+              fecha_nacimiento: p.fecha_nacimiento,
+              mes: bd.getUTCMonth(),
+              dia: bd.getUTCDate(),
+            }
+          })
+          setCumpleaneros(mapped)
+        }
+      } catch (err) {
+        console.warn("Error al cargar cumpleañeros:", err)
       }
     }
     fetchCumpleaneros()
-  }, [supabase])
+  }, [supabase, user])
 
   const primerDiaMes = new Date(anio, mes, 1).getDay()
   const offsetLunes = primerDiaMes === 0 ? 6 : primerDiaMes - 1
@@ -301,11 +311,11 @@ function AgendaContent() {
   })() : []
 
   return (
-    <div className="w-full flex flex-col lg:h-[calc(100vh-8rem)]">
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 min-h-0 flex flex-col">
-          <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <CardContent className="flex-1 min-h-0 flex flex-col p-4 overflow-hidden">
+    <div className="w-full h-[calc(100vh-8rem-30px)] flex flex-col mt-[30px]">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
+        <div className="lg:col-span-2 flex flex-col min-h-0">
+          <Card className="flex-1 flex flex-col overflow-hidden">
+            <CardContent className="flex-1 flex flex-col p-4 overflow-hidden">
               <div className="flex items-center justify-between mb-3 shrink-0">
                 <button onClick={prevMes} className="p-2 rounded-lg hover:bg-gray-100"><ChevronLeft className="w-5 h-5" /></button>
                 <div className="flex items-center gap-3">
@@ -315,7 +325,7 @@ function AgendaContent() {
                 <button onClick={nextMes} className="p-2 rounded-lg hover:bg-gray-100"><ChevronRight className="w-5 h-5" /></button>
               </div>
 
-              <div className="flex-1 min-h-0 grid grid-rows-[auto_1fr] overflow-hidden">
+              <div className="flex-1 grid grid-rows-[auto_1fr] overflow-hidden">
                 <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-t-lg overflow-hidden">
                   {DIAS.map((d) => (
                     <div key={d} className="bg-gray-50 py-1.5 text-center text-xs font-semibold text-gray-500">{d}</div>
@@ -371,86 +381,7 @@ function AgendaContent() {
           </Card>
         </div>
 
-        <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
-          <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
-            <CardContent className="flex-1 min-h-0 flex flex-col p-4 overflow-hidden">
-              <div className="flex items-center justify-between mb-2 shrink-0">
-                <h3 className="text-sm font-semibold text-gray-900">
-                  {diaSeleccionado ? new Date(diaSeleccionado + "T12:00:00").toLocaleDateString("es-VE", { weekday: "long", day: "numeric", month: "long" }) : "Proximos eventos"}
-                </h3>
-                <button onClick={() => openCreate(diaSeleccionado || undefined)} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-luxor-primary text-white text-xs font-medium hover:bg-luxor-primary/90 transition-colors">
-                  <Plus className="w-3.5 h-3.5" /> Nuevo
-                </button>
-              </div>
-              {loading ? (
-                <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-luxor-primary animate-spin" /></div>
-              ) : diaSeleccionado ? (
-                (eventosSeleccionados.length === 0 && cbsDelDia.length === 0) ? (
-                  <div className="text-center py-8 text-gray-400">
-                    <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                    <p className="text-sm">Sin eventos este dia</p>
-                    <button onClick={() => openCreate(diaSeleccionado)} className="text-xs text-luxor-primary mt-2 hover:underline">Crear uno</button>
-                  </div>
-                ) : (
-                  <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
-                    {cbsDelDia.length > 0 && (
-                      <div className="p-3 rounded-lg border bg-gradient-to-r from-pink-50 to-amber-50 border-pink-200">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Cake className="w-4 h-4 text-pink-500" />
-                          <p className="font-semibold text-sm text-pink-700">Cumpleaños</p>
-                        </div>
-                        {cbsDelDia.map((c) => (
-                          <p key={c.id} className="text-xs text-pink-600 ml-6">
-                            🎉 {c.nombre} {c.apellido}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    {eventosSeleccionados.map((ev) => (
-                      <div key={ev.id} className={`p-3 rounded-lg border ${CAT_CONFIG[ev.categoria].bg}`}>
-                        <div className="flex items-start justify-between">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm truncate">{ev.titulo}</p>
-                            <div className="flex items-center gap-2 mt-1 text-xs opacity-75">
-                              <Clock className="w-3 h-3" />
-                              {ev.hora_inicio} - {ev.hora_fin}
-                            </div>
-                            {ev.descripcion && <p className="text-xs mt-1 opacity-75 line-clamp-2">{ev.descripcion}</p>}
-                          </div>
-                          <div className="flex gap-1 shrink-0 ml-2">
-                            <button onClick={() => openEdit(ev)} className="p-1 rounded hover:bg-black/5"><Edit2 className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => handleDelete(ev.id)} className="p-1 rounded hover:bg-black/5"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              ) : (
-                <div className="flex-1 min-h-0 overflow-y-auto space-y-2">
-                  {eventos.length === 0 ? (
-                    <div className="text-center py-8 text-gray-400">
-                      <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                      <p className="text-sm">Tu agenda esta vacia</p>
-                      <button onClick={() => openCreate()} className="text-xs text-luxor-primary mt-2 hover:underline">Crear tu primer evento</button>
-                    </div>
-                  ) : (
-                    eventos.slice(0, 8).map((ev) => (
-                      <div key={ev.id} className={`p-2.5 rounded-lg border ${CAT_CONFIG[ev.categoria].bg} cursor-pointer`} onClick={() => { setDiaSeleccionado(ev.fecha); setMes(new Date(ev.fecha + "T12:00:00").getMonth()); setAnio(new Date(ev.fecha + "T12:00:00").getFullYear()) }}>
-                        <p className="font-medium text-sm truncate">{ev.titulo}</p>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs opacity-75">
-                          <span>{new Date(ev.fecha + "T12:00:00").toLocaleDateString("es-VE", { day: "numeric", month: "short" })}</span>
-                          <Clock className="w-3 h-3" />
-                          <span>{ev.hora_inicio}</span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
+        <div className="flex flex-col gap-3 min-h-0">
           <Card className="shrink-0">
             <CardContent className="p-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-2">Categorias</h3>
@@ -467,6 +398,87 @@ function AgendaContent() {
                     </div>
                   )
                 })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 flex flex-col overflow-hidden min-h-0">
+            <CardContent className="flex-1 flex flex-col p-4 overflow-hidden min-h-0">
+              <div className="flex items-center justify-between mb-2 shrink-0">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  {diaSeleccionado ? new Date(diaSeleccionado + "T12:00:00").toLocaleDateString("es-VE", { weekday: "long", day: "numeric", month: "long" }) : "Proximos eventos"}
+                </h3>
+                <button onClick={() => openCreate(diaSeleccionado || undefined)} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-luxor-primary text-white text-xs font-medium hover:bg-luxor-primary/90 transition-colors">
+                  <Plus className="w-3.5 h-3.5" /> Nuevo
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {loading ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-luxor-primary animate-spin" /></div>
+                ) : diaSeleccionado ? (
+                  (eventosSeleccionados.length === 0 && cbsDelDia.length === 0) ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">Sin eventos este dia</p>
+                      <button onClick={() => openCreate(diaSeleccionado)} className="text-xs text-luxor-primary mt-2 hover:underline">Crear uno</button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {cbsDelDia.length > 0 && (
+                        <div className="p-3 rounded-lg border bg-gradient-to-r from-pink-50 to-amber-50 border-pink-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Cake className="w-4 h-4 text-pink-500" />
+                            <p className="font-semibold text-sm text-pink-700">Cumpleaños</p>
+                          </div>
+                          {cbsDelDia.map((c) => (
+                            <p key={c.id} className="text-xs text-pink-600 ml-6">
+                              🎉 {c.nombre} {c.apellido}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                      {eventosSeleccionados.map((ev) => (
+                        <div key={ev.id} className={`p-3 rounded-lg border ${CAT_CONFIG[ev.categoria].bg}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm truncate">{ev.titulo}</p>
+                              <div className="flex items-center gap-2 mt-1 text-xs opacity-75">
+                                <Clock className="w-3 h-3" />
+                                {ev.hora_inicio} - {ev.hora_fin}
+                              </div>
+                              {ev.descripcion && <p className="text-xs mt-1 opacity-75 line-clamp-2">{ev.descripcion}</p>}
+                            </div>
+                            <div className="flex gap-1 shrink-0 ml-2">
+                              <button onClick={() => openEdit(ev)} className="p-1 rounded hover:bg-black/5"><Edit2 className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDelete(ev.id)} className="p-1 rounded hover:bg-black/5"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  eventos.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">Tu agenda esta vacia</p>
+                      <button onClick={() => openCreate()} className="text-xs text-luxor-primary mt-2 hover:underline">Crear tu primer evento</button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {eventos.slice(0, 8).map((ev) => (
+                        <div key={ev.id} className={`p-2.5 rounded-lg border ${CAT_CONFIG[ev.categoria].bg} cursor-pointer`} onClick={() => { setDiaSeleccionado(ev.fecha); setMes(new Date(ev.fecha + "T12:00:00").getMonth()); setAnio(new Date(ev.fecha + "T12:00:00").getFullYear()) }}>
+                          <p className="font-medium text-sm truncate">{ev.titulo}</p>
+                          <div className="flex items-center gap-2 mt-0.5 text-xs opacity-75">
+                            <span>{new Date(ev.fecha + "T12:00:00").toLocaleDateString("es-VE", { day: "numeric", month: "short" })}</span>
+                            <Clock className="w-3 h-3" />
+                            <span>{ev.hora_inicio}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
               </div>
             </CardContent>
           </Card>

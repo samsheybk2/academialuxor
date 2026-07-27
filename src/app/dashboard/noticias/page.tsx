@@ -994,21 +994,35 @@ async function handleEliminar(pubId: string) {
             <div key={pub.id} id={`pub-${pub.id}`} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8 scroll-mt-20">
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md">
-                    {pub.autor?.avatar_url ? (
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md ${
+                    pub.es_sistema
+                      ? 'bg-gradient-to-br from-amber-500 to-orange-600'
+                      : 'bg-gradient-to-br from-luxor-primary to-luxor-secondary'
+                  }`}>
+                    {pub.es_sistema ? (
+                      <img src="/Academia Luxor.webp" alt="" className="w-full h-full rounded-full object-cover" />
+                    ) : pub.autor?.avatar_url ? (
                       <img src={pub.autor.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                     ) : (
                       pub.autor?.nombre?.charAt(0) || "?"
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{pub.autor?.nombre || "Usuario"}</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {pub.es_sistema ? 'Academia Luxor' : pub.autor?.nombre || "Usuario"}
+                    </p>
                     <p className="text-xs text-gray-400">
-                      <span className={`font-medium ${
-                        pub.autor?.rol === "decano" || pub.autor?.rol === "developer" ? "text-amber-600" : pub.autor?.rol === "facilitador" ? "text-luxor-primary" : "text-gray-500"
-                      }`}>
-                        {pub.autor?.rol === "decano" || pub.autor?.rol === "developer" ? "Admin" : pub.autor?.rol === "facilitador" ? "Facilitador" : "Estudiante"}
-                      </span>
+                      {pub.es_sistema ? (
+                        <span className="font-medium text-amber-600">Sistema</span>
+                      ) : (
+                        <>
+                          <span className={`font-medium ${
+                            pub.autor?.rol === "decano" || pub.autor?.rol === "developer" ? "text-amber-600" : pub.autor?.rol === "facilitador" ? "text-luxor-primary" : "text-gray-500"
+                          }`}>
+                            {pub.autor?.rol === "decano" || pub.autor?.rol === "developer" ? "Admin" : pub.autor?.rol === "facilitador" ? "Facilitador" : "Estudiante"}
+                          </span>
+                        </>
+                      )}
                       <span className="mx-1.5 text-gray-300">·</span>
                       {timeAgo(pub.created_at)}
                       {pub.sucursales_destino && pub.sucursales_destino.length > 0 && (
@@ -1032,8 +1046,28 @@ async function handleEliminar(pubId: string) {
                 <PublicacionContenido contenido={pub.contenido} />
 
                 {pub.imagen_url && (
-                  <div className="mt-3 rounded-xl overflow-hidden border border-white/40 shadow-md">
-                    <img src={pub.imagen_url} alt="" className="w-full max-h-80 object-cover" />
+                  <div className={`mt-3 ${pub.tipo === 'insignia' ? 'flex items-center gap-4' : ''}`}>
+                    {pub.tipo === 'insignia' && (
+                      <div className="flex-shrink-0">
+                        <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-luxor-primary/30 shadow-lg">
+                          <img src={pub.imagen_url} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    )}
+                    <div className={pub.tipo === 'insignia' ? 'flex-1' : ''}>
+                      {pub.tipo !== 'insignia' && (
+                        <div className="rounded-xl overflow-hidden border border-white/40 shadow-md">
+                          <img src={pub.imagen_url} alt="" className="w-full max-h-80 object-cover" />
+                        </div>
+                      )}
+                      {pub.tipo === 'insignia' && (
+                        <div className="bg-gradient-to-r from-luxor-primary/5 to-luxor-secondary/5 rounded-lg p-3 border border-luxor-primary/20">
+                          <p className="text-sm text-gray-700">
+                            ¡Felicidades! Has obtenido esta insignia por tu dedicación y esfuerzo en la plataforma.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

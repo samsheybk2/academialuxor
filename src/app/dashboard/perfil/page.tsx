@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
+import { crearNoticiaInsignia, crearNoticiaNivel } from "@/lib/noticias"
 import { updatePassword } from "@/lib/auth"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { Button } from "@/components/ui/Button"
@@ -603,6 +604,8 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
   const [dbCursos, setDbCursos] = useState<{ id: string; titulo: string }[]>([])
   const [selectedMarcoId, setSelectedMarcoId] = useState<string | null>(null)
   const fetchedRef = useRef(false)
+  const notifiedBadgesRef = useRef<Set<string>>(new Set())
+  const notifiedNivelRef = useRef<string | null>(null)
 
   const [modalForm, setModalForm] = useState({ nombre: "", bio: "", newPassword: "", confirmPassword: "" })
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -899,6 +902,41 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
 
   const facNivel = overrideFrame ? { ...baseFacNivel, ...overrideFrame, n: baseFacNivel.n, i: baseFacNivel.i, score: baseFacNivel.score, from: baseFacNivel.from, to: baseFacNivel.to, pct: baseFacNivel.pct } : baseFacNivel
   const stuNivel = overrideFrame ? { ...baseStuNivel, ...overrideFrame, n: baseStuNivel.n, i: baseStuNivel.i, score: baseStuNivel.score, from: baseStuNivel.from, to: baseStuNivel.to, pct: baseStuNivel.pct } : baseStuNivel
+
+  // Detectar nuevas insignias y niveles para crear noticias
+  useEffect(() => {
+    if (!effectiveUser || effectiveBadges.length === 0) return
+
+    const currentNivel = userRole === "facilitador" ? facNivel.n : stuNivel.n
+
+    // Detectar nuevas insignias ganadas
+    effectiveBadges.forEach((badge) => {
+      if (badge.ok && !notifiedBadgesRef.current.has(badge.id)) {
+        notifiedBadgesRef.current.add(badge.id)
+        // Solo crear noticia si no estamos en modo simulación
+        if (!(isDev && godMode)) {
+          crearNoticiaInsignia(
+            `Felicidades ${effectiveUser.nombre} has obtenido la insignia "${badge.nombre}"`,
+            effectiveUser.id,
+            badge.imagen_url || undefined
+          )
+        }
+      }
+    })
+
+    // Detectar nuevo nivel alcanzado
+    if (currentNivel && notifiedNivelRef.current !== currentNivel) {
+      const previousNivel = notifiedNivelRef.current
+      notifiedNivelRef.current = currentNivel
+      // Solo crear noticia si no estamos en modo simulación y hay un nivel anterior
+      if (!(isDev && godMode) && previousNivel) {
+        crearNoticiaNivel(
+          `⭐ ${effectiveUser.nombre} ha alcanzado el nivel "${currentNivel}"`,
+          effectiveUser.id
+        )
+      }
+    }
+  }, [effectiveBadges, facNivel.n, stuNivel.n, effectiveUser, userRole])
 
   async function saveMarcoSelection(marcoId: string | null) {
     setSelectedMarcoId(marcoId)

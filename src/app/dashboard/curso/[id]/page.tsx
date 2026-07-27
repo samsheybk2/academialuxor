@@ -9,6 +9,7 @@ import { Quiz } from "@/components/course/Quiz"
 import { Certificado } from "@/components/course/Certificado"
 import { OpinionesCurso } from "@/components/course/OpinionesCurso"
 import { createSupabaseClient } from "@/lib/supabase"
+import { crearNoticiaCurso } from "@/lib/noticias"
 import type { Pregunta } from "@/lib/cursos-detalle"
 import {
   ArrowLeft,
@@ -1095,6 +1096,12 @@ function CursoContent({ id }: { id: string }) {
               curso_nombre: curso.titulo,
               duracion: curso.duracion,
             })
+
+            // Crear noticia automática
+            await crearNoticiaCurso(
+              `${user.nombre} ha completado el curso "${curso.titulo}"`,
+              user.id
+            )
           }
         }
       } else {
