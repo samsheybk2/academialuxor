@@ -20,7 +20,6 @@ import {
   Users,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { openSidebar } from "@/lib/chatEvents"
 
 interface Chat {
   id: string
@@ -288,7 +287,7 @@ function ChatContent() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => openSidebar()}
+                onClick={() => window.dispatchEvent(new Event("open-sidebar"))}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 title="Menú"
               >
@@ -382,15 +381,6 @@ function ChatContent() {
               className="p-2 rounded-lg hover:bg-gray-100"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <button
-              onClick={() => openSidebar()}
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              title="Menú"
-            >
-              <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
             </button>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-luxor-primary to-luxor-secondary flex items-center justify-center text-white font-bold text-sm overflow-hidden flex-shrink-0">
               {chatActivo.otro_usuario.avatar_url ? (

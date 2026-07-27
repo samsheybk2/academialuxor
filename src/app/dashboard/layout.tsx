@@ -32,8 +32,9 @@ export default function DashboardLayout({
   }, [user, loading, router])
 
   useEffect(() => {
-    setSidebarOpenCallback(() => setSidebarOpen(true))
-    return () => setSidebarOpenCallback(null)
+    const handleOpenSidebar = () => setSidebarOpen(true)
+    window.addEventListener("open-sidebar", handleOpenSidebar)
+    return () => window.removeEventListener("open-sidebar", handleOpenSidebar)
   }, [])
 
   if (loading) {
