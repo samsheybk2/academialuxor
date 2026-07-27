@@ -19,6 +19,7 @@ import {
   MessageCircle,
   Users,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface Chat {
   id: string
@@ -55,6 +56,7 @@ interface Usuario {
 
 function ChatContent() {
   const { user } = useAuth()
+  const router = useRouter()
   const supabase = createSupabaseClient()
 
   const [chats, setChats] = useState<Chat[]>([])
@@ -277,7 +279,7 @@ function ChatContent() {
   )
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex bg-white rounded-2xl border border-gray-200 overflow-hidden mt-4">
+    <div className="h-dvh flex bg-white overflow-hidden">
       {/* Sidebar - Lista de chats */}
       <div className={`${chatActivo ? "hidden md:flex" : "flex"} flex-col w-full md:w-80 border-r border-gray-200 bg-gray-50`}>
         {/* Header */}
@@ -360,12 +362,12 @@ function ChatContent() {
 
       {/* Área de mensajes */}
       {chatActivo ? (
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 h-dvh">
           {/* Header del chat */}
-          <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white">
+          <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white shrink-0">
             <button
               onClick={() => setChatActivo(null)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+              className="p-2 rounded-lg hover:bg-gray-100"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
@@ -439,7 +441,7 @@ function ChatContent() {
           </div>
 
           {/* Input de mensaje */}
-          <div className="p-4 border-t border-gray-200 bg-white">
+          <div className="p-4 border-t border-gray-200 bg-white shrink-0">
             <div className="flex items-center gap-2">
               <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
                 <Smile className="w-5 h-5" />
