@@ -135,11 +135,23 @@ function AgendaContent() {
       return
     }
 
+    // Buscar el ID del cargo en la tabla cargos usando el nombre
+    const { data: cargoData } = await supabase
+      .from("cargos")
+      .select("id")
+      .eq("nombre", profileData.cargo)
+      .single()
+
+    if (!cargoData?.id) {
+      setVideoConfs([])
+      return
+    }
+
     // Obtener video conferencias donde el cargo del usuario esté invitado
     const { data: vcIds } = await supabase
       .from("video_conferencias_cargos")
       .select("video_conferencia_id")
-      .eq("cargo_id", profileData.cargo)
+      .eq("cargo_id", cargoData.id)
 
     const vcIdsList = (vcIds || []).map((v: any) => v.video_conferencia_id)
 
