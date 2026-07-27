@@ -21,6 +21,7 @@ import {
   Users,
   Tag,
   Cake,
+  Video,
 } from "lucide-react"
 
 interface Evento {
@@ -33,6 +34,18 @@ interface Evento {
   categoria: "reunion" | "capacitacion" | "tarea" | "evento" | "otro"
   usuario_id: string
   created_at: string
+}
+
+interface VideoConf {
+  id: string
+  titulo: string
+  descripcion: string
+  fecha: string
+  hora_inicio: string
+  hora_fin: string
+  facilitador_nombre: string
+  curso_titulo: string | null
+  sala_jitsi: string
 }
 
 interface Estudiante {
@@ -92,6 +105,7 @@ function AgendaContent() {
   const [searchEstudiante, setSearchEstudiante] = useState("")
   const [showEstudiantes, setShowEstudiantes] = useState(false)
   const [cumpleaneros, setCumpleaneros] = useState<Cumpleanero[]>([])
+  const [videoConfs, setVideoConfs] = useState<VideoConf[]>([])
 
   const supabase = createSupabaseClient()
 
@@ -107,7 +121,58 @@ function AgendaContent() {
     setLoading(false)
   }, [user, supabase])
 
+  const fetchVideoConfs = useCallback(async () => {
+    if (!user) return
+    // Obtener el cargo del usuario
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("cargo")
+      .eq("id", user.id)
+      .single()
+
+    if (!profileData?.cargo) {
+      setVideoConfs([])
+      return
+    }
+
+    // Obtener video conferencias donde el cargo del usuario esté invitado
+    const { data: vcIds } = await supabase
+      .from("video_conferencias_cargos")
+      .select("video_conferencia_id")
+      .eq("cargo_id", profileData.cargo)
+
+    const vcIdsList = (vcIds || []).map((v: any) => v.video_conferencia_id)
+
+    if (vcIdsList.length === 0) {
+      setVideoConfs([])
+      return
+    }
+
+    const { data: vcs } = await supabase
+      .from("video_conferencias")
+      .select("id, titulo, descripcion, fecha, hora_inicio, hora_fin, sala_jitsi, profiles!video_conferencias_facilitador_id_fkey(nombre), cursos(titulo)")
+      .in("id", vcIdsList)
+      .eq("activa", true)
+      .order("fecha", { ascending: true })
+      .order("hora_inicio", { ascending: true })
+
+    if (vcs) {
+      setVideoConfs(vcs.map((vc: any) => ({
+        id: vc.id,
+        titulo: vc.titulo,
+        descripcion: vc.descripcion || "",
+        fecha: vc.fecha,
+        hora_inicio: vc.hora_inicio,
+        hora_fin: vc.hora_fin,
+        facilitador_nombre: vc.profiles?.nombre || "Facilitador",
+        curso_titulo: vc.cursos?.titulo || null,
+        sala_jitsi: vc.sala_jitsi,
+      })))
+    }
+  }, [user, supabase])
+
   useEffect(() => { fetchEventos() }, [fetchEventos])
+  useEffect(() => { fetchVideoConfs() }, [fetchVideoConfs])
 
   useEffect(() => {
     if (!isFacilitador) return
@@ -176,11 +241,13 @@ function AgendaContent() {
   }
 
   const eventosPorDia = (fecha: string) => eventos.filter((e) => e.fecha === fecha)
+  const videoConfsPorDia = (fecha: string) => videoConfs.filter((v) => v.fecha === fecha)
 
   const cumpleanerosPorDia = (dia: number) =>
     cumpleaneros.filter((c) => c.mes === mes && c.dia === dia)
 
   const eventosHoy = eventosPorDia(getFechaStr(today.getDate()))
+  const videoConfsHoy = videoConfsPorDia(getFechaStr(today.getDate()))
 
   const openCreate = (fecha?: string) => {
     setEditingId(null)
@@ -305,6 +372,7 @@ function AgendaContent() {
   const irHoy = () => { setMes(today.getMonth()); setAnio(today.getFullYear()); setDiaSeleccionado(getFechaStr(today.getDate())) }
 
   const eventosSeleccionados = diaSeleccionado ? eventosPorDia(diaSeleccionado) : []
+  const videoConfsSeleccionadas = diaSeleccionado ? videoConfsPorDia(diaSeleccionado) : []
   const cbsDelDia = diaSeleccionado ? (() => {
     const d = new Date(diaSeleccionado + "T12:00:00")
     return cumpleaneros.filter((c) => c.mes === d.getUTCMonth() && c.dia === d.getUTCDate())
@@ -337,6 +405,7 @@ function AgendaContent() {
                     if (dia < 1 || dia > diasEnMes) return <div key={i} className="bg-white" />
                     const fecha = getFechaStr(dia)
                     const evts = eventosPorDia(fecha)
+                    const vcs = videoConfsPorDia(fecha)
                     const cbs = cumpleanerosPorDia(dia)
                     const isToday = dia === today.getDate() && mes === today.getMonth() && anio === today.getFullYear()
                     const isSelected = diaSeleccionado === fecha
@@ -365,12 +434,21 @@ function AgendaContent() {
                               🎉 {c.nombre}
                             </div>
                           ))}
-                          {evts.slice(0, cbs.length > 0 ? 1 : 2).map((e) => (
+                          {vcs.slice(0, 1).map((v) => (
+                            <div key={v.id} className="text-[9px] px-0.5 py-px rounded truncate leading-tight bg-purple-100 text-purple-700 border border-purple-200">
+                               {v.titulo}
+                            </div>
+                          ))}
+                          {evts.slice(0, cbs.length > 0 ? (vcs.length > 0 ? 0 : 1) : (vcs.length > 0 ? 1 : 2)).map((e) => (
                             <div key={e.id} className={`text-[9px] px-0.5 py-px rounded truncate leading-tight ${CAT_CONFIG[e.categoria].bg}`}>
                               {e.titulo}
                             </div>
                           ))}
-                          {evts.length > (cbs.length > 0 ? 1 : 2) && <div className="text-[9px] text-gray-400 pl-0.5 leading-tight">+{evts.length - (cbs.length > 0 ? 1 : 2)}</div>}
+                          {(() => {
+                            const total = cbs.length + vcs.length + evts.length
+                            const shown = (cbs.length > 0 ? 1 : 0) + (vcs.length > 0 ? 1 : 0) + (cbs.length > 0 ? (vcs.length > 0 ? 0 : 1) : (vcs.length > 0 ? 1 : 2))
+                            return total > shown ? <div className="text-[9px] text-gray-400 pl-0.5 leading-tight">+{total - shown}</div> : null
+                          })()}
                         </div>
                       </button>
                     )
@@ -416,7 +494,7 @@ function AgendaContent() {
                 {loading ? (
                   <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-luxor-primary animate-spin" /></div>
                 ) : diaSeleccionado ? (
-                  (eventosSeleccionados.length === 0 && cbsDelDia.length === 0) ? (
+                  (eventosSeleccionados.length === 0 && videoConfsSeleccionadas.length === 0 && cbsDelDia.length === 0) ? (
                     <div className="text-center py-8 text-gray-400">
                       <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
                       <p className="text-sm">Sin eventos este dia</p>
@@ -437,6 +515,35 @@ function AgendaContent() {
                           ))}
                         </div>
                       )}
+                      {videoConfsSeleccionadas.map((vc) => (
+                        <div key={vc.id} className="p-3 rounded-lg border bg-purple-50 text-purple-700 border-purple-200">
+                          <div className="flex items-start justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <Video className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+                                <p className="font-semibold text-sm truncate">{vc.titulo}</p>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-xs opacity-75">
+                                <Clock className="w-3 h-3" />
+                                {vc.hora_inicio} - {vc.hora_fin}
+                              </div>
+                              {vc.curso_titulo && (
+                                <p className="text-xs mt-1 opacity-75">Curso: {vc.curso_titulo}</p>
+                              )}
+                              <p className="text-xs mt-1 opacity-75">Facilitador: {vc.facilitador_nombre}</p>
+                            </div>
+                            <a
+                              href={`https://meet.jit.si/${vc.sala_jitsi}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors flex items-center gap-1 shrink-0 ml-2"
+                            >
+                              <Video className="w-3 h-3" />
+                              Unirse
+                            </a>
+                          </div>
+                        </div>
+                      ))}
                       {eventosSeleccionados.map((ev) => (
                         <div key={ev.id} className={`p-3 rounded-lg border ${CAT_CONFIG[ev.categoria].bg}`}>
                           <div className="flex items-start justify-between">
@@ -458,7 +565,7 @@ function AgendaContent() {
                     </div>
                   )
                 ) : (
-                  eventos.length === 0 ? (
+                  eventos.length === 0 && videoConfs.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
                       <Calendar className="w-10 h-10 mx-auto mb-2 opacity-40" />
                       <p className="text-sm">Tu agenda esta vacia</p>
@@ -466,6 +573,19 @@ function AgendaContent() {
                     </div>
                   ) : (
                     <div className="space-y-2">
+                      {videoConfs.slice(0, 4).map((vc) => (
+                        <div key={vc.id} className="p-2.5 rounded-lg border bg-purple-50 border-purple-200 cursor-pointer" onClick={() => { setDiaSeleccionado(vc.fecha); setMes(new Date(vc.fecha + "T12:00:00").getMonth()); setAnio(new Date(vc.fecha + "T12:00:00").getFullYear()) }}>
+                          <div className="flex items-center gap-2">
+                            <Video className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+                            <p className="font-medium text-sm truncate text-purple-700">{vc.titulo}</p>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-purple-600 opacity-75">
+                            <span>{new Date(vc.fecha + "T12:00:00").toLocaleDateString("es-VE", { day: "numeric", month: "short" })}</span>
+                            <Clock className="w-3 h-3" />
+                            <span>{vc.hora_inicio}</span>
+                          </div>
+                        </div>
+                      ))}
                       {eventos.slice(0, 8).map((ev) => (
                         <div key={ev.id} className={`p-2.5 rounded-lg border ${CAT_CONFIG[ev.categoria].bg} cursor-pointer`} onClick={() => { setDiaSeleccionado(ev.fecha); setMes(new Date(ev.fecha + "T12:00:00").getMonth()); setAnio(new Date(ev.fecha + "T12:00:00").getFullYear()) }}>
                           <p className="font-medium text-sm truncate">{ev.titulo}</p>
