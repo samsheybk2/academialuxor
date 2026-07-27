@@ -20,6 +20,7 @@ import {
   Users,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { openSidebar } from "@/lib/chatEvents"
 
 interface Chat {
   id: string
@@ -287,7 +288,7 @@ function ChatContent() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => window.dispatchEvent(new CustomEvent("open-sidebar"))}
+                onClick={() => openSidebar()}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 title="Menú"
               >
@@ -383,7 +384,7 @@ function ChatContent() {
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
             <button
-              onClick={() => window.dispatchEvent(new CustomEvent("open-sidebar"))}
+              onClick={() => openSidebar()}
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
               title="Menú"
             >

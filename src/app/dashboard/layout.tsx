@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/Sidebar"
 import { Header } from "@/components/layout/Header"
 import { MobileNav } from "@/components/layout/MobileNav"
 import { LoadingBar } from "@/components/ui/LoadingBar"
+import { setSidebarOpenCallback } from "@/lib/chatEvents"
 
 export default function DashboardLayout({
   children,
@@ -31,9 +32,8 @@ export default function DashboardLayout({
   }, [user, loading, router])
 
   useEffect(() => {
-    const handleOpenSidebar = () => setSidebarOpen(true)
-    window.addEventListener("open-sidebar", handleOpenSidebar)
-    return () => window.removeEventListener("open-sidebar", handleOpenSidebar)
+    setSidebarOpenCallback(() => setSidebarOpen(true))
+    return () => setSidebarOpenCallback(null)
   }, [])
 
   if (loading) {
