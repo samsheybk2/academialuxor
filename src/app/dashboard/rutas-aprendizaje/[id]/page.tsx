@@ -30,6 +30,7 @@ import {
   GripVertical,
   Save,
   Route,
+  Video,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -37,12 +38,14 @@ const iconMap: Record<TipoEtapa, React.ElementType> = {
   curso: BookOpen,
   taller: Wrench,
   examen: FileText,
+  video_conferencia: Video,
 }
 
 const stepColors: Record<TipoEtapa, { ring: string; bg: string; line: string; text: string }> = {
   curso: { ring: "border-blue-400", bg: "bg-blue-50", line: "bg-blue-300", text: "text-blue-700" },
   taller: { ring: "border-violet-400", bg: "bg-violet-50", line: "bg-violet-300", text: "text-violet-700" },
   examen: { ring: "border-amber-400", bg: "bg-amber-50", line: "bg-amber-300", text: "text-amber-700" },
+  video_conferencia: { ring: "border-purple-400", bg: "bg-purple-50", line: "bg-purple-300", text: "text-purple-700" },
 }
 
 interface StudentData {
@@ -55,7 +58,7 @@ interface StudentData {
   certificado: boolean
 }
 
-const emptyForm = { titulo: "", tipo: "curso" as TipoEtapa, descripcion: "", duracion: "", obligatorio: true, cursoId: "" as string | null }
+const emptyForm = { titulo: "", tipo: "curso" as TipoEtapa, descripcion: "", duracion: "", obligatorio: true, cursoId: "" as string | null, videoConferenciaId: "" as string | null }
 
 function CargoContent({ id }: { id: string }) {
   const { user } = useAuth()
@@ -71,6 +74,7 @@ function CargoContent({ id }: { id: string }) {
   const [isCustom, setIsCustom] = useState(id.startsWith("custom_"))
   const [elementos, setElementos] = useState<ElementoRuta[]>([])
   const [cursosDisponibles, setCursosDisponibles] = useState<{ id: string; titulo: string; descripcion: string; introduccion?: string; duracion: string }[]>([])
+  const [videoConferencias, setVideoConferencias] = useState<{ id: string; titulo: string; fecha: string; hora_inicio: string; hora_fin: string }[]>([])
   const [students, setStudents] = useState<StudentData[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"sequential" | "grouped">("sequential")
@@ -109,6 +113,13 @@ function CargoContent({ id }: { id: string }) {
 
       setCursosDisponibles(cursosFiltrados)
 
+      const { data: vcs } = await supabase
+        .from("video_conferencias")
+        .select("id, titulo, fecha, hora_inicio, hora_fin")
+        .eq("activa", true)
+        .order("fecha", { ascending: true })
+      setVideoConferencias(vcs || [])
+
       const { data: elems } = await supabase
         .from("cargo_elementos")
         .select("*")
@@ -126,6 +137,7 @@ function CargoContent({ id }: { id: string }) {
             orden: e.orden,
             obligatorio: e.obligatorio ?? true,
             cursoId: e.curso_id || undefined,
+            videoConferenciaId: e.video_conferencia_id || undefined,
           }))
         )
       }
@@ -195,12 +207,13 @@ function CargoContent({ id }: { id: string }) {
       orden: maxOrden + 1,
       obligatorio: form.obligatorio,
       curso_id: form.cursoId || null,
+      video_conferencia_id: form.videoConferenciaId || null,
     })
 
     if (!error) {
       setElementos((prev) => [
         ...prev,
-        { id: newId, titulo: form.titulo.trim(), tipo: form.tipo, descripcion: form.descripcion.trim(), duracion: form.duracion.trim() || "Sin definir", orden: maxOrden + 1, obligatorio: form.obligatorio },
+        { id: newId, titulo: form.titulo.trim(), tipo: form.tipo, descripcion: form.descripcion.trim(), duracion: form.duracion.trim() || "Sin definir", orden: maxOrden + 1, obligatorio: form.obligatorio, videoConferenciaId: form.videoConferenciaId || undefined },
       ])
     }
 
@@ -222,6 +235,7 @@ function CargoContent({ id }: { id: string }) {
         duracion: form.duracion.trim() || "Sin definir",
         obligatorio: form.obligatorio,
         curso_id: form.cursoId || null,
+        video_conferencia_id: form.videoConferenciaId || null,
       })
       .eq("id", editingId)
 
@@ -229,7 +243,7 @@ function CargoContent({ id }: { id: string }) {
       setElementos((prev) =>
         prev.map((e) =>
           e.id === editingId
-            ? { ...e, titulo: form.titulo.trim(), tipo: form.tipo, descripcion: form.descripcion.trim(), duracion: form.duracion.trim() || e.duracion, obligatorio: form.obligatorio }
+            ? { ...e, titulo: form.titulo.trim(), tipo: form.tipo, descripcion: form.descripcion.trim(), duracion: form.duracion.trim() || e.duracion, obligatorio: form.obligatorio, videoConferenciaId: form.videoConferenciaId || undefined }
             : e
         )
       )
@@ -257,7 +271,7 @@ function CargoContent({ id }: { id: string }) {
   function startEdit(elem: ElementoRuta) {
     setEditingId(elem.id)
     setShowAddForm(false)
-    setForm({ titulo: elem.titulo, tipo: elem.tipo, descripcion: elem.descripcion, duracion: elem.duracion, obligatorio: elem.obligatorio, cursoId: elem.cursoId || null })
+    setForm({ titulo: elem.titulo, tipo: elem.tipo, descripcion: elem.descripcion, duracion: elem.duracion, obligatorio: elem.obligatorio, cursoId: elem.cursoId || null, videoConferenciaId: elem.videoConferenciaId || null })
   }
 
   function cancelForm() {
@@ -287,6 +301,7 @@ function CargoContent({ id }: { id: string }) {
     curso: sorted.filter((e) => e.tipo === "curso"),
     taller: sorted.filter((e) => e.tipo === "taller"),
     examen: sorted.filter((e) => e.tipo === "examen"),
+    video_conferencia: sorted.filter((e) => e.tipo === "video_conferencia"),
   }
 
   const totalStudents = students.length
@@ -412,12 +427,13 @@ function CargoContent({ id }: { id: string }) {
                     <label className="block text-xs font-medium text-gray-600">Tipo *</label>
                     <select
                       value={form.tipo}
-                      onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoEtapa })}
+                      onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoEtapa, cursoId: null, videoConferenciaId: null })}
                       className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
                     >
                       <option value="curso">Curso</option>
                       <option value="taller">Taller Practico</option>
                       <option value="examen">Examen Escrito</option>
+                      <option value="video_conferencia">Video Conferencia</option>
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -442,7 +458,7 @@ function CargoContent({ id }: { id: string }) {
                 <div className="flex gap-3 mt-3 items-end">
                   <div className="flex-1 space-y-1.5">
                     <label className="block text-xs font-medium text-gray-600">
-                      {form.tipo === "curso" ? "Seleccionar Curso *" : "Titulo *"}
+                      {form.tipo === "curso" ? "Seleccionar Curso *" : form.tipo === "video_conferencia" ? "Seleccionar Video Conferencia *" : "Titulo *"}
                     </label>
                     {form.tipo === "curso" ? (
                       <select
@@ -462,6 +478,26 @@ function CargoContent({ id }: { id: string }) {
                         <option value="">Selecciona un curso...</option>
                         {cursosDisponibles.map((c) => (
                           <option key={c.id} value={c.titulo}>{c.titulo}</option>
+                        ))}
+                      </select>
+                    ) : form.tipo === "video_conferencia" ? (
+                      <select
+                        value={form.videoConferenciaId || ""}
+                        onChange={(e) => {
+                          const vc = videoConferencias.find((v) => v.id === e.target.value)
+                          setForm({
+                            ...form,
+                            titulo: vc?.titulo || "",
+                            descripcion: "",
+                            duracion: vc ? `${vc.hora_inicio} - ${vc.hora_fin}` : "",
+                            videoConferenciaId: vc?.id || null,
+                          })
+                        }}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-luxor-primary/30"
+                      >
+                        <option value="">Selecciona una video conferencia...</option>
+                        {videoConferencias.map((vc) => (
+                          <option key={vc.id} value={vc.id}>{vc.titulo} ({new Date(vc.fecha + "T12:00:00").toLocaleDateString("es-VE", { day: "numeric", month: "short" })} {vc.hora_inicio})</option>
                         ))}
                       </select>
                     ) : (
@@ -593,6 +629,17 @@ function CargoContent({ id }: { id: string }) {
                                 Evaluar Estudiantes
                               </Link>
                             )}
+                            {elemento.tipo === "video_conferencia" && elemento.videoConferenciaId && (
+                              <a
+                                href={`https://meet.jit.si/AcademiaLuxor-${elemento.videoConferenciaId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700 transition-colors"
+                              >
+                                <Video className="w-4 h-4" />
+                                Unirse a la Video Conferencia
+                              </a>
+                            )}
                           </div>
                         )}
                       </div>
@@ -604,7 +651,7 @@ function CargoContent({ id }: { id: string }) {
 
             {viewMode === "grouped" && sorted.length > 0 && (
               <div className="space-y-6">
-                {(["curso", "taller", "examen"] as TipoEtapa[]).map((tipo) => {
+                {(["curso", "taller", "examen", "video_conferencia"] as TipoEtapa[]).map((tipo) => {
                   const items = elementosByType[tipo]
                   const config = tipoEtapaConfig[tipo]
                   const Icon = iconMap[tipo]
@@ -640,6 +687,17 @@ function CargoContent({ id }: { id: string }) {
                                 <Users className="w-3 h-3" />
                                 Evaluar
                               </Link>
+                            )}
+                            {elem.tipo === "video_conferencia" && elem.videoConferenciaId && (
+                              <a
+                                href={`https://meet.jit.si/AcademiaLuxor-${elem.videoConferenciaId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-1 bg-purple-600 text-white text-xs rounded-lg font-medium hover:bg-purple-700 transition-colors flex-shrink-0 hidden sm:inline-flex items-center gap-1"
+                              >
+                                <Video className="w-3 h-3" />
+                                Unirse
+                              </a>
                             )}
                             {canEdit && (
                               <div className="flex items-center gap-0.5 flex-shrink-0">

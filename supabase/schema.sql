@@ -282,12 +282,13 @@ CREATE TABLE IF NOT EXISTS cargo_elementos (
   id TEXT PRIMARY KEY,
   cargo_id TEXT NOT NULL REFERENCES cargos(id) ON DELETE CASCADE,
   titulo TEXT NOT NULL,
-  tipo TEXT NOT NULL DEFAULT 'curso' CHECK (tipo IN ('curso', 'taller', 'examen')),
+  tipo TEXT NOT NULL DEFAULT 'curso' CHECK (tipo IN ('curso', 'taller', 'examen', 'video_conferencia')),
   descripcion TEXT,
   duracion TEXT,
   orden INTEGER DEFAULT 0,
   obligatorio BOOLEAN DEFAULT TRUE,
   curso_id UUID REFERENCES cursos(id) ON DELETE SET NULL,
+  video_conferencia_id UUID REFERENCES video_conferencias(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -1410,6 +1411,45 @@ CREATE POLICY "video_conferencias_delete_facilitador" ON video_conferencias
     public.get_my_role() IN ('decano', 'facilitador', 'developer')
     AND facilitador_id = auth.uid()
   );
+
+-- 1.24 CARGOS INVITADOS A VIDEO CONFERENCIAS
+CREATE TABLE IF NOT EXISTS video_conferencias_cargos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  video_conferencia_id UUID NOT NULL REFERENCES video_conferencias(id) ON DELETE CASCADE,
+  cargo_id TEXT NOT NULL REFERENCES cargos(id) ON DELETE CASCADE,
+  UNIQUE(video_conferencia_id, cargo_id)
+);
+
+ALTER TABLE video_conferencias_cargos ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "vc_cargos_select_auth" ON video_conferencias_cargos
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "vc_cargos_all_facilitador" ON video_conferencias_cargos
+  FOR ALL USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+-- 1.25 ASISTENCIA A VIDEO CONFERENCIAS
+CREATE TABLE IF NOT EXISTS video_conferencias_asistencia (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  video_conferencia_id UUID NOT NULL REFERENCES video_conferencias(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  fecha_registro TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(video_conferencia_id, user_id)
+);
+
+ALTER TABLE video_conferencias_asistencia ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "vc_asistencia_select_auth" ON video_conferencias_asistencia
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "vc_asistencia_insert_own" ON video_conferencias_asistencia
+  FOR INSERT WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "vc_asistencia_insert_facilitador" ON video_conferencias_asistencia
+  FOR INSERT WITH CHECK (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
+
+CREATE POLICY "vc_asistencia_delete_facilitador" ON video_conferencias_asistencia
+  FOR DELETE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
 -- ============================================================
 -- 5. INDICES PARA RENDIMIENTO

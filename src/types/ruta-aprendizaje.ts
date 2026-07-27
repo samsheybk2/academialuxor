@@ -1,4 +1,4 @@
-export type TipoEtapa = "curso" | "taller" | "examen"
+export type TipoEtapa = "curso" | "taller" | "examen" | "video_conferencia"
 
 export type EstadoEtapa = "definido" | "en_progreso" | "completado"
 
@@ -11,6 +11,7 @@ export interface ElementoRuta {
   orden: number
   obligatorio: boolean
   cursoId?: string
+  videoConferenciaId?: string
 }
 
 export interface RutaAprendizaje {
@@ -43,6 +44,12 @@ export const tipoEtapaConfig: Record<
     icon: "📝",
     color: "text-amber-700",
     bgColor: "bg-amber-100",
+  },
+  video_conferencia: {
+    label: "Video Conferencia",
+    icon: "📹",
+    color: "text-purple-700",
+    bgColor: "bg-purple-100",
   },
 }
 

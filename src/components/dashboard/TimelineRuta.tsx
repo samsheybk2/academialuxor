@@ -6,12 +6,14 @@ import {
   BookOpen,
   Wrench,
   FileText,
+  Video,
 } from "lucide-react"
 
 const iconMap: Record<TipoEtapa, React.ElementType> = {
   curso: BookOpen,
   taller: Wrench,
   examen: FileText,
+  video_conferencia: Video,
 }
 
 interface TimelineProps {

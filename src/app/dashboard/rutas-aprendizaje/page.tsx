@@ -37,6 +37,7 @@ import {
   Zap,
   Star,
   Filter,
+  Video,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -419,11 +420,13 @@ function RutasContent() {
       curso: BookOpen,
       taller: Wrench,
       examen: FileText,
+      video_conferencia: Video,
     }
     const stepColorsStudent: Record<TipoEtapa, { ring: string; bg: string; line: string; text: string }> = {
       curso: { ring: "border-blue-400", bg: "bg-blue-50", line: "bg-blue-300", text: "text-blue-700" },
       taller: { ring: "border-violet-400", bg: "bg-violet-50", line: "bg-violet-300", text: "text-violet-700" },
       examen: { ring: "border-amber-400", bg: "bg-amber-50", line: "bg-amber-300", text: "text-amber-700" },
+      video_conferencia: { ring: "border-purple-400", bg: "bg-purple-50", line: "bg-purple-300", text: "text-purple-700" },
     }
 
     const cursosCompletados = Object.values(elementosProgreso).filter((p) => p.estado === "completada").length
