@@ -68,6 +68,7 @@ function ChatContent() {
   const mensajesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const mensajesContainerRef = useRef<HTMLDivElement>(null)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
 
   const scrollToBottom = useCallback(() => {
     mensajesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -83,9 +84,25 @@ function ChatContent() {
     }
   }, [chatActivo])
 
-  const fetchChats = useCallback(async () => {
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+
+    const onResize = () => {
+      const height = vv.height
+      const fullHeight = window.innerHeight
+      const diff = fullHeight - height
+      setKeyboardHeight(diff > 50 ? diff : 0)
+    }
+
+    vv.addEventListener("resize", onResize)
+    onResize()
+    return () => vv.removeEventListener("resize", onResize)
+  }, [])
+
+  const fetchChats = useCallback(async (showLoading = false) => {
     if (!user) return
-    setLoading(true)
+    if (showLoading) setLoading(true)
 
     const { data: chatsData } = await supabase
       .from("chats")
@@ -123,7 +140,7 @@ function ChatContent() {
   }, [user, supabase])
 
   useEffect(() => {
-    fetchChats()
+    fetchChats(true)
   }, [fetchChats])
 
   const fetchMensajes = useCallback(async (chatId: string) => {
@@ -134,18 +151,33 @@ function ChatContent() {
       .order("created_at", { ascending: true })
 
     if (data) {
-      setMensajesCache((prev) => ({ ...prev, [chatId]: data }))
-      // Marcar como leídos
+      setMensajesCache((prev) => {
+        const current = prev[chatId] || []
+        const merged = [...current]
+        data.forEach((newMsg: Mensaje) => {
+          const idx = merged.findIndex((m) => m.id === newMsg.id)
+          if (idx >= 0) {
+            merged[idx] = { ...merged[idx], leido: newMsg.leido }
+          } else {
+            merged.push(newMsg)
+          }
+        })
+        return { ...prev, [chatId]: merged }
+      })
+      // Marcar como leídos sin refetchear chats
       const noLeidos = data.filter((m: any) => !m.leido && m.emisor_id !== user?.id)
       if (noLeidos.length > 0) {
         await supabase
           .from("mensajes")
           .update({ leido: true })
           .in("id", noLeidos.map((m: any) => m.id))
-        fetchChats()
+        // Actualizar solo el no_leidos del chat activo en el state local
+        setChats((prev) =>
+          prev.map((c) => (c.id === chatId ? { ...c, no_leidos: 0 } : c))
+        )
       }
     }
-  }, [user, supabase, fetchChats])
+  }, [user, supabase])
 
   useEffect(() => {
     if (chatActivo) {
@@ -175,7 +207,6 @@ function ChatContent() {
             if (exists) return prev
             return { ...prev, [chatActivo.id]: [...current, nuevoMsg] }
           })
-          // Marcar como leídos los mensajes del otro usuario
           if (nuevoMsg.emisor_id !== user?.id && !nuevoMsg.leido) {
             supabase
               .from("mensajes")
@@ -210,18 +241,49 @@ function ChatContent() {
     }
   }, [chatActivo, user, supabase])
 
-  // Realtime subscription for chats list
+  // Realtime subscription for chats list — solo para mensajes nuevos en otros chats
   useEffect(() => {
     const channel = supabase
       .channel("chats-list")
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
+          schema: "public",
+          table: "mensajes",
+        },
+        (payload: any) => {
+          const nuevoMsg = payload.new as Mensaje
+          // Si es de otro chat (no el activo), incrementar no_leidos
+          if (!chatActivo || nuevoMsg.chat_id !== chatActivo.id) {
+            setChats((prev) =>
+              prev.map((c) =>
+                c.id === nuevoMsg.chat_id
+                  ? { ...c, no_leidos: c.no_leidos + 1, ultimo_mensaje: nuevoMsg.contenido, ultimo_mensaje_at: nuevoMsg.created_at }
+                  : c
+              ).sort((a, b) => new Date(b.ultimo_mensaje_at || b.created_at).getTime() - new Date(a.ultimo_mensaje_at || a.created_at).getTime())
+            )
+          } else {
+            // Mensaje en el chat activo: solo actualizar orden
+            setChats((prev) =>
+              prev.map((c) =>
+                c.id === nuevoMsg.chat_id
+                  ? { ...c, ultimo_mensaje: nuevoMsg.contenido, ultimo_mensaje_at: nuevoMsg.created_at }
+                  : c
+              ).sort((a, b) => new Date(b.ultimo_mensaje_at || b.created_at).getTime() - new Date(a.ultimo_mensaje_at || a.created_at).getTime())
+            )
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
           schema: "public",
           table: "chats",
         },
-        (payload: any) => {
+        () => {
+          // Si se actualiza un chat (ej. al enviar mensaje), refrescar lista
           fetchChats()
         }
       )
@@ -230,7 +292,7 @@ function ChatContent() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [supabase, fetchChats])
+  }, [supabase, chatActivo, fetchChats])
 
   const fetchUsuarios = useCallback(async () => {
     if (!user) return
@@ -298,13 +360,46 @@ function ChatContent() {
     const contenido = nuevoMensaje.trim()
     setNuevoMensaje("")
 
-    await supabase
+    // Optimistic update: agregar al cache inmediatamente
+    const tempMsg: Mensaje = {
+      id: `temp-${Date.now()}`,
+      chat_id: chatActivo.id,
+      emisor_id: user.id,
+      contenido,
+      leido: false,
+      created_at: new Date().toISOString(),
+    }
+    setMensajesCache((prev) => {
+      const current = prev[chatActivo.id] || []
+      return { ...prev, [chatActivo.id]: [...current, tempMsg] }
+    })
+
+    const { data: mensaje, error } = await supabase
       .from("mensajes")
       .insert({
         chat_id: chatActivo.id,
         emisor_id: user.id,
         contenido,
       })
+      .select("*")
+      .single()
+
+    if (mensaje && !error) {
+      // Reemplazar el mensaje temporal con el real
+      setMensajesCache((prev) => {
+        const current = prev[chatActivo.id] || []
+        return {
+          ...prev,
+          [chatActivo.id]: current.map((m) => (m.id === tempMsg.id ? mensaje : m)),
+        }
+      })
+    } else {
+      // Si falla, remover el temporal
+      setMensajesCache((prev) => {
+        const current = prev[chatActivo.id] || []
+        return { ...prev, [chatActivo.id]: current.filter((m) => m.id !== tempMsg.id) }
+      })
+    }
 
     await supabase
       .from("chats")
@@ -346,7 +441,7 @@ function ChatContent() {
   const mensajes = chatActivo ? mensajesCache[chatActivo.id] || [] : []
 
   return (
-    <div className="h-dvh flex bg-white overflow-hidden">
+    <div className="fixed inset-0 z-20 flex bg-white overflow-hidden">
       {/* Sidebar - Lista de chats */}
       <div className={`${chatActivo ? "hidden md:flex" : "flex"} flex-col w-full md:w-80 border-r border-gray-200 bg-gray-50`}>
         {/* Header */}
@@ -440,7 +535,7 @@ function ChatContent() {
 
       {/* Área de mensajes */}
       {chatActivo ? (
-        <div className="flex-1 flex flex-col min-w-0 h-dvh">
+        <div className="flex-1 flex flex-col min-w-0 h-full">
           {/* Header del chat */}
           <div className="flex items-center gap-3 p-4 border-b border-gray-200 bg-white shrink-0">
             <button
@@ -504,7 +599,7 @@ function ChatContent() {
           </div>
 
           {/* Input de mensaje */}
-          <div className="p-4 border-t border-gray-200 bg-white shrink-0">
+          <div className="p-4 border-t border-gray-200 bg-white shrink-0" style={{ paddingBottom: keyboardHeight > 0 ? `${Math.min(keyboardHeight, 20)}px` : undefined }}>
             <div className="flex items-center gap-2">
               <input
                 ref={inputRef}

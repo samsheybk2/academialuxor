@@ -51,7 +51,7 @@ export default function DashboardLayout({
   if (!user) return null
 
   return (
-    <div className="h-dvh bg-gray-50 flex flex-col">
+    <div className="h-dvh bg-gray-50 flex flex-col overflow-hidden">
       <LoadingBar />
       <Sidebar
         open={sidebarOpen}
@@ -60,7 +60,7 @@ export default function DashboardLayout({
         onToggleCollapse={() => {}}
       />
       {!hideMobileNav && <Header onMenuClick={() => setSidebarOpen(true)} />}
-      <main className={`flex-1 overflow-y-auto overflow-x-hidden ${hideMobileNav ? "bg-white" : "bg-[#F0F2F5] px-6"} ${hideMobileNav ? "mt-0" : "mt-14"} ${hideMobileNav ? "mb-0" : "mb-16 lg:mb-0"}`}>{children}</main>
+      <main className={`flex-1 overflow-y-auto overflow-x-hidden ${hideMobileNav ? "bg-white" : "bg-white lg:bg-[#F0F2F5] sm:px-6"} ${hideMobileNav ? "mt-0" : "mt-14"} ${hideMobileNav ? "mb-0" : "mb-16 lg:mb-0"}`}>{children}</main>
       {!hideMobileNav && <MobileNav />}
     </div>
   )

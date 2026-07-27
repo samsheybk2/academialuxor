@@ -674,8 +674,8 @@ async function handleEliminar(pubId: string) {
            </div>
 
          {/* Feed principal — siempre centrado */}
-         <div className="h-full overflow-y-auto bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-           <div className="w-full space-y-6 pt-0 pb-6 px-4">
+         <div className="h-full overflow-y-auto bg-white lg:bg-[#F0F2F5] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+           <div className="w-full space-y-6 pt-0 pb-6 px-0 sm:px-4">
 
          {/* Modal Crear Publicación */}
          {canPost && (
@@ -984,14 +984,14 @@ async function handleEliminar(pubId: string) {
         </div>
 
         {publicaciones.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div className="text-center py-20 bg-white sm:rounded-2xl rounded-none border border-gray-100 shadow-sm">
             <SmilePlus className="w-14 h-14 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-400 font-medium">Aún no hay publicaciones</p>
             <p className="text-gray-300 text-xs mt-1">Sé el primero en compartir algo</p>
           </div>
         ) : (
           publicaciones.map((pub) => (
-            <div key={pub.id} id={`pub-${pub.id}`} className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8 scroll-mt-20">
+            <div key={pub.id} id={`pub-${pub.id}`} className="bg-white/70 backdrop-blur-xl sm:rounded-2xl rounded-none shadow-xl shadow-black/5 border border-white/50 overflow-hidden transition-all hover:shadow-2xl hover:shadow-black/8 scroll-mt-20">
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ring-2 ring-white/60 shadow-md ${
