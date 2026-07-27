@@ -1451,6 +1451,59 @@ CREATE POLICY "vc_asistencia_insert_facilitador" ON video_conferencias_asistenci
 CREATE POLICY "vc_asistencia_delete_facilitador" ON video_conferencias_asistencia
   FOR DELETE USING (public.get_my_role() IN ('decano', 'facilitador', 'developer'));
 
+-- 1.27 CHATS Y MENSAJES
+CREATE TABLE IF NOT EXISTS chats (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  usuario1_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  usuario2_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  ultimo_mensaje TEXT,
+  ultimo_mensaje_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(usuario1_id, usuario2_id)
+);
+
+ALTER TABLE chats ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "chats_select_own" ON chats
+  FOR SELECT USING (auth.uid() = usuario1_id OR auth.uid() = usuario2_id);
+
+CREATE POLICY "chats_insert_own" ON chats
+  FOR INSERT WITH CHECK (auth.uid() = usuario1_id OR auth.uid() = usuario2_id);
+
+CREATE POLICY "chats_update_own" ON chats
+  FOR UPDATE USING (auth.uid() = usuario1_id OR auth.uid() = usuario2_id);
+
+CREATE TABLE IF NOT EXISTS mensajes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+  emisor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  contenido TEXT NOT NULL,
+  leido BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE mensajes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "mensajes_select_own" ON mensajes
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM chats
+      WHERE chats.id = mensajes.chat_id
+      AND (chats.usuario1_id = auth.uid() OR chats.usuario2_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "mensajes_insert_own" ON mensajes
+  FOR INSERT WITH CHECK (auth.uid() = emisor_id);
+
+CREATE POLICY "mensajes_update_own" ON mensajes
+  FOR UPDATE USING (auth.uid() = emisor_id);
+
+CREATE INDEX idx_chats_usuario1 ON chats(usuario1_id);
+CREATE INDEX idx_chats_usuario2 ON chats(usuario2_id);
+CREATE INDEX idx_mensajes_chat ON mensajes(chat_id);
+CREATE INDEX idx_mensajes_created ON mensajes(created_at DESC);
+
 -- ============================================================
 -- 5. INDICES PARA RENDIMIENTO
 -- ============================================================
