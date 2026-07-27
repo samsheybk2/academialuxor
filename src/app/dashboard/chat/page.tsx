@@ -9,11 +9,6 @@ import {
   Send,
   Check,
   CheckCheck,
-  MoreVertical,
-  Smile,
-  Paperclip,
-  Phone,
-  Video,
   ArrowLeft,
   Loader2,
   MessageCircle,
@@ -61,10 +56,9 @@ function ChatContent() {
 
   const [chats, setChats] = useState<Chat[]>([])
   const [chatActivo, setChatActivo] = useState<Chat | null>(null)
-  const [mensajes, setMensajes] = useState<Mensaje[]>([])
+  const [mensajesCache, setMensajesCache] = useState<Record<string, Mensaje[]>>({})
   const [nuevoMensaje, setNuevoMensaje] = useState("")
   const [loading, setLoading] = useState(true)
-  const [loadingMensajes, setLoadingMensajes] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [busqueda, setBusqueda] = useState("")
   const [mostrarBusqueda, setShowBusqueda] = useState(false)
@@ -73,6 +67,7 @@ function ChatContent() {
 
   const mensajesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const mensajesContainerRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = useCallback(() => {
     mensajesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -80,7 +75,7 @@ function ChatContent() {
 
   useEffect(() => {
     scrollToBottom()
-  }, [mensajes, scrollToBottom])
+  }, [mensajesCache[chatActivo?.id || ""], scrollToBottom])
 
   useEffect(() => {
     if (chatActivo) {
@@ -132,7 +127,6 @@ function ChatContent() {
   }, [fetchChats])
 
   const fetchMensajes = useCallback(async (chatId: string) => {
-    setLoadingMensajes(true)
     const { data } = await supabase
       .from("mensajes")
       .select("*")
@@ -140,7 +134,7 @@ function ChatContent() {
       .order("created_at", { ascending: true })
 
     if (data) {
-      setMensajes(data)
+      setMensajesCache((prev) => ({ ...prev, [chatId]: data }))
       // Marcar como leídos
       const noLeidos = data.filter((m: any) => !m.leido && m.emisor_id !== user?.id)
       if (noLeidos.length > 0) {
@@ -151,7 +145,6 @@ function ChatContent() {
         fetchChats()
       }
     }
-    setLoadingMensajes(false)
   }, [user, supabase, fetchChats])
 
   useEffect(() => {
@@ -159,6 +152,85 @@ function ChatContent() {
       fetchMensajes(chatActivo.id)
     }
   }, [chatActivo, fetchMensajes])
+
+  // Realtime subscription for messages
+  useEffect(() => {
+    if (!chatActivo) return
+
+    const channel = supabase
+      .channel(`chat-${chatActivo.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "mensajes",
+          filter: `chat_id=eq.${chatActivo.id}`,
+        },
+        (payload: any) => {
+          const nuevoMsg = payload.new as Mensaje
+          setMensajesCache((prev) => {
+            const current = prev[chatActivo.id] || []
+            const exists = current.some((m) => m.id === nuevoMsg.id)
+            if (exists) return prev
+            return { ...prev, [chatActivo.id]: [...current, nuevoMsg] }
+          })
+          // Marcar como leídos los mensajes del otro usuario
+          if (nuevoMsg.emisor_id !== user?.id && !nuevoMsg.leido) {
+            supabase
+              .from("mensajes")
+              .update({ leido: true })
+              .eq("id", nuevoMsg.id)
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "mensajes",
+          filter: `chat_id=eq.${chatActivo.id}`,
+        },
+        (payload: any) => {
+          const updatedMsg = payload.new as Mensaje
+          setMensajesCache((prev) => {
+            const current = prev[chatActivo.id] || []
+            return {
+              ...prev,
+              [chatActivo.id]: current.map((m) => (m.id === updatedMsg.id ? updatedMsg : m)),
+            }
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [chatActivo, user, supabase])
+
+  // Realtime subscription for chats list
+  useEffect(() => {
+    const channel = supabase
+      .channel("chats-list")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chats",
+        },
+        (payload: any) => {
+          fetchChats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [supabase, fetchChats])
 
   const fetchUsuarios = useCallback(async () => {
     if (!user) return
@@ -179,7 +251,6 @@ function ChatContent() {
   async function iniciarChat(otroUsuario: Usuario) {
     if (!user) return
 
-    // Verificar si ya existe un chat
     const { data: chatExistente } = await supabase
       .from("chats")
       .select("*")
@@ -198,7 +269,6 @@ function ChatContent() {
       return
     }
 
-    // Crear nuevo chat
     const { data: nuevoChat } = await supabase
       .from("chats")
       .insert({
@@ -228,27 +298,22 @@ function ChatContent() {
     const contenido = nuevoMensaje.trim()
     setNuevoMensaje("")
 
-    const { data: mensaje } = await supabase
+    await supabase
       .from("mensajes")
       .insert({
         chat_id: chatActivo.id,
         emisor_id: user.id,
         contenido,
       })
-      .select("*")
-      .single()
 
-    if (mensaje) {
-      setMensajes((prev) => [...prev, mensaje])
-      await supabase
-        .from("chats")
-        .update({
-          ultimo_mensaje: contenido,
-          ultimo_mensaje_at: new Date().toISOString(),
-        })
-        .eq("id", chatActivo.id)
-      fetchChats()
-    }
+    await supabase
+      .from("chats")
+      .update({
+        ultimo_mensaje: contenido,
+        ultimo_mensaje_at: new Date().toISOString(),
+      })
+      .eq("id", chatActivo.id)
+
     setEnviando(false)
   }
 
@@ -277,6 +342,8 @@ function ChatContent() {
   const chatsFiltrados = chats.filter((c) =>
     c.otro_usuario.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
+
+  const mensajes = chatActivo ? mensajesCache[chatActivo.id] || [] : []
 
   return (
     <div className="h-dvh flex bg-white overflow-hidden">
@@ -393,26 +460,11 @@ function ChatContent() {
               <h3 className="font-semibold text-gray-900 truncate">{chatActivo.otro_usuario.nombre}</h3>
               <p className="text-xs text-gray-500 capitalize">{chatActivo.otro_usuario.rol}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-                <Phone className="w-5 h-5" />
-              </button>
-              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-                <Video className="w-5 h-5" />
-              </button>
-              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-                <MoreVertical className="w-5 h-5" />
-              </button>
-            </div>
           </div>
 
           {/* Mensajes */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-            {loadingMensajes ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 text-luxor-primary animate-spin" />
-              </div>
-            ) : mensajes.length === 0 ? (
+          <div ref={mensajesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            {mensajes.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
                 <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-40" />
                 <p className="text-sm">Inicia la conversación</p>
@@ -454,12 +506,6 @@ function ChatContent() {
           {/* Input de mensaje */}
           <div className="p-4 border-t border-gray-200 bg-white shrink-0">
             <div className="flex items-center gap-2">
-              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-                <Smile className="w-5 h-5" />
-              </button>
-              <button className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
-                <Paperclip className="w-5 h-5" />
-              </button>
               <input
                 ref={inputRef}
                 type="text"
