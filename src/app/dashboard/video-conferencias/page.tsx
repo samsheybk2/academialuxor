@@ -457,6 +457,24 @@ function VideoConferenciasContent() {
                     )}
                   </div>
                   <span className="text-xs text-gray-600">{vc.facilitador_nombre}</span>
+                  {puedeCrear && (isDecano || vc.facilitador_id === user?.id) && (
+                    <div className="ml-auto flex gap-1">
+                      <button
+                        onClick={() => openEdit(vc)}
+                        className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                        title="Editar"
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(vc.id)}
+                        className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -500,17 +518,19 @@ function VideoConferenciasContent() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-semibold text-gray-900">{vc.titulo}</h3>
-                  {puedeCrear && vc.facilitador_id === user?.id && (
+                  {puedeCrear && (isDecano || vc.facilitador_id === user?.id) && (
                     <div className="flex gap-1">
                       <button
                         onClick={() => openEdit(vc)}
                         className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                        title="Editar"
                       >
                         <Monitor className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(vc.id)}
                         className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+                        title="Eliminar"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -559,7 +579,7 @@ function VideoConferenciasContent() {
                     </div>
                     <span className="text-xs text-gray-600">{vc.facilitador_nombre}</span>
                   </div>
-                  {puedeCrear && vc.facilitador_id === user?.id && (
+                  {puedeCrear && (isDecano || vc.facilitador_id === user?.id) && (
                     <button
                       onClick={() => openAsistencia(vc)}
                       className="text-xs text-purple-600 hover:underline flex items-center gap-1"
@@ -585,9 +605,20 @@ function VideoConferenciasContent() {
             {conferenciasPasadas.slice(0, 6).map((vc) => (
               <div
                 key={vc.id}
-                className="bg-gray-50 rounded-xl border border-gray-200 p-4 opacity-60"
+                className="bg-gray-50 rounded-xl border border-gray-200 p-4 opacity-60 hover:opacity-100 transition-opacity"
               >
-                <h3 className="font-semibold text-gray-700 mb-1">{vc.titulo}</h3>
+                <div className="flex items-start justify-between mb-1">
+                  <h3 className="font-semibold text-gray-700">{vc.titulo}</h3>
+                  {puedeCrear && (isDecano || vc.facilitador_id === user?.id) && (
+                    <button
+                      onClick={() => handleDelete(vc.id)}
+                      className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
                 {vc.curso_titulo && (
                   <p className="text-xs text-gray-500 mb-1">{vc.curso_titulo}</p>
                 )}
