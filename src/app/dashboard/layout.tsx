@@ -30,6 +30,12 @@ export default function DashboardLayout({
     }
   }, [user, loading, router])
 
+  useEffect(() => {
+    const handleOpenSidebar = () => setSidebarOpen(true)
+    window.addEventListener("open-sidebar", handleOpenSidebar)
+    return () => window.removeEventListener("open-sidebar", handleOpenSidebar)
+  }, [])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
