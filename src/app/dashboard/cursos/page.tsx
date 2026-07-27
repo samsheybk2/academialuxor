@@ -20,7 +20,6 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Send,
   Loader2,
 } from "lucide-react"
 import Link from "next/link"
@@ -115,11 +114,6 @@ function CursosContent() {
     const matchEstado = filterEstado === "todos" || c.estado === filterEstado
     return matchSearch && matchNivel && matchEstado
   })
-
-  async function handleEnviarRevision(id: string) {
-    await supabase.from("cursos").update({ estado: "pendiente" }).eq("id", id)
-    fetchCursos()
-  }
 
   async function handleAprobar() {
     if (!cursoToAprobar) return
@@ -328,51 +322,6 @@ function CursosContent() {
                     </CardContent>
                   </Card>
                 </Link>
-                {(isDecano || isFacilitador) && (
-                  <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg p-1 shadow-sm">
-                    {isDecano && curso.estado === "pendiente" && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setCursoToAprobar(curso)
-                            setShowAprobarModal(true)
-                          }}
-                          className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="Aprobar"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setCursoToAprobar(curso)
-                            setShowAprobarModal(true)
-                          }}
-                          className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Rechazar"
-                        >
-                          <XCircle className="w-3.5 h-3.5" />
-                        </button>
-                      </>
-                    )}
-                    {(isFacilitador || user?.rol === "developer") && curso.estado === "borrador" && (
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          handleEnviarRevision(curso.id)
-                        }}
-                        className="p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="Enviar a revisión"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
             )
           })}

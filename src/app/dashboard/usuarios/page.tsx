@@ -445,7 +445,7 @@ function UsuariosContent() {
                       <option value="todos">Todos los roles</option>
                       <option value="facilitador">Facilitadores</option>
                       <option value="estudiante">Estudiantes</option>
-                      <option value="developer">Developer</option>
+                      <option value="decano">Decano</option>
                     </select>
                   </div>
                   {filterRol !== "todos" && (

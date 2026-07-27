@@ -75,7 +75,7 @@ interface CursoData {
   max_intentos?: number
 }
 
-type Pestaña = "informacion" | "contenido" | "opiniones"
+type Pestaña = "informacion" | "contenido" | "masterclass" | "opiniones"
 
 declare global {
   interface Window {
@@ -236,16 +236,24 @@ function Pestañas({
   activa,
   onChange,
   children,
+  isEstudiante,
 }: {
   activa: Pestaña
   onChange: (p: Pestaña) => void
   children?: React.ReactNode
+  isEstudiante?: boolean
 }) {
-  const tabs: { id: Pestaña; label: string; icon: React.ElementType }[] = [
+  const allTabs: { id: Pestaña; label: string; icon: React.ElementType }[] = [
     { id: "informacion", label: "Informacion", icon: Info },
     { id: "contenido", label: "Contenido", icon: ListChecks },
+    { id: "masterclass", label: "Master Class", icon: Play },
     { id: "opiniones", label: "Opiniones", icon: MessageSquare },
   ]
+
+  const tabs = allTabs.filter((tab) => {
+    if (tab.id === "masterclass") return isEstudiante
+    return true
+  })
 
   return (
     <div className="border-b border-gray-200">
@@ -439,6 +447,7 @@ function TabContenido({
   moduloActual,
   moduloCompletados,
   isDecano,
+  isEstudiante,
   inscrito,
   materialPdf,
   curso,
@@ -455,6 +464,7 @@ function TabContenido({
   moduloActual: number
   moduloCompletados: string[]
   isDecano: boolean
+  isEstudiante: boolean
   inscrito: boolean
   materialPdf: MaterialPDF[]
   curso: CursoData
@@ -510,6 +520,7 @@ function TabContenido({
               onCompletar={onModuloCompletado}
               intentosUsados={intentosByModulo[modulo.id] || 0}
               maxIntentos={modulo.max_intentos || curso?.max_intentos || 3}
+              isEstudiante={isEstudiante}
             />
           </div>
         ) : (
@@ -771,6 +782,69 @@ function TabContenido({
           })}
         </div>
       </div>
+    </div>
+  )
+}
+
+function TabMasterClass({ curso }: { curso: CursoData }) {
+  const [showVideo, setShowVideo] = useState(false)
+  const embedUrl = curso.video_bienvenida ? getYouTubeEmbedUrl(curso.video_bienvenida) : null
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+            <Play className="w-6 h-6 text-purple-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Master Class</h3>
+            <p className="text-sm text-gray-500">Bienvenida al curso</p>
+          </div>
+        </div>
+        {curso.introduccion && (
+          <p className="text-sm text-gray-700 leading-relaxed">{curso.introduccion}</p>
+        )}
+      </div>
+
+      {curso.video_bienvenida ? (
+        <div className="bg-black rounded-xl overflow-hidden w-full aspect-video relative">
+          {!showVideo ? (
+            <div className="relative w-full h-full">
+              {curso.imagen_portada && (
+                <img
+                  src={curso.imagen_portada}
+                  alt={`Portada de ${curso.titulo}`}
+                  className="w-full h-full object-cover opacity-60"
+                />
+              )}
+              {embedUrl && (
+                <button
+                  onClick={() => setShowVideo(true)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 transition-colors"
+                >
+                  <div className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                    <Play className="w-9 h-9 text-purple-600 ml-1" />
+                  </div>
+                </button>
+              )}
+            </div>
+          ) : embedUrl ? (
+            <iframe
+              src={embedUrl}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : null}
+        </div>
+      ) : (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
+          <Play className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">No hay video de bienvenida disponible</p>
+          <p className="text-gray-400 text-sm mt-1">El facilitador no ha agregado una Master Class para este curso</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -1330,7 +1404,7 @@ function CursoContent({ id }: { id: string }) {
           </div>
 
           {(isDecanoEff || inscritoEff) && (
-            <Pestañas activa={pestaña} onChange={setPestaña} />
+            <Pestañas activa={pestaña} onChange={setPestaña} isEstudiante={isEstudianteEff} />
           )}
         </div>
 
@@ -1359,6 +1433,7 @@ function CursoContent({ id }: { id: string }) {
                 moduloActual={moduloActual}
                 moduloCompletados={moduloCompletados}
                 isDecano={isDecanoEff}
+                isEstudiante={isEstudianteEff}
                 inscrito={inscritoEff}
                 materialPdf={materialPdf}
                 curso={curso!}
@@ -1371,6 +1446,10 @@ function CursoContent({ id }: { id: string }) {
                 intentosByModulo={intentosByModulo}
                 onModuloCompletado={handleModuloCompletado}
               />
+            )}
+
+            {pestaña === "masterclass" && isEstudianteEff && (
+              <TabMasterClass curso={curso!} />
             )}
 
             {pestaña === "opiniones" && (

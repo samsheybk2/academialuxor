@@ -10,9 +10,10 @@ interface QuizProps {
   onCompletar: (aprobado: boolean, respuestas: { pregunta_id: string; seleccionada: number | null; libre: string | null }[]) => void
   intentosUsados?: number
   maxIntentos?: number
+  isEstudiante?: boolean
 }
 
-export function Quiz({ preguntas, onCompletar, intentosUsados = 0, maxIntentos = 3 }: QuizProps) {
+export function Quiz({ preguntas, onCompletar, intentosUsados = 0, maxIntentos = 3, isEstudiante = false }: QuizProps) {
   const [current, setCurrent] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [libre, setLibre] = useState("")
@@ -146,7 +147,7 @@ export function Quiz({ preguntas, onCompletar, intentosUsados = 0, maxIntentos =
         </span>
         <div className="flex gap-1.5">
           {preguntas.map((p, i) => {
-            const isCorrect = p.tipo !== "libre" && respuestas[i] === p.respuestaCorrecta
+            const isCorrect = !isEstudiante && p.tipo !== "libre" && respuestas[i] === p.respuestaCorrecta
             const isAnswered = p.tipo === "libre" ? respuestasLibres[i] !== undefined : respuestas[i] !== undefined
             return (
               <div
@@ -192,7 +193,7 @@ export function Quiz({ preguntas, onCompletar, intentosUsados = 0, maxIntentos =
         ) : (
           <div className="space-y-2">
             {pregunta.opciones.map((opcion, i) => {
-              const isCorrect = i === pregunta.respuestaCorrecta
+              const isCorrect = !isEstudiante && i === pregunta.respuestaCorrecta
               const isSelected = selected === i
 
               let style = "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
