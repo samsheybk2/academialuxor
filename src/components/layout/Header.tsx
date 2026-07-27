@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
-import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Star, LayoutGrid, ArrowUpRight, X } from "lucide-react"
+import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Star, LayoutGrid, ArrowUpRight, X, Video } from "lucide-react"
 import Link from "next/link"
 import { CourseTimer } from "./CourseTimer"
 
@@ -14,6 +14,7 @@ const navByRole = {
     { href: "/dashboard/cursos", label: "Gestionar Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
+    { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   developer: [
@@ -23,6 +24,7 @@ const navByRole = {
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/insignias", label: "Experiencia", icon: Star },
+    { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   facilitador: [
@@ -31,11 +33,13 @@ const navByRole = {
     { href: "/dashboard/cursos", label: "Mis Cursos", icon: BookOpen },
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
+    { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
   estudiante: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
     { href: "/dashboard/rutas-aprendizaje", label: "Mi Ruta", icon: Route },
+    { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
   ],
 }

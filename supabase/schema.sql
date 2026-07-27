@@ -1371,6 +1371,47 @@ ALTER TABLE publicaciones ADD COLUMN IF NOT EXISTS anclado_hasta TIMESTAMPTZ;
 ALTER TABLE publicaciones ADD COLUMN IF NOT EXISTS sucursales_destino TEXT[] DEFAULT '{}';
 
 -- ============================================================
+-- 1.23 VIDEO CONFERENCIAS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS video_conferencias (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  titulo TEXT NOT NULL,
+  descripcion TEXT,
+  facilitador_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  curso_id UUID REFERENCES cursos(id) ON DELETE SET NULL,
+  fecha DATE NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  sala_jitsi TEXT NOT NULL,
+  activa BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE video_conferencias ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "video_conferencias_select_auth" ON video_conferencias
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "video_conferencias_insert_facilitador" ON video_conferencias
+  FOR INSERT WITH CHECK (
+    public.get_my_role() IN ('decano', 'facilitador', 'developer')
+    AND facilitador_id = auth.uid()
+  );
+
+CREATE POLICY "video_conferencias_update_facilitador" ON video_conferencias
+  FOR UPDATE USING (
+    public.get_my_role() IN ('decano', 'facilitador', 'developer')
+    AND facilitador_id = auth.uid()
+  );
+
+CREATE POLICY "video_conferencias_delete_facilitador" ON video_conferencias
+  FOR DELETE USING (
+    public.get_my_role() IN ('decano', 'facilitador', 'developer')
+    AND facilitador_id = auth.uid()
+  );
+
+-- ============================================================
 -- 5. INDICES PARA RENDIMIENTO
 -- ============================================================
 CREATE INDEX idx_cursos_facilitador ON cursos(facilitador_id);
