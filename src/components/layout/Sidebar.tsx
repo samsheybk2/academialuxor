@@ -78,7 +78,7 @@ export function Sidebar({
     <>
       {open && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40"
           onClick={onClose}
         />
       )}
@@ -86,7 +86,7 @@ export function Sidebar({
       <aside
         className={`fixed top-0 left-0 z-50 h-full bg-white border-r border-gray-200 transition-all duration-300 flex flex-col ${
           collapsed ? "w-[68px]" : "w-64"
-        } ${open ? "translate-x-0" : "-translate-x-full"} lg:hidden`}
+        } ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
           {!collapsed && (

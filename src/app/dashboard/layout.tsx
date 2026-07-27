@@ -7,7 +7,6 @@ import { Sidebar } from "@/components/layout/Sidebar"
 import { Header } from "@/components/layout/Header"
 import { MobileNav } from "@/components/layout/MobileNav"
 import { LoadingBar } from "@/components/ui/LoadingBar"
-import { setSidebarOpenCallback } from "@/lib/chatEvents"
 
 export default function DashboardLayout({
   children,
