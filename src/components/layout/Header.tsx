@@ -103,7 +103,6 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [showNotif, setShowNotif] = useState(false)
   const [showBirthdayModal, setShowBirthdayModal] = useState(false)
   const [showAppSwitcher, setShowAppSwitcher] = useState(false)
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [notificaciones, setNotificaciones] = useState<Array<{
     id: string; titulo: string; mensaje: string; fecha: string; leido: boolean; tipo: string
   }>>([])
@@ -150,17 +149,6 @@ export function Header({ onMenuClick }: HeaderProps) {
     document.addEventListener("mousedown", handleClick)
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
-
-  useEffect(() => {
-    if (showMobileMenu) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = ""
-    }
-    return () => {
-      document.body.style.overflow = ""
-    }
-  }, [showMobileMenu])
 
   const isBirthday = (() => {
     if (!user?.fecha_nacimiento) return false
@@ -332,47 +320,6 @@ export function Header({ onMenuClick }: HeaderProps) {
           />
         ))}
       </nav>
-
-      {/* Botón menú móvil */}
-      <button
-        onClick={() => setShowMobileMenu(!showMobileMenu)}
-        className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-      >
-        <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          {showMobileMenu ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
-
-      {/* Menú móvil desplegable */}
-      {showMobileMenu && (
-        <div className="lg:hidden fixed inset-0 top-14 z-40 bg-white border-t border-gray-200 shadow-lg">
-          <div className="grid grid-cols-4 gap-2 p-4">
-            {nav.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setShowMobileMenu(false)}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all ${
-                    isActive
-                      ? "bg-luxor-primary text-white shadow-md"
-                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <Icon className="w-6 h-6" />
-                  <span className="text-xs font-medium text-center leading-tight">{item.label}</span>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       <div className="flex items-center gap-3 ml-auto shrink-0">
         <CourseTimer />

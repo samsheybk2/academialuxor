@@ -4,38 +4,46 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
-import { GraduationCap, BookOpen, Users, Route, Calendar, Newspaper, MoreVertical, X, Network, Star } from "lucide-react"
+import { GraduationCap, BookOpen, Users, Route, Calendar, Newspaper, MoreVertical, X, Network, Star, Video, MessageCircle } from "lucide-react"
 
 const navByRole = {
   decano: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
+    { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
+    { href: "/dashboard/rutas-aprendizaje", label: "Rutas", icon: Route },
+    { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Cursos", icon: BookOpen },
-    { href: "/dashboard/rutas-aprendizaje", label: "Rutas", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
-    { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/dashboard/video-conferencias", label: "Video", icon: Video },
   ],
   developer: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
+    { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
+    { href: "/dashboard/rutas-aprendizaje", label: "Rutas", icon: Route },
+    { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Cursos", icon: BookOpen },
-    { href: "/dashboard/rutas-aprendizaje", label: "Rutas", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/insignias", label: "Experiencia", icon: Star },
-    { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/dashboard/video-conferencias", label: "Video", icon: Video },
   ],
   facilitador: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
+    { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
+    { href: "/dashboard/rutas-aprendizaje", label: "Rutas", icon: Route },
+    { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Cursos", icon: BookOpen },
-    { href: "/dashboard/rutas-aprendizaje", label: "Rutas", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
-    { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/dashboard/video-conferencias", label: "Video", icon: Video },
   ],
   estudiante: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
+    { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/rutas-aprendizaje", label: "Mi Ruta", icon: Route },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/dashboard/video-conferencias", label: "Video", icon: Video },
   ],
 }
 
