@@ -23,12 +23,6 @@ import {
   Plus,
   Trash2,
   Check,
-  ThumbsUp,
-  Heart,
-  Flame,
-  Frown,
-  Smile,
-  CircleHelp,
   Pencil,
   MapPin,
 } from "lucide-react"
@@ -54,13 +48,13 @@ const SUCURSALES = [
   "El Castaño",
 ]
 
-const REACCIONES_CONFIG: Record<TipoReaccion, { icon: typeof ThumbsUp; color: string; bg: string; hoverBg: string; label: string }> = {
-  me_gusta: { icon: ThumbsUp, color: "text-blue-600", bg: "bg-blue-50 border-blue-200", hoverBg: "hover:bg-blue-50", label: "Me gusta" },
-  me_encanta: { icon: Heart, color: "text-rose-500", bg: "bg-rose-50 border-rose-200", hoverBg: "hover:bg-rose-50", label: "Me encanta" },
-  me_enoja: { icon: Flame, color: "text-orange-500", bg: "bg-orange-50 border-orange-200", hoverBg: "hover:bg-orange-50", label: "Me enoja" },
-  me_entristece: { icon: Frown, color: "text-sky-500", bg: "bg-sky-50 border-sky-200", hoverBg: "hover:bg-sky-50", label: "Me entristece" },
-  me_divierte: { icon: Smile, color: "text-amber-500", bg: "bg-amber-50 border-amber-200", hoverBg: "hover:bg-amber-50", label: "Me divierte" },
-  estoy_confundido: { icon: CircleHelp, color: "text-purple-500", bg: "bg-purple-50 border-purple-200", hoverBg: "hover:bg-purple-50", label: "Estoy confundido" },
+const REACCIONES_CONFIG: Record<TipoReaccion, { emoji: string; color: string; bg: string; hoverBg: string; label: string }> = {
+  me_gusta: { emoji: "👍", color: "text-blue-600", bg: "bg-blue-50 border-blue-200", hoverBg: "hover:bg-blue-50", label: "Me gusta" },
+  me_encanta: { emoji: "❤️", color: "text-rose-500", bg: "bg-rose-50 border-rose-200", hoverBg: "hover:bg-rose-50", label: "Me encanta" },
+  me_enoja: { emoji: "😠", color: "text-orange-500", bg: "bg-orange-50 border-orange-200", hoverBg: "hover:bg-orange-50", label: "Me enoja" },
+  me_entristece: { emoji: "😢", color: "text-sky-500", bg: "bg-sky-50 border-sky-200", hoverBg: "hover:bg-sky-50", label: "Me entristece" },
+  me_divierte: { emoji: "😂", color: "text-amber-500", bg: "bg-amber-50 border-amber-200", hoverBg: "hover:bg-amber-50", label: "Me divierte" },
+  estoy_confundido: { emoji: "😕", color: "text-purple-500", bg: "bg-purple-50 border-purple-200", hoverBg: "hover:bg-purple-50", label: "Estoy confundido" },
 }
 
 const REACCION_KEYS = Object.keys(REACCIONES_CONFIG) as TipoReaccion[]
@@ -1098,7 +1092,6 @@ async function handleEliminar(pubId: string) {
               <div className="px-5 pb-3 pt-2 flex items-center gap-1.5 border-t border-white/30 mt-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {REACCION_KEYS.map((tipo) => {
                   const config = REACCIONES_CONFIG[tipo]
-                  const Icon = config.icon
                   const count = pub.total_reacciones?.[tipo] || 0
                   const isActive = pub.mis_reacciones === tipo
                   return (
@@ -1112,7 +1105,7 @@ async function handleEliminar(pubId: string) {
                       }`}
                       title={config.label}
                     >
-                      <Icon className={`w-5 h-5`} fill={isActive ? "currentColor" : "none"} strokeWidth={isActive ? 2.5 : 2} />
+                      <span className="text-lg leading-none">{config.emoji}</span>
                       {count > 0 && <span>{count}</span>}
                     </button>
                   )
