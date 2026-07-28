@@ -107,7 +107,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
         setForm({
           titulo: curso.titulo || "",
           niveles: Array.isArray(curso.nivel) ? curso.nivel : curso.nivel ? [curso.nivel] : [],
-          tipo: curso.tipo || "obligatorio",
+          tipo: curso.obligatorio !== false ? "obligatorio" : "electivo",
           facilitador_id: curso.facilitador_id || "",
           introduccion: curso.introduccion || "",
           video_bienvenida: curso.video_bienvenida || "",
@@ -423,7 +423,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
         .update({
           titulo: form.titulo,
           nivel: form.niveles,
-          tipo: form.tipo,
+          obligatorio: form.tipo === "obligatorio",
           facilitador_id: form.facilitador_id,
           facilitador_nombre: facilitador?.nombre || "",
           introduccion: form.introduccion,

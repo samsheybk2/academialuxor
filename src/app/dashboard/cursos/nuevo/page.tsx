@@ -330,7 +330,6 @@ function NuevoCursoContent() {
         .insert({
           titulo: form.titulo,
           nivel: form.niveles,
-          tipo: form.tipo,
           facilitador_id: form.facilitador_id,
           facilitador_nombre: facilitador?.nombre || "",
           introduccion: form.introduccion,
@@ -340,6 +339,7 @@ function NuevoCursoContent() {
           max_intentos: form.max_intentos ? parseInt(form.max_intentos) : 3,
           estado: "borrador",
           activo: false,
+          obligatorio: form.tipo === "obligatorio",
           modulos_count: modulos.length,
         })
         .select()

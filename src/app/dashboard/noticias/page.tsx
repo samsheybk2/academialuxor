@@ -497,6 +497,7 @@ export default function NoticiasPage() {
         .select("id, titulo, nivel, duracion, imagen_portada")
         .eq("estado", "aprobado")
         .eq("activo", true)
+        .eq("obligatorio", false)
         .order("created_at", { ascending: false })
         .limit(10)
       if (data) setCursosAprobados(data)

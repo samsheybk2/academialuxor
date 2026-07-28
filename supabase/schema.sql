@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS cursos (
   modulos_count INTEGER DEFAULT 0,
   estudiantes_count INTEGER DEFAULT 0,
   activo BOOLEAN DEFAULT false,
+  obligatorio BOOLEAN DEFAULT true,
   observaciones TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
