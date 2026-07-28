@@ -21,9 +21,11 @@ export default function RecuperarContrasenaPage() {
       let email = identifier
       if (!identifier.includes("@")) {
         const supabase = createSupabaseClient()
-        const { data } = await supabase.from("profiles").select("email").eq("username", identifier).single()
-        if (data?.email) {
-          email = data.email
+        const { data, error: rpcError } = await supabase.rpc("get_email_by_username", {
+          p_username: identifier,
+        })
+        if (data) {
+          email = data as string
         } else {
           throw new Error("Usuario no encontrado")
         }

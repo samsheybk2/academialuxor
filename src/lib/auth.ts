@@ -11,13 +11,11 @@ export async function signIn(identifier: string, password: string) {
   const supabase = getClient()
   let email = identifier
   if (!identifier.includes("@")) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("username", identifier)
-      .single()
-    if (data?.email) {
-      email = data.email
+    const { data, error } = await supabase.rpc("get_email_by_username", {
+      p_username: identifier,
+    })
+    if (data) {
+      email = data as string
     } else {
       throw new Error("Usuario no encontrado")
     }

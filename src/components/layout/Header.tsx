@@ -414,6 +414,7 @@ export function Header({ onMenuClick }: HeaderProps) {
               { name: "RRLL", desc: "Relaciones Laborales", href: "/rrll", color: "from-orange-500 to-amber-600", active: false },
               { name: "SSSL", desc: "Seguridad y Salud en el Trabajo", href: "/sssl", color: "from-red-500 to-rose-600", active: false },
               { name: "BTH", desc: "Bienestar y Talento Humano", href: "/bth", color: "from-purple-500 to-violet-600", active: false },
+              { name: "NOM", desc: "Nómina y Organización de Meta", href: "/nom", color: "from-slate-600 to-gray-800", active: true },
             ].map((app) => (
               <Link
                 key={app.name}

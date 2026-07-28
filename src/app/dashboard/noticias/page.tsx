@@ -404,6 +404,7 @@ export default function NoticiasPage() {
 
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [cursosAprobados, setCursosAprobados] = useState<Array<{ id: string; titulo: string; nivel: any; duracion: string | null; imagen_portada: string | null }>>([])
+  const [editorContent, setEditorContent] = useState("")
 
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -415,6 +416,9 @@ export default function NoticiasPage() {
       TiptapLink.configure({ openOnClick: false }),
     ],
     content: "",
+    onUpdate: ({ editor: e }) => {
+      setEditorContent(e.getText().trim())
+    },
   })
 
   const fetchPublicaciones = useCallback(async () => {
@@ -596,6 +600,7 @@ export default function NoticiasPage() {
 
     if (!pubError) {
       editor?.commands.setContent("")
+      setEditorContent("")
       removeImagen()
       setEnlaceUrl("")
       setEnlaceTitulo("")
@@ -901,7 +906,7 @@ async function handleEliminar(pubId: string) {
                     {/* Botón Publicar */}
                     <button
                       onClick={handlePublicar}
-                      disabled={submitting || uploading || !(editor?.getText().trim())}
+                      disabled={submitting || uploading || !editorContent}
                       className="w-full py-2.5 bg-luxor-primary text-white text-sm font-semibold rounded-lg hover:bg-luxor-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                       {submitting || uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Publicar"}
