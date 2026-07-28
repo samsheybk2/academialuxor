@@ -111,6 +111,10 @@ useEffect(() => {
 - ✅ Checkbox de términos y condiciones removido del formulario de registro
 - ✅ Botón de CYD eliminado de CstHeader y NomHeader
 - ✅ Página de postulación con fondo emerald-600 y textos blancos
+- ✅ Página de postulación: campos blancos sin bordes con esquinas cuadradas
+- ✅ Página de postulación: fondo cubre toda la pantalla en móvil (w-full)
+- ✅ Página de postulación: botón fijo en la parte inferior, solo visible al completar 100%
+- ✅ Página de postulación: barra de progreso fija en la parte superior
 - ✅ Build exitoso sin errores
 
 ### Pendiente
