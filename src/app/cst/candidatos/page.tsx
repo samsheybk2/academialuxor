@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import {
-  Search, Plus, Filter, MoreHorizontal, Mail, Phone, MapPin, Calendar,
+  Search, Plus, MoreHorizontal, Mail, Phone, MapPin, Calendar,
   ChevronDown, Eye, Trash2, ArrowRight, Users, TrendingUp, Clock, CheckCircle2,
   XCircle, Star, GripVertical, X, FileText, Building2, DollarSign, Send, Download,
   SlidersHorizontal
@@ -60,6 +60,7 @@ export default function CandidatosPage() {
   const [vista, setVista] = useState<"kanban" | "lista">("kanban")
   const [candidatoSeleccionado, setCandidatoSeleccionado] = useState<Candidato | null>(null)
   const [showNuevo, setShowNuevo] = useState(false)
+  const [showFiltros, setShowFiltros] = useState(false)
 
   const candidatosFiltrados = candidatos.filter((c) => {
     const matchBusqueda = c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -133,36 +134,56 @@ export default function CandidatosPage() {
         </span>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+        <div className="relative w-full max-w-lg">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Buscar por nombre, email o puesto..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
           />
+          <button
+            onClick={() => setShowFiltros(!showFiltros)}
+            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${
+              showFiltros || filtroFuente !== "Todas" || filtroPuesto !== "Todos"
+                ? "bg-emerald-100 text-emerald-600"
+                : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+          </button>
+          {showFiltros && (
+            <div className="absolute top-full mt-2 right-0 z-20 bg-white rounded-xl shadow-2xl border border-gray-200 p-3 min-w-[200px] space-y-2">
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">Fuente</label>
+                <select
+                  value={filtroFuente}
+                  onChange={(e) => setFiltroFuente(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                >
+                  {fuentes.map((f) => (
+                    <option key={f} value={f}>{f === "Todas" ? "Todas" : f}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">Puesto</label>
+                <select
+                  value={filtroPuesto}
+                  onChange={(e) => setFiltroPuesto(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                >
+                  <option value="Todos">Todos</option>
+                  {cargosOptions.map((c) => (
+                    <option key={c.value} value={c.label}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
-        <select
-          value={filtroFuente}
-          onChange={(e) => setFiltroFuente(e.target.value)}
-          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-        >
-          {fuentes.map((f) => (
-            <option key={f} value={f}>{f === "Todas" ? "Todas las fuentes" : f}</option>
-          ))}
-        </select>
-        <select
-          value={filtroPuesto}
-          onChange={(e) => setFiltroPuesto(e.target.value)}
-          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-        >
-          <option value="Todos">Todos los puestos</option>
-          {cargosOptions.map((c) => (
-            <option key={c.value} value={c.label}>{c.label}</option>
-          ))}
-        </select>
         <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
           <button
             onClick={() => setVista("kanban")}

@@ -4,7 +4,7 @@ import { useState } from "react"
 import {
   Search, Plus, ClipboardList, Clock, Users, BarChart3, Eye, Edit3, Trash2,
   CheckCircle2, XCircle, MoreHorizontal, X, Play, Pause, FileText, Target,
-  TrendingUp, Award, AlertTriangle, ChevronDown, ChevronUp, Star, Send
+  TrendingUp, Award, AlertTriangle, ChevronDown, ChevronUp, Star, Send, SlidersHorizontal
 } from "lucide-react"
 
 type TestEstado = "borrador" | "activo" | "inactivo"
@@ -68,6 +68,7 @@ export default function TestCompetenciasPage() {
   const [showPreguntas, setShowPreguntas] = useState(false)
   const [preguntas, setPreguntas] = useState<Pregunta[]>(preguntasMock)
   const [showAsignar, setShowAsignar] = useState(false)
+  const [showFiltros, setShowFiltros] = useState(false)
 
   const testsFiltrados = tests.filter((t) => {
     const matchBusqueda = t.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -123,37 +124,57 @@ export default function TestCompetenciasPage() {
         </span>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
+      <div className="flex justify-center mb-6">
+        <div className="relative w-full max-w-lg">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Buscar test por nombre o descripcion..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
           />
+          <button
+            onClick={() => setShowFiltros(!showFiltros)}
+            className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${
+              showFiltros || filtroTipo !== "todos" || filtroEstado !== "todos"
+                ? "bg-emerald-100 text-emerald-600"
+                : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+          </button>
+          {showFiltros && (
+            <div className="absolute top-full mt-2 right-0 z-20 bg-white rounded-xl shadow-2xl border border-gray-200 p-3 min-w-[200px] space-y-2">
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">Tipo</label>
+                <select
+                  value={filtroTipo}
+                  onChange={(e) => setFiltroTipo(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                >
+                  <option value="todos">Todos</option>
+                  {tiposTest.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-gray-500 mb-1">Estado</label>
+                <select
+                  value={filtroEstado}
+                  onChange={(e) => setFiltroEstado(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="activo">Activo</option>
+                  <option value="borrador">Borrador</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
-        <select
-          value={filtroTipo}
-          onChange={(e) => setFiltroTipo(e.target.value)}
-          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-        >
-          <option value="todos">Todos los tipos</option>
-          {tiposTest.map((t) => (
-            <option key={t.value} value={t.value}>{t.label}</option>
-          ))}
-        </select>
-        <select
-          value={filtroEstado}
-          onChange={(e) => setFiltroEstado(e.target.value)}
-          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-        >
-          <option value="todos">Todos los estados</option>
-          <option value="activo">Activo</option>
-          <option value="borrador">Borrador</option>
-          <option value="inactivo">Inactivo</option>
-        </select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
