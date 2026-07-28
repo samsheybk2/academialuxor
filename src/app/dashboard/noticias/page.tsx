@@ -9,7 +9,7 @@ import type { Publicacion, TipoReaccion, EncuestaOpcion } from "@/types"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Placeholder from "@tiptap/extension-placeholder"
-import Link from "@tiptap/extension-link"
+import TiptapLink from "@tiptap/extension-link"
 import {
   Loader2,
   X,
@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { CalendarioSidebar } from "@/components/ui/CalendarioSidebar"
 import { Modal } from "@/components/ui/Modal"
+import Link from "next/link"
 
 const SUCURSALES = [
   "Oficina Central",
@@ -402,6 +403,7 @@ export default function NoticiasPage() {
   const [modalView, setModalView] = useState<"main" | "sucursales">("main")
 
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [cursosAprobados, setCursosAprobados] = useState<Array<{ id: string; titulo: string; nivel: any; duracion: string | null; imagen_portada: string | null }>>([])
 
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -410,7 +412,7 @@ export default function NoticiasPage() {
     extensions: [
       StarterKit.configure({ heading: false, link: false }),
       Placeholder.configure({ placeholder: "¿Qué quieres compartir con la comunidad?" }),
-      Link.configure({ openOnClick: false }),
+      TiptapLink.configure({ openOnClick: false }),
     ],
     content: "",
   })
@@ -487,6 +489,20 @@ export default function NoticiasPage() {
   useEffect(() => {
     fetchPublicaciones()
   }, [fetchPublicaciones])
+
+  useEffect(() => {
+    async function fetchCursos() {
+      const { data } = await supabase
+        .from("cursos")
+        .select("id, titulo, nivel, duracion, imagen_portada")
+        .eq("estado", "aprobado")
+        .eq("activo", true)
+        .order("created_at", { ascending: false })
+        .limit(10)
+      if (data) setCursosAprobados(data)
+    }
+    fetchCursos()
+  }, [supabase])
 
   function handleImagenChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -1126,44 +1142,42 @@ async function handleEliminar(pubId: string) {
               <p className="text-xs text-gray-500 mt-1">Explora capacitaciones recomendadas para tu crecimiento.</p>
             </div>
 
-            {[
-              {
-                titulo: "Liderazgo y gestión de equipos",
-                categoria: "Desarrollo humano",
-                duracion: "6 semanas",
-              },
-              {
-                titulo: "Atención al cliente premium",
-                categoria: "Servicio",
-                duracion: "4 semanas",
-              },
-              {
-                titulo: "Prevención de pérdidas",
-                categoria: "Operaciones",
-                duracion: "3 semanas",
-              },
-              {
-                titulo: "Normativas y cumplimiento",
-                categoria: "Gestión",
-                duracion: "5 semanas",
-              },
-            ].map((curso, i) => (
-              <div
-                key={i}
-                className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-luxor-primary">
-                    {curso.categoria}
-                  </span>
-                  <span className="text-[10px] text-gray-400">{formatDuration(curso.duracion)}</span>
-                </div>
-                <h4 className="mt-2 text-sm font-semibold text-gray-800">{curso.titulo}</h4>
-                <button className="mt-3 w-full rounded-lg bg-luxor-primary/10 px-3 py-2 text-xs font-medium text-luxor-primary hover:bg-luxor-primary/20 transition-colors">
-                  Ver curso
-                </button>
+            {cursosAprobados.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p className="text-xs">No hay cursos disponibles</p>
               </div>
-            ))}
+            ) : (
+              cursosAprobados.map((curso) => {
+                const niveles = Array.isArray(curso.nivel) ? curso.nivel : [curso.nivel]
+                return (
+                  <div
+                    key={curso.id}
+                    className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    {curso.imagen_portada && (
+                      <div className="rounded-xl overflow-hidden mb-2">
+                        <img src={curso.imagen_portada} alt="" className="w-full h-32 object-cover" />
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-luxor-primary">
+                        {niveles[0] || "General"}
+                      </span>
+                      {curso.duracion && (
+                        <span className="text-[10px] text-gray-400">{formatDuration(curso.duracion)}</span>
+                      )}
+                    </div>
+                    <h4 className="mt-2 text-sm font-semibold text-gray-800">{curso.titulo}</h4>
+                    <Link
+                      href={`/dashboard/curso/${curso.id}`}
+                      className="mt-3 block w-full rounded-lg bg-luxor-primary/10 px-3 py-2 text-xs font-medium text-luxor-primary hover:bg-luxor-primary/20 transition-colors text-center"
+                    >
+                      Ver curso
+                    </Link>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
       </div>
