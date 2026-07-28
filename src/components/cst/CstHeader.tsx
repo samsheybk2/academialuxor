@@ -51,11 +51,7 @@ function TooltipIcon({
   )
 }
 
-interface CstHeaderProps {
-  onMenuClick: () => void
-}
-
-export function CstHeader({ onMenuClick }: CstHeaderProps) {
+export function CstHeader() {
   const { user, logout } = useAuth()
 
   return (
