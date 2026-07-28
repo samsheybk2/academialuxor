@@ -4,10 +4,11 @@ import { useState } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { LogOut, Users, ClipboardList, BarChart3, Settings, ArrowUpRight, Network } from "lucide-react"
+import { LogOut, Users, ClipboardList, BarChart3, Settings, ArrowUpRight, Network, Briefcase } from "lucide-react"
 
 const navItems = [
   { href: "/cst/candidatos", label: "Candidatos", icon: Users },
+  { href: "/cst/plantilla", label: "Plantilla", icon: Briefcase },
   { href: "/cst/test-competencias", label: "Tests", icon: ClipboardList },
   { href: "/cst/panel-control", label: "Panel", icon: BarChart3 },
   { href: "/cst/configuracion", label: "Config", icon: Settings },
