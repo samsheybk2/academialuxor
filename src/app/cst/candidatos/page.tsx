@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Search, Plus, Filter, MoreHorizontal, Mail, Phone, MapPin, Calendar,
   ChevronDown, Eye, Trash2, ArrowRight, Users, TrendingUp, Clock, CheckCircle2,
@@ -49,13 +49,14 @@ const candidatosMock: Candidato[] = [
 ]
 
 const fuentes = ["Todas", "LinkedIn", "Computrabajo", "Indeed", "Referido", "Boca a boca", "Otros"]
-const puestos = ["Todos", "Gerente de Ventas", "Analista de RRHH", "Coordinador de Logistica", "Supervisor de Almacen", "Gerente de TI", "Cajero Senior", "Asistente Administrativo", "Gerente de Marketing", "Auditora Interna"]
 
 export default function CandidatosPage() {
   const [candidatos, setCandidatos] = useState<Candidato[]>(candidatosMock)
+  const [cargos, setCargos] = useState<{ id: string; nombre: string }[]>([])
   const [busqueda, setBusqueda] = useState("")
   const [filtroFuente, setFiltroFuente] = useState("Todas")
   const [filtroPuesto, setFiltroPuesto] = useState("Todos")
+  const [puestoNuevo, setPuestoNuevo] = useState("")
   const [vista, setVista] = useState<"kanban" | "lista">("kanban")
   const [candidatoSeleccionado, setCandidatoSeleccionado] = useState<Candidato | null>(null)
   const [showNuevo, setShowNuevo] = useState(false)
@@ -78,6 +79,18 @@ export default function CandidatosPage() {
     enProceso: candidatos.filter((c) => !["contratado", "rechazado"].includes(c.etapa)).length,
     contratados: candidatos.filter((c) => c.etapa === "contratado").length,
   }
+
+  useEffect(() => {
+    const fetchCargos = async () => {
+      const { createSupabaseClient } = await import("@/lib/supabase")
+      const supabase = createSupabaseClient()
+      const { data } = await supabase.from("cargos").select("id, nombre").order("nombre")
+      if (data) setCargos(data)
+    }
+    fetchCargos()
+  }, [])
+
+  const cargosOptions = cargos.map((c) => ({ value: c.id, label: c.nombre }))
 
   const moverCandidato = (id: string, nuevaEtapa: EtapaATS) => {
     setCandidatos((prev) => prev.map((c) => c.id === id ? { ...c, etapa: nuevaEtapa } : c))
@@ -145,8 +158,9 @@ export default function CandidatosPage() {
           onChange={(e) => setFiltroPuesto(e.target.value)}
           className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
         >
-          {puestos.map((p) => (
-            <option key={p} value={p}>{p === "Todos" ? "Todos los puestos" : p}</option>
+          <option value="Todos">Todos los puestos</option>
+          {cargosOptions.map((c) => (
+            <option key={c.value} value={c.label}>{c.label}</option>
           ))}
         </select>
         <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
@@ -453,7 +467,16 @@ export default function CandidatosPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Puesto al que aplica</label>
-                <input type="text" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="Nombre del puesto" />
+                <select
+                  value={puestoNuevo}
+                  onChange={(e) => setPuestoNuevo(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                >
+                  <option value="">Seleccionar cargo...</option>
+                  {cargosOptions.map((c) => (
+                    <option key={c.value} value={c.label}>{c.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

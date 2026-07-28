@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
-import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Star, LayoutGrid, ArrowUpRight, X, Video, MessageCircle } from "lucide-react"
+import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Star, LayoutGrid, ArrowUpRight, X, Video, MessageCircle, UserCheck } from "lucide-react"
 import Link from "next/link"
 import { CourseTimer } from "./CourseTimer"
 
@@ -17,6 +17,7 @@ const navByRole = {
     { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   developer: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -28,6 +29,7 @@ const navByRole = {
     { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   facilitador: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -38,6 +40,7 @@ const navByRole = {
     { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   estudiante: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -45,6 +48,7 @@ const navByRole = {
     { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/cst", label: "CST", icon: UserCheck },
   ],
 }
 

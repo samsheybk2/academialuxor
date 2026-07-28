@@ -15,6 +15,7 @@ import {
   Newspaper,
   Network,
   Star,
+  UserCheck,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ const navByRole = {
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   developer: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -41,6 +43,7 @@ const navByRole = {
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/insignias", label: "Experiencia", icon: Star },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   facilitador: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -49,6 +52,7 @@ const navByRole = {
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
+    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   estudiante: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
