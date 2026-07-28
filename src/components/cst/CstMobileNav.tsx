@@ -10,7 +10,7 @@ const cstNav = [
   { href: "/cst/test-competencias", label: "Tests", icon: ClipboardList },
   { href: "/cst/panel-control", label: "Panel", icon: BarChart3 },
   { href: "/cst/configuracion", label: "Config", icon: Settings },
-  { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
+  { href: "/cst/organigrama", label: "Organigrama", icon: Network },
 ]
 
 export function CstMobileNav() {
