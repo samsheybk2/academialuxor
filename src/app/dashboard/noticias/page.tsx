@@ -48,13 +48,12 @@ const SUCURSALES = [
   "El Castaño",
 ]
 
-const REACCIONES_CONFIG: Record<TipoReaccion, { emoji: string; color: string; bg: string; hoverBg: string; label: string }> = {
-  me_gusta: { emoji: "👍", color: "text-blue-600", bg: "bg-blue-50 border-blue-200", hoverBg: "hover:bg-blue-50", label: "Me gusta" },
-  me_encanta: { emoji: "❤️", color: "text-rose-500", bg: "bg-rose-50 border-rose-200", hoverBg: "hover:bg-rose-50", label: "Me encanta" },
-  me_enoja: { emoji: "😠", color: "text-orange-500", bg: "bg-orange-50 border-orange-200", hoverBg: "hover:bg-orange-50", label: "Me enoja" },
-  me_entristece: { emoji: "😢", color: "text-sky-500", bg: "bg-sky-50 border-sky-200", hoverBg: "hover:bg-sky-50", label: "Me entristece" },
-  me_divierte: { emoji: "😂", color: "text-amber-500", bg: "bg-amber-50 border-amber-200", hoverBg: "hover:bg-amber-50", label: "Me divierte" },
-  estoy_confundido: { emoji: "😕", color: "text-purple-500", bg: "bg-purple-50 border-purple-200", hoverBg: "hover:bg-purple-50", label: "Estoy confundido" },
+const REACCIONES_CONFIG: Record<TipoReaccion, { image: string; color: string; bg: string; hoverBg: string; label: string }> = {
+  me_gusta: { image: "/me gusta.png", color: "text-blue-600", bg: "bg-blue-50 border-blue-200", hoverBg: "hover:bg-blue-50", label: "Me gusta" },
+  me_encanta: { image: "/me encanta.png", color: "text-rose-500", bg: "bg-rose-50 border-rose-200", hoverBg: "hover:bg-rose-50", label: "Me encanta" },
+  me_enoja: { image: "/me enoja.png", color: "text-orange-500", bg: "bg-orange-50 border-orange-200", hoverBg: "hover:bg-orange-50", label: "Me enoja" },
+  me_entristece: { image: "/me entristece.png", color: "text-sky-500", bg: "bg-sky-50 border-sky-200", hoverBg: "hover:bg-sky-50", label: "Me entristece" },
+  me_divierte: { image: "/me divierte.png", color: "text-amber-500", bg: "bg-amber-50 border-amber-200", hoverBg: "hover:bg-amber-50", label: "Me divierte" },
 }
 
 const REACCION_KEYS = Object.keys(REACCIONES_CONFIG) as TipoReaccion[]
@@ -1105,7 +1104,9 @@ async function handleEliminar(pubId: string) {
                       }`}
                       title={config.label}
                     >
-                      <span className="text-lg leading-none">{config.emoji}</span>
+                      {"image" in config ? (
+                        <img src={config.image} alt={config.label} className="w-7 h-7 object-contain" draggable={false} />
+                      ) : null}
                       {count > 0 && <span>{count}</span>}
                     </button>
                   )

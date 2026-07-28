@@ -62,7 +62,7 @@ export interface Progreso {
   fechaFin?: string
 }
 
-export type TipoReaccion = "me_gusta" | "me_encanta" | "me_enoja" | "me_entristece" | "me_divierte" | "estoy_confundido"
+export type TipoReaccion = "me_gusta" | "me_encanta" | "me_enoja" | "me_entristece" | "me_divierte"
 
 export interface Publicacion {
   id: string
