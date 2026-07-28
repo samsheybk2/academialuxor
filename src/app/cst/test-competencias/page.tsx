@@ -104,25 +104,23 @@ export default function TestCompetenciasPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: "Tests Totales", value: stats.total, icon: ClipboardList, color: "text-gray-700", bg: "bg-gray-50" },
-          { label: "Activos", value: stats.activos, icon: CheckCircle2, color: "text-green-700", bg: "bg-green-50" },
-          { label: "Total Intentos", value: stats.totalIntentos, icon: Users, color: "text-blue-700", bg: "bg-blue-50" },
-          { label: "Promedio General", value: `${Math.round(stats.calificacionPromedio)}%`, icon: TrendingUp, color: "text-amber-700", bg: "bg-amber-50" },
-        ].map((stat) => (
-          <div key={stat.label} className={`${stat.bg} rounded-xl p-4 border border-gray-100`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${stat.bg}`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.label}</p>
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+          <ClipboardList className="w-3.5 h-3.5" />
+          Tests: {stats.total}
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          Activos: {stats.activos}
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+          <Users className="w-3.5 h-3.5" />
+          Intentos: {stats.totalIntentos}
+        </span>
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+          <TrendingUp className="w-3.5 h-3.5" />
+          Promedio: {Math.round(stats.calificacionPromedio)}%
+        </span>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
