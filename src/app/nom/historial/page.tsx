@@ -148,15 +148,15 @@ export default function HistorialPage() {
   )
 
   return (
-    <div className="min-h-full bg-gray-950 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-full bg-[#F0F2F5] p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-gray-800 flex items-center justify-center">
-            <History className="w-5 h-5 text-white" />
+            <History className="w-5 h-5 text-gray-900" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Historial de Calculos</h1>
-            <p className="text-sm text-gray-400">{calculos.length} calculos guardados</p>
+            <h1 className="text-xl font-bold text-gray-900">Historial de Calculos</h1>
+            <p className="text-sm text-gray-500">{calculos.length} calculos guardados</p>
           </div>
         </div>
 
@@ -164,7 +164,7 @@ export default function HistorialPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
           placeholder="Buscar por nombre, cargo o cedula..."
         />
 
@@ -178,19 +178,19 @@ export default function HistorialPage() {
             </div>
           ) : (
             filtered.map((calc) => (
-              <div key={calc.id} className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+              <div key={calc.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => setExpandedId(expandedId === calc.id ? null : calc.id)}
                 >
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
-                      <span className="text-white font-semibold text-sm">
+                    <div className="w-10 h-10 rounded-full bg-luxor-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-gray-900 font-semibold text-sm">
                         {calc.empleado_nombre.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-semibold text-white truncate">{calc.empleado_nombre}</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 truncate">{calc.empleado_nombre}</h3>
                       <p className="text-xs text-gray-500 truncate">
                         {calc.empleado_cargo} &middot; ${calc.resultado.total_paquete.toLocaleString()}
                       </p>
@@ -199,10 +199,10 @@ export default function HistorialPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       calc.resultado.comparacion_mercado.posicion.includes("encima")
-                        ? "bg-green-900/50 text-green-400"
+                        ? "bg-green-50 text-green-700"
                         : calc.resultado.comparacion_mercado.posicion.includes("debajo")
-                        ? "bg-red-900/50 text-red-400"
-                        : "bg-blue-900/50 text-blue-400"
+                        ? "bg-red-50 text-red-700"
+                        : "bg-blue-50 text-blue-700"
                     }`}>
                       {calc.resultado.comparacion_mercado.posicion.length > 20
                         ? calc.resultado.comparacion_mercado.posicion.substring(0, 20) + "..."
@@ -210,21 +210,21 @@ export default function HistorialPage() {
                     </span>
                     <button
                       onClick={(e) => { e.stopPropagation(); exportarPDF(calc) }}
-                      className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-600"
                       title="Exportar PDF"
                     >
                       <FileText className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); exportarExcel(calc) }}
-                      className="p-1.5 rounded-lg hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-600"
                       title="Exportar Excel"
                     >
                       <Table className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteCalculo(calc.id) }}
-                      className="p-1.5 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400"
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -233,31 +233,31 @@ export default function HistorialPage() {
                 </div>
 
                 {expandedId === calc.id && (
-                  <div className="px-4 pb-4 border-t border-gray-800 space-y-3 mt-2">
+                  <div className="px-4 pb-4 border-t border-gray-200 space-y-3 mt-2">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="bg-gray-800/50 rounded-xl p-3">
+                      <div className="bg-gray-50 rounded-xl p-3">
                         <p className="text-xs text-gray-500">Salario Base</p>
-                        <p className="text-sm font-semibold text-white">${calc.resultado.salario_base.toLocaleString()}</p>
+                        <p className="text-sm font-semibold text-gray-900">${calc.resultado.salario_base.toLocaleString()}</p>
                       </div>
-                      <div className="bg-gray-800/50 rounded-xl p-3">
+                      <div className="bg-gray-50 rounded-xl p-3">
                         <p className="text-xs text-gray-500">Antiguedad ({calc.resultado.porcentaje_antiguedad}%)</p>
-                        <p className="text-sm font-semibold text-amber-400">${calc.resultado.bonificacion_antiguedad.toLocaleString()}</p>
+                        <p className="text-sm font-semibold text-amber-600">${calc.resultado.bonificacion_antiguedad.toLocaleString()}</p>
                       </div>
-                      <div className="bg-gray-800/50 rounded-xl p-3">
+                      <div className="bg-gray-50 rounded-xl p-3">
                         <p className="text-xs text-gray-500">Total Paquete</p>
-                        <p className="text-sm font-semibold text-white">${calc.resultado.total_paquete.toLocaleString()}</p>
+                        <p className="text-sm font-semibold text-gray-900">${calc.resultado.total_paquete.toLocaleString()}</p>
                       </div>
-                      <div className="bg-gray-800/50 rounded-xl p-3">
+                      <div className="bg-gray-50 rounded-xl p-3">
                         <p className="text-xs text-gray-500">Posicion Mercado</p>
-                        <p className="text-sm font-semibold text-white">{calc.resultado.comparacion_mercado.posicion}</p>
+                        <p className="text-sm font-semibold text-gray-900">{calc.resultado.comparacion_mercado.posicion}</p>
                       </div>
                     </div>
                     {calc.resultado.recomendaciones.length > 0 && (
-                      <div className="bg-gray-800/30 rounded-xl p-3">
+                      <div className="bg-gray-50 rounded-xl p-3">
                         <p className="text-xs text-gray-500 mb-2">Recomendaciones:</p>
                         <div className="space-y-1">
                           {calc.resultado.recomendaciones.map((r, i) => (
-                            <p key={i} className="text-xs text-gray-300">• {r}</p>
+                            <p key={i} className="text-xs text-gray-600">• {r}</p>
                           ))}
                         </div>
                       </div>

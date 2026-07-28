@@ -400,57 +400,57 @@ export default function CalculadoraPage() {
   const formatearMoneda = (v: number) => v.toLocaleString("es-VE", { style: "currency", currency: "USD" })
 
   return (
-    <div className="min-h-full bg-gray-950 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-full bg-[#F0F2F5] p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Title */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-gray-800 flex items-center justify-center">
-            <Calculator className="w-5 h-5 text-white" />
+            <Calculator className="w-5 h-5 text-gray-900" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Calculadora Salarial</h1>
-            <p className="text-sm text-gray-400">Calcule paquetes salariales con datos de mercado</p>
+            <h1 className="text-xl font-bold text-gray-900">Calculadora Salarial</h1>
+            <p className="text-sm text-gray-500">Calcule paquetes salariales con datos de mercado</p>
           </div>
         </div>
 
         {/* Input Form */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Employee Data */}
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <div className="flex items-center gap-2 mb-5">
-              <User className="w-5 h-5 text-slate-400" />
-              <h2 className="text-base font-semibold text-white">Datos del Empleado</h2>
+              <User className="w-5 h-5 text-luxor-primary" />
+              <h2 className="text-base font-semibold text-gray-900">Datos del Empleado</h2>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Nombre completo *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Nombre completo *</label>
                 <input
                   type="text"
                   value={empleadoNombre}
                   onChange={(e) => setEmpleadoNombre(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                   placeholder="Ej: Juan Perez"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Cedula</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Cedula</label>
                 <input
                   type="text"
                   value={empleadoCedula}
                   onChange={(e) => setEmpleadoCedula(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                   placeholder="V-12345678"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Cargo *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Cargo *</label>
                 <select
                   value={empleadoCargoId}
                   onChange={(e) => {
                     setEmpleadoCargoId(e.target.value)
                     autoFillPercentiles(e.target.value)
                   }}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                 >
                   <option value="">Seleccionar cargo...</option>
                   {cargos.map(c => (
@@ -460,24 +460,24 @@ export default function CalculadoraPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1.5">Salario actual ($) *</label>
+                  <label className="block text-sm text-gray-500 mb-1.5">Salario actual ($) *</label>
                   <input
                     type="number"
                     value={empleadoSalario}
                     onChange={(e) => setEmpleadoSalario(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                     placeholder="0.00"
                     min="0"
                     step="0.01"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1.5">Antiguedad (anios) *</label>
+                  <label className="block text-sm text-gray-500 mb-1.5">Antiguedad (anios) *</label>
                   <input
                     type="number"
                     value={empleadoAntiguedad}
                     onChange={(e) => setEmpleadoAntiguedad(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                     placeholder="0"
                     min="0"
                     max="50"
@@ -488,18 +488,18 @@ export default function CalculadoraPage() {
           </div>
 
           {/* Configuration */}
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <div className="flex items-center gap-2 mb-5">
-              <Layers className="w-5 h-5 text-slate-400" />
-              <h2 className="text-base font-semibold text-white">Configuracion</h2>
+              <Layers className="w-5 h-5 text-luxor-primary" />
+              <h2 className="text-base font-semibold text-gray-900">Configuracion</h2>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Escala Salarial *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Escala Salarial *</label>
                 <select
                   value={escalaId}
                   onChange={(e) => setEscalaId(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                 >
                   <option value="">Seleccionar escala...</option>
                   {escalas.map(e => (
@@ -507,18 +507,18 @@ export default function CalculadoraPage() {
                   ))}
                 </select>
                 {escalas.length === 0 && (
-                  <p className="text-xs text-amber-400 mt-1.5">
+                  <p className="text-xs text-amber-600 mt-1.5">
                     No hay escalas.{" "}
-                    <a href="/nom/escalas" className="underline hover:text-amber-300">Crear escala</a>
+                    <a href="/nom/escalas" className="underline hover:text-amber-800">Crear escala</a>
                   </p>
                 )}
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Regla de Antiguedad *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Regla de Antiguedad *</label>
                 <select
                   value={reglaId}
                   onChange={(e) => setReglaId(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                 >
                   <option value="">Seleccionar regla...</option>
                   {reglas.map(r => (
@@ -526,9 +526,9 @@ export default function CalculadoraPage() {
                   ))}
                 </select>
                 {reglas.length === 0 && (
-                  <p className="text-xs text-amber-400 mt-1.5">
+                  <p className="text-xs text-amber-600 mt-1.5">
                     No hay reglas.{" "}
-                    <a href="/nom/antiguedad" className="underline hover:text-amber-300">Crear regla</a>
+                    <a href="/nom/antiguedad" className="underline hover:text-amber-800">Crear regla</a>
                   </p>
                 )}
               </div>
@@ -538,13 +538,13 @@ export default function CalculadoraPage() {
                 const escala = escalas.find(e => e.id === escalaId)
                 if (!escala || escala.niveles.length === 0) return null
                 return (
-                  <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                     <p className="text-xs text-gray-500 mb-2">Vista previa de la escala:</p>
                     <div className="space-y-1">
                       {escala.niveles.map(n => (
                         <div key={n.id} className="flex justify-between text-xs">
-                          <span className="text-gray-400">Nivel {n.nivel}: {n.nombre}</span>
-                          <span className="text-gray-300">${n.salario_minimo.toLocaleString()} - ${n.salario_maximo.toLocaleString()}</span>
+                          <span className="text-gray-500">Nivel {n.nivel}: {n.nombre}</span>
+                          <span className="text-gray-600">${n.salario_minimo.toLocaleString()} - ${n.salario_maximo.toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -557,14 +557,14 @@ export default function CalculadoraPage() {
                 const regla = reglas.find(r => r.id === reglaId)
                 if (!regla) return null
                 return (
-                  <div className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50">
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                     <p className="text-xs text-gray-500 mb-2">Vista previa de la regla:</p>
                     {regla.tipo === "porcentaje_anual" ? (
-                      <p className="text-xs text-gray-300">{regla.porcentaje_anual}% por anio de antiguedad (max 50%)</p>
+                      <p className="text-xs text-gray-600">{regla.porcentaje_anual}% por anio de antiguedad (max 50%)</p>
                     ) : (
                       <div className="space-y-1">
                         {regla.tramos.map((t, i) => (
-                          <div key={i} className="text-xs text-gray-300">
+                          <div key={i} className="text-xs text-gray-600">
                             {t.desde}-{t.hasta} anios: {t.porcentaje}%
                           </div>
                         ))}
@@ -578,63 +578,63 @@ export default function CalculadoraPage() {
         </div>
 
         {/* Market Percentiles */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <div className="flex items-center gap-2 mb-5">
-            <BarChart3 className="w-5 h-5 text-slate-400" />
-            <h2 className="text-base font-semibold text-white">Percentiles de Mercado</h2>
+            <BarChart3 className="w-5 h-5 text-luxor-primary" />
+            <h2 className="text-base font-semibold text-gray-900">Percentiles de Mercado</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Percentil 25 ($)</label>
+              <label className="block text-sm text-gray-500 mb-1.5">Percentil 25 ($)</label>
               <input
                 type="number"
                 value={percentilP25}
                 onChange={(e) => setPercentilP25(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                 placeholder="0"
                 min="0"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Percentil 50 ($)</label>
+              <label className="block text-sm text-gray-500 mb-1.5">Percentil 50 ($)</label>
               <input
                 type="number"
                 value={percentilP50}
                 onChange={(e) => setPercentilP50(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                 placeholder="0"
                 min="0"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Percentil 75 ($)</label>
+              <label className="block text-sm text-gray-500 mb-1.5">Percentil 75 ($)</label>
               <input
                 type="number"
                 value={percentilP75}
                 onChange={(e) => setPercentilP75(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                 placeholder="0"
                 min="0"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1.5">Percentil 90 ($)</label>
+              <label className="block text-sm text-gray-500 mb-1.5">Percentil 90 ($)</label>
               <input
                 type="number"
                 value={percentilP90}
                 onChange={(e) => setPercentilP90(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                 placeholder="0"
                 min="0"
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm text-gray-400 mb-1.5">Fuente</label>
+              <label className="block text-sm text-gray-500 mb-1.5">Fuente</label>
               <input
                 type="text"
                 value={percentilFuente}
                 onChange={(e) => setPercentilFuente(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
                 placeholder="Ej: Survey 2024, Mercer, etc."
               />
             </div>
@@ -661,21 +661,21 @@ export default function CalculadoraPage() {
               <button
                 onClick={guardarCalculo}
                 disabled={guardando}
-                className="flex items-center gap-2 px-5 py-3 bg-gray-800 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors border border-gray-700"
+                className="flex items-center gap-2 px-5 py-3 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200"
               >
                 <Save className="w-4 h-4" />
                 {guardando ? "Guardando..." : guardado ? "Guardado!" : "Guardar"}
               </button>
               <button
                 onClick={exportarPDF}
-                className="flex items-center gap-2 px-5 py-3 bg-gray-800 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors border border-gray-700"
+                className="flex items-center gap-2 px-5 py-3 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200"
               >
                 <FileText className="w-4 h-4" />
                 PDF
               </button>
               <button
                 onClick={exportarExcel}
-                className="flex items-center gap-2 px-5 py-3 bg-gray-800 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors border border-gray-700"
+                className="flex items-center gap-2 px-5 py-3 bg-gray-50 text-gray-600 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200"
               >
                 <Table className="w-4 h-4" />
                 Excel
@@ -688,35 +688,35 @@ export default function CalculadoraPage() {
         {showResults && resultado && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Salary Breakdown */}
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-              <h3 className="text-base font-semibold text-white mb-5">Desglose del Paquete Salarial</h3>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-5">Desglose del Paquete Salarial</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <p className="text-xs text-gray-500 mb-1">Salario Base</p>
-                  <p className="text-xl font-bold text-white">{formatearMoneda(resultado.salario_base)}</p>
+                  <p className="text-xl font-bold text-gray-900">{formatearMoneda(resultado.salario_base)}</p>
                 </div>
-                <div className="bg-gray-800/50 rounded-xl p-4 border border-gray-700/50">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <p className="text-xs text-gray-500 mb-1">Bonificacion Antiguedad ({resultado.porcentaje_antiguedad}%)</p>
-                  <p className="text-xl font-bold text-amber-400">{formatearMoneda(resultado.bonificacion_antiguedad)}</p>
+                  <p className="text-xl font-bold text-amber-600">{formatearMoneda(resultado.bonificacion_antiguedad)}</p>
                 </div>
-                <div className="bg-gradient-to-br from-slate-700/50 to-gray-700/50 rounded-xl p-4 border border-slate-600/50">
-                  <p className="text-xs text-gray-400 mb-1">Total Paquete</p>
-                  <p className="text-2xl font-bold text-white">{formatearMoneda(resultado.total_paquete)}</p>
+                <div className="bg-gradient-to-br from-luxor-primary/10 to-luxor-secondary/10 rounded-xl p-4 border border-luxor-primary/20">
+                  <p className="text-xs text-gray-500 mb-1">Total Paquete</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatearMoneda(resultado.total_paquete)}</p>
                 </div>
               </div>
             </div>
 
             {/* Market Comparison */}
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-              <h3 className="text-base font-semibold text-white mb-5">Comparacion con Mercado</h3>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-5">Comparacion con Mercado</h3>
 
               <div className="mb-6">
                 <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
                   resultado.comparacion_mercado.posicion.includes("encima")
-                    ? "bg-green-900/50 text-green-300 border border-green-700/50"
+                    ? "bg-green-50 text-green-700 border border-green-200"
                     : resultado.comparacion_mercado.posicion.includes("debajo")
-                    ? "bg-red-900/50 text-red-300 border border-red-700/50"
-                    : "bg-blue-900/50 text-blue-300 border border-blue-700/50"
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-blue-50 text-blue-700 border border-blue-200"
                 }`}>
                   {resultado.comparacion_mercado.posicion.includes("encima") ? <TrendingUp className="w-4 h-4" /> :
                    resultado.comparacion_mercado.posicion.includes("debajo") ? <TrendingDown className="w-4 h-4" /> :
@@ -728,10 +728,10 @@ export default function CalculadoraPage() {
               {/* Visual bar chart */}
               {resultado.comparacion_mercado.percentil_50 > 0 && (
                 <div className="mb-6">
-                  <div className="relative h-12 bg-gray-800 rounded-xl overflow-hidden">
+                  <div className="relative h-12 bg-gray-50 rounded-xl overflow-hidden">
                     {/* Scale bar */}
                     <div className="absolute inset-0 flex items-center">
-                      <div className="absolute left-0 right-0 h-2 bg-gray-700 mx-4 rounded-full" />
+                      <div className="absolute left-0 right-0 h-2 bg-gray-200 mx-4 rounded-full" />
                       {/* Percentile markers */}
                       {[
                         { val: resultado.comparacion_mercado.percentil_25, label: "P25", color: "bg-gray-500" },
@@ -754,7 +754,7 @@ export default function CalculadoraPage() {
                         return (
                           <div className="absolute top-0 bottom-0 flex flex-col items-center" style={{ left: `${Math.min(left, 95)}%` }}>
                             <div className="w-1 h-full bg-amber-400" />
-                            <div className="absolute -top-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-gray-900" />
+                            <div className="absolute -top-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-white" />
                           </div>
                         )
                       })()}
@@ -768,7 +768,7 @@ export default function CalculadoraPage() {
                   </div>
                   <div className="flex items-center gap-2 mt-2 px-4">
                     <div className="w-3 h-3 bg-amber-400 rounded-full" />
-                    <span className="text-xs text-gray-400">Empleado: ${resultado.total_paquete.toLocaleString()}</span>
+                    <span className="text-xs text-gray-500">Empleado: ${resultado.total_paquete.toLocaleString()}</span>
                   </div>
                 </div>
               )}
@@ -782,9 +782,9 @@ export default function CalculadoraPage() {
                     { label: "vs P75", value: resultado.comparacion_mercado.diferencias.vs_p75 },
                     { label: "vs P90", value: resultado.comparacion_mercado.diferencias.vs_p90 },
                   ].map((d) => (
-                    <div key={d.label} className="bg-gray-800/50 rounded-xl p-3 border border-gray-700/50 text-center">
+                    <div key={d.label} className="bg-gray-50 rounded-xl p-3 border border-gray-100 text-center">
                       <p className="text-xs text-gray-500 mb-1">{d.label}</p>
-                      <p className={`text-sm font-semibold ${d.value >= 0 ? "text-green-400" : "text-red-400"}`}>
+                      <p className={`text-sm font-semibold ${d.value >= 0 ? "text-green-600" : "text-red-600"}`}>
                         {d.value >= 0 ? "+" : ""}{formatearMoneda(d.value)}
                       </p>
                     </div>
@@ -794,15 +794,15 @@ export default function CalculadoraPage() {
             </div>
 
             {/* Recommendations */}
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
-              <h3 className="text-base font-semibold text-white mb-4">Recomendaciones</h3>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-4">Recomendaciones</h3>
               <div className="space-y-3">
                 {resultado.recomendaciones.map((rec, i) => (
-                  <div key={i} className="flex items-start gap-3 bg-gray-800/30 rounded-xl p-3 border border-gray-700/30">
-                    <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-xs text-white font-semibold">{i + 1}</span>
+                  <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                    <div className="w-6 h-6 rounded-full bg-luxor-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-xs text-gray-900 font-semibold">{i + 1}</span>
                     </div>
-                    <p className="text-sm text-gray-300">{rec}</p>
+                    <p className="text-sm text-gray-600">{rec}</p>
                   </div>
                 ))}
               </div>

@@ -144,16 +144,16 @@ export default function PercentilesPage() {
   )
 
   return (
-    <div className="min-h-full bg-gray-950 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-full bg-[#F0F2F5] p-4 sm:p-6 lg:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-gray-800 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
+              <BarChart3 className="w-5 h-5 text-gray-900" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Percentiles de Mercado</h1>
-              <p className="text-sm text-gray-400">Datos salariales de referencia por cargo</p>
+              <h1 className="text-xl font-bold text-gray-900">Percentiles de Mercado</h1>
+              <p className="text-sm text-gray-500">Datos salariales de referencia por cargo</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -166,14 +166,14 @@ export default function PercentilesPage() {
             />
             <button
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-800 text-gray-300 rounded-xl hover:bg-gray-700 transition-colors text-sm border border-gray-700"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 rounded-xl hover:bg-gray-100 border border-gray-200 transition-colors text-sm border border-gray-200"
             >
               <Upload className="w-4 h-4" />
               Importar
             </button>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-600 text-white rounded-xl hover:bg-slate-500 transition-colors text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2.5 bg-luxor-primary text-white rounded-xl hover:bg-luxor-secondary transition-colors text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
               Nuevo
@@ -186,26 +186,26 @@ export default function PercentilesPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500 transition-colors"
+          className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500 transition-colors"
           placeholder="Buscar por cargo o fuente..."
         />
 
         {/* Form */}
         {showForm && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-white">Agregar Percentil</h3>
-              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400">
+              <h3 className="text-base font-semibold text-gray-900">Agregar Percentil</h3>
+              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="sm:col-span-2 lg:col-span-1">
-                <label className="block text-sm text-gray-400 mb-1.5">Cargo *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Cargo *</label>
                 <select
                   value={cargoNombre}
                   onChange={(e) => setCargoNombre(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                 >
                   <option value="">Seleccionar...</option>
                   {cargos.map(c => (
@@ -218,15 +218,15 @@ export default function PercentilesPage() {
                     type="text"
                     value=""
                     onChange={(e) => setCargoNombre(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm mt-2 focus:outline-none focus:border-slate-500"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm mt-2 focus:outline-none focus:border-slate-500"
                     placeholder="Nombre del cargo"
                     autoFocus
                   />
                 )}
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Nivel</label>
-                <select value={nivel || ""} onChange={(e) => setNivel(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500">
+                <label className="block text-sm text-gray-500 mb-1.5">Nivel</label>
+                <select value={nivel || ""} onChange={(e) => setNivel(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500">
                   <option value="">Todos</option>
                   <option value="gerentes">Gerentes</option>
                   <option value="coordinadores">Coordinadores</option>
@@ -235,38 +235,38 @@ export default function PercentilesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Fuente</label>
-                <input type="text" value={fuente} onChange={(e) => setFuente(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500" placeholder="Ej: Survey 2024" />
+                <label className="block text-sm text-gray-500 mb-1.5">Fuente</label>
+                <input type="text" value={fuente} onChange={(e) => setFuente(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500" placeholder="Ej: Survey 2024" />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Fecha referencia</label>
-                <input type="date" value={fechaRef} onChange={(e) => setFechaRef(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500" />
+                <label className="block text-sm text-gray-500 mb-1.5">Fecha referencia</label>
+                <input type="date" value={fechaRef} onChange={(e) => setFechaRef(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500" />
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">P25 ($)</label>
-                <input type="number" value={p25} onChange={(e) => setP25(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500" min="0" />
+                <label className="block text-sm text-gray-500 mb-1.5">P25 ($)</label>
+                <input type="number" value={p25} onChange={(e) => setP25(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500" min="0" />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">P50 ($)</label>
-                <input type="number" value={p50} onChange={(e) => setP50(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500" min="0" />
+                <label className="block text-sm text-gray-500 mb-1.5">P50 ($)</label>
+                <input type="number" value={p50} onChange={(e) => setP50(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500" min="0" />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">P75 ($)</label>
-                <input type="number" value={p75} onChange={(e) => setP75(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500" min="0" />
+                <label className="block text-sm text-gray-500 mb-1.5">P75 ($)</label>
+                <input type="number" value={p75} onChange={(e) => setP75(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500" min="0" />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">P90 ($)</label>
-                <input type="number" value={p90} onChange={(e) => setP90(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500" min="0" />
+                <label className="block text-sm text-gray-500 mb-1.5">P90 ($)</label>
+                <input type="number" value={p90} onChange={(e) => setP90(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500" min="0" />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={resetForm} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
+              <button onClick={resetForm} className="px-4 py-2 text-gray-500 hover:text-gray-900 text-sm">Cancelar</button>
               <button
                 onClick={savePercentil}
                 disabled={saving || !cargoNombre || !p50}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-xl hover:bg-slate-500 transition-colors text-sm font-medium disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 bg-luxor-primary text-white rounded-xl hover:bg-luxor-secondary transition-colors text-sm font-medium disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
                 {saving ? "Guardando..." : "Guardar"}
@@ -276,7 +276,7 @@ export default function PercentilesPage() {
         )}
 
         {/* Table */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="text-center py-12 text-gray-500">Cargando...</div>
           ) : filtered.length === 0 ? (
@@ -288,7 +288,7 @@ export default function PercentilesPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-800">
+                  <tr className="border-b border-gray-200">
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Cargo</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500">Nivel</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-gray-500">P25</th>
@@ -301,18 +301,18 @@ export default function PercentilesPage() {
                 </thead>
                 <tbody>
                   {filtered.map((p) => (
-                    <tr key={p.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                      <td className="px-4 py-3 text-sm text-white font-medium">{p.cargo_nombre}</td>
-                      <td className="px-4 py-3 text-sm text-gray-400 capitalize">{p.nivel || "-"}</td>
-                      <td className="px-4 py-3 text-sm text-gray-300 text-right">${p.percentil_25.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-gray-300 text-right">${p.percentil_50.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-gray-300 text-right">${p.percentil_75.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-gray-300 text-right">${p.percentil_90.toLocaleString()}</td>
+                    <tr key={p.id} className="border-b border-gray-200/50 hover:bg-gray-100 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-900 font-medium">{p.cargo_nombre}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 capitalize">{p.nivel || "-"}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-right">${p.percentil_25.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-right">${p.percentil_50.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-right">${p.percentil_75.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-right">${p.percentil_90.toLocaleString()}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{p.fuente || "-"}</td>
                       <td className="px-2 py-3">
                         <button
                           onClick={() => deletePercentil(p.id)}
-                          className="p-1.5 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400"
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

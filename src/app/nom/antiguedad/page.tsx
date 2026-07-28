@@ -102,21 +102,21 @@ export default function AntiguedadPage() {
   }
 
   return (
-    <div className="min-h-full bg-gray-950 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-full bg-[#F0F2F5] p-4 sm:p-6 lg:p-8">
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-gray-800 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
+              <Clock className="w-5 h-5 text-gray-900" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Reglas de Antiguedad</h1>
-              <p className="text-sm text-gray-400">Configure las bonificaciones por antiguedad</p>
+              <h1 className="text-xl font-bold text-gray-900">Reglas de Antiguedad</h1>
+              <p className="text-sm text-gray-500">Configure las bonificaciones por antiguedad</p>
             </div>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-600 text-white rounded-xl hover:bg-slate-500 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2.5 bg-luxor-primary text-white rounded-xl hover:bg-luxor-secondary transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             Nueva Regla
@@ -125,31 +125,31 @@ export default function AntiguedadPage() {
 
         {/* Form */}
         {showForm && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-white">Crear Regla</h3>
-              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400">
+              <h3 className="text-base font-semibold text-gray-900">Crear Regla</h3>
+              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Nombre *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Nombre *</label>
                 <input
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                   placeholder="Ej: Regla Corporativa"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Tipo *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Tipo *</label>
                 <select
                   value={tipo}
                   onChange={(e) => setTipo(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                 >
                   <option value="porcentaje_anual">Porcentaje por anio</option>
                   <option value="tramos">Tramos por rango de anios</option>
@@ -159,12 +159,12 @@ export default function AntiguedadPage() {
 
             {tipo === "porcentaje_anual" ? (
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Porcentaje por anio de antiguedad (%)</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Porcentaje por anio de antiguedad (%)</label>
                 <input
                   type="number"
                   value={porcentajeAnual}
                   onChange={(e) => setPorcentajeAnual(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                   placeholder="Ej: 2.5"
                   min="0"
                   max="50"
@@ -175,8 +175,8 @@ export default function AntiguedadPage() {
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm text-gray-400">Tramos</label>
-                  <button onClick={addTramo} className="text-xs text-slate-400 hover:text-slate-300">+ Agregar tramo</button>
+                  <label className="text-sm text-gray-500">Tramos</label>
+                  <button onClick={addTramo} className="text-xs text-luxor-primary hover:text-luxor-secondary">+ Agregar tramo</button>
                 </div>
                 <div className="space-y-2">
                   {tramos.map((t, i) => (
@@ -188,7 +188,7 @@ export default function AntiguedadPage() {
                           type="number"
                           value={t.desde}
                           onChange={(e) => updateTramo(i, "desde", parseInt(e.target.value) || 0)}
-                          className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-slate-500"
+                          className="w-16 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-gray-900 text-xs focus:outline-none focus:border-slate-500"
                           min="0"
                         />
                       </div>
@@ -198,7 +198,7 @@ export default function AntiguedadPage() {
                           type="number"
                           value={t.hasta}
                           onChange={(e) => updateTramo(i, "hasta", parseInt(e.target.value) || 0)}
-                          className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-slate-500"
+                          className="w-16 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-gray-900 text-xs focus:outline-none focus:border-slate-500"
                           min="0"
                         />
                       </div>
@@ -208,14 +208,14 @@ export default function AntiguedadPage() {
                           type="number"
                           value={t.porcentaje}
                           onChange={(e) => updateTramo(i, "porcentaje", parseFloat(e.target.value) || 0)}
-                          className="w-16 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none focus:border-slate-500"
+                          className="w-16 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-gray-900 text-xs focus:outline-none focus:border-slate-500"
                           min="0"
                           step="0.5"
                         />
                       </div>
                       <button
                         onClick={() => removeTramo(i)}
-                        className="p-1 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400"
+                        className="p-1 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -226,11 +226,11 @@ export default function AntiguedadPage() {
             )}
 
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={resetForm} className="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
+              <button onClick={resetForm} className="px-4 py-2 text-gray-500 hover:text-gray-900 text-sm">Cancelar</button>
               <button
                 onClick={saveRegla}
                 disabled={saving || !nombre}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-xl hover:bg-slate-500 transition-colors text-sm font-medium disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 bg-luxor-primary text-white rounded-xl hover:bg-luxor-secondary transition-colors text-sm font-medium disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
                 {saving ? "Guardando..." : "Guardar"}
@@ -250,13 +250,13 @@ export default function AntiguedadPage() {
             </div>
           ) : (
             reglas.map((regla) => (
-              <div key={regla.id} className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+              <div key={regla.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => setExpandedId(expandedId === regla.id ? null : regla.id)}
                 >
                   <div>
-                    <h3 className="text-sm font-semibold text-white">{regla.nombre}</h3>
+                    <h3 className="text-sm font-semibold text-gray-900">{regla.nombre}</h3>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {regla.tipo === "porcentaje_anual"
                         ? `${regla.porcentaje_anual}% por anio`
@@ -266,7 +266,7 @@ export default function AntiguedadPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteRegla(regla.id) }}
-                      className="p-1.5 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400"
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -274,21 +274,21 @@ export default function AntiguedadPage() {
                   </div>
                 </div>
                 {expandedId === regla.id && (
-                  <div className="px-4 pb-4 border-t border-gray-800">
+                  <div className="px-4 pb-4 border-t border-gray-200">
                     {regla.tipo === "porcentaje_anual" ? (
-                      <div className="mt-3 bg-gray-800/50 rounded-xl p-3">
-                        <p className="text-sm text-gray-300">
-                          Bonificacion: <span className="text-white font-semibold">{regla.porcentaje_anual}%</span> por cada anio de antiguedad
+                      <div className="mt-3 bg-gray-50 rounded-xl p-3">
+                        <p className="text-sm text-gray-600">
+                          Bonificacion: <span className="text-gray-900 font-semibold">{regla.porcentaje_anual}%</span> por cada anio de antiguedad
                         </p>
                         <p className="text-xs text-gray-500 mt-1">Tope maximo: 50% del salario</p>
                       </div>
                     ) : (
                       <div className="mt-3 space-y-1.5">
                         {regla.tramos.map((t, i) => (
-                          <div key={i} className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-3 py-2">
+                          <div key={i} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
                             <span className="text-xs text-gray-500">Tramo {i + 1}</span>
-                            <span className="text-sm text-gray-300">{t.desde} - {t.hasta} anios</span>
-                            <span className="text-sm text-white font-semibold">{t.porcentaje}%</span>
+                            <span className="text-sm text-gray-600">{t.desde} - {t.hasta} anios</span>
+                            <span className="text-sm text-gray-900 font-semibold">{t.porcentaje}%</span>
                           </div>
                         ))}
                       </div>

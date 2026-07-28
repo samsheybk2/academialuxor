@@ -159,21 +159,21 @@ export default function EscalasPage() {
   }
 
   return (
-    <div className="min-h-full bg-gray-950 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-full bg-[#F0F2F5] p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-gray-800 flex items-center justify-center">
-              <Layers className="w-5 h-5 text-white" />
+              <Layers className="w-5 h-5 text-gray-900" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Escalas Salariales</h1>
-              <p className="text-sm text-gray-400">Defina las escalas para calcular paquetes</p>
+              <h1 className="text-xl font-bold text-gray-900">Escalas Salariales</h1>
+              <p className="text-sm text-gray-500">Defina las escalas para calcular paquetes</p>
             </div>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-600 text-white rounded-xl hover:bg-slate-500 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2.5 bg-luxor-primary text-white rounded-xl hover:bg-luxor-secondary transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
             Nueva Escala
@@ -182,31 +182,31 @@ export default function EscalasPage() {
 
         {/* New Escala Form */}
         {showForm && (
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-white">Crear Escala</h3>
-              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400">
+              <h3 className="text-base font-semibold text-gray-900">Crear Escala</h3>
+              <button onClick={resetForm} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Nombre *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Nombre *</label>
                 <input
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                   placeholder="Ej: Escala Corporativa 2024"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1.5">Tipo *</label>
+                <label className="block text-sm text-gray-500 mb-1.5">Tipo *</label>
                 <select
                   value={tipo}
                   onChange={(e) => setTipo(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                 >
                   <option value="fijo_porcentaje">Porcentaje fijo entre niveles</option>
                   <option value="rango_por_cargo">Rango por cargo</option>
@@ -215,20 +215,20 @@ export default function EscalasPage() {
               </div>
               {tipo === "fijo_porcentaje" && (
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1.5">% Diferencia entre niveles</label>
+                  <label className="block text-sm text-gray-500 mb-1.5">% Diferencia entre niveles</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       value={porcentajeDiferencia}
                       onChange={(e) => setPorcentajeDiferencia(e.target.value)}
-                      className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-slate-500"
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                       placeholder="15"
                       min="1"
                       max="100"
                     />
                     <button
                       onClick={generateFromPercentage}
-                      className="px-3 py-2 bg-gray-700 text-gray-300 rounded-xl hover:bg-gray-600 text-sm"
+                      className="px-3 py-2 hover:bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-100 text-sm"
                     >
                       Gen.
                     </button>
@@ -240,8 +240,8 @@ export default function EscalasPage() {
             {/* Niveles */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <label className="text-sm text-gray-400">Niveles de la escala</label>
-                <button onClick={addNivel} className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-300">
+                <label className="text-sm text-gray-500">Niveles de la escala</label>
+                <button onClick={addNivel} className="flex items-center gap-1 text-xs text-luxor-primary hover:text-luxor-secondary">
                   <Plus className="w-3.5 h-3.5" /> Agregar nivel
                 </button>
               </div>
@@ -253,14 +253,14 @@ export default function EscalasPage() {
                       type="text"
                       value={n.nombre}
                       onChange={(e) => updateNivel(i, "nombre", e.target.value)}
-                      className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-slate-500"
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                       placeholder="Nombre del nivel"
                     />
                     <input
                       type="number"
                       value={n.salario_minimo}
                       onChange={(e) => updateNivel(i, "salario_minimo", e.target.value)}
-                      className="w-28 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-slate-500"
+                      className="w-28 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                       placeholder="Min $"
                       min="0"
                     />
@@ -268,13 +268,13 @@ export default function EscalasPage() {
                       type="number"
                       value={n.salario_maximo}
                       onChange={(e) => updateNivel(i, "salario_maximo", e.target.value)}
-                      className="w-28 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-slate-500"
+                      className="w-28 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-900 text-sm focus:outline-none focus:border-slate-500"
                       placeholder="Max $"
                       min="0"
                     />
                     <button
                       onClick={() => removeNivel(i)}
-                      className="p-1.5 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -284,13 +284,13 @@ export default function EscalasPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={resetForm} className="px-4 py-2 text-gray-400 hover:text-white text-sm">
+              <button onClick={resetForm} className="px-4 py-2 text-gray-500 hover:text-gray-900 text-sm">
                 Cancelar
               </button>
               <button
                 onClick={saveEscala}
                 disabled={saving || !nombre}
-                className="flex items-center gap-2 px-5 py-2.5 bg-slate-600 text-white rounded-xl hover:bg-slate-500 transition-colors text-sm font-medium disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 bg-luxor-primary text-white rounded-xl hover:bg-luxor-secondary transition-colors text-sm font-medium disabled:opacity-50"
               >
                 <Save className="w-4 h-4" />
                 {saving ? "Guardando..." : "Guardar"}
@@ -310,13 +310,13 @@ export default function EscalasPage() {
             </div>
           ) : (
             escalas.map((escala) => (
-              <div key={escala.id} className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+              <div key={escala.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() => setExpandedId(expandedId === escala.id ? null : escala.id)}
                 >
                   <div>
-                    <h3 className="text-sm font-semibold text-white">{escala.nombre}</h3>
+                    <h3 className="text-sm font-semibold text-gray-900">{escala.nombre}</h3>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {escala.niveles.length} niveles &middot; {escala.tipo.replace(/_/g, " ")}
                       {escala.porcentaje_diferencia && ` (${escala.porcentaje_diferencia}%)`}
@@ -325,7 +325,7 @@ export default function EscalasPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteEscala(escala.id) }}
-                      className="p-1.5 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400"
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-600"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -333,7 +333,7 @@ export default function EscalasPage() {
                   </div>
                 </div>
                 {expandedId === escala.id && escala.niveles.length > 0 && (
-                  <div className="px-4 pb-4 border-t border-gray-800">
+                  <div className="px-4 pb-4 border-t border-gray-200">
                     <table className="w-full mt-3">
                       <thead>
                         <tr className="text-xs text-gray-500">
@@ -345,11 +345,11 @@ export default function EscalasPage() {
                       </thead>
                       <tbody>
                         {escala.niveles.map((n) => (
-                          <tr key={n.id || n.nivel} className="border-t border-gray-800/50">
-                            <td className="py-2 text-sm text-gray-400">{n.nivel}</td>
-                            <td className="py-2 text-sm text-white">{n.nombre}</td>
-                            <td className="py-2 text-sm text-gray-300 text-right">${Number(n.salario_minimo).toLocaleString()}</td>
-                            <td className="py-2 text-sm text-gray-300 text-right">${Number(n.salario_maximo).toLocaleString()}</td>
+                          <tr key={n.id || n.nivel} className="border-t border-gray-200/50">
+                            <td className="py-2 text-sm text-gray-500">{n.nivel}</td>
+                            <td className="py-2 text-sm text-gray-900">{n.nombre}</td>
+                            <td className="py-2 text-sm text-gray-600 text-right">${Number(n.salario_minimo).toLocaleString()}</td>
+                            <td className="py-2 text-sm text-gray-600 text-right">${Number(n.salario_maximo).toLocaleString()}</td>
                           </tr>
                         ))}
                       </tbody>
