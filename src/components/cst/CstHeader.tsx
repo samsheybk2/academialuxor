@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useAuth } from "@/hooks/useAuth"
+import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { LogOut, Users, ClipboardList, BarChart3, Settings, ArrowUpRight } from "lucide-react"
 
@@ -53,6 +54,7 @@ function TooltipIcon({
 
 export function CstHeader() {
   const { user, logout } = useAuth()
+  const pathname = usePathname()
 
   return (
     <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200 flex items-center px-4">
@@ -71,7 +73,7 @@ export function CstHeader() {
             href={item.href}
             label={item.label}
             icon={item.icon}
-            isActive={false}
+            isActive={pathname === item.href}
           />
         ))}
       </nav>
