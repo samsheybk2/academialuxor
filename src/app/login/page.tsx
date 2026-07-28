@@ -131,15 +131,6 @@ export default function LoginPage() {
 
       {/* Panel derecho - Formulario */}
       <div className="flex-1 flex flex-col h-screen">
-        {/* Header móvil - Fondo blanco con logo */}
-        <div className="lg:hidden flex items-center justify-center py-6 bg-white flex-shrink-0 border-b border-gray-200">
-          <img
-            src="/logo.webp"
-            alt="Academia Luxor"
-            className="h-20 w-auto"
-          />
-        </div>
-
         {/* Área del formulario */}
         <div className="flex-1 overflow-y-auto relative bg-white lg:bg-white">
           {/* Slideshow de fondos - solo móvil */}
@@ -161,20 +152,7 @@ export default function LoginPage() {
 
           <div className="relative z-10 flex items-center justify-center min-h-full px-6 py-12">
             <div className="w-full max-w-lg">
-              {/* Logo - solo visible en desktop */}
-              <div className="hidden lg:flex lg:justify-center mb-8">
-                <img
-                  src="/logo.webp"
-                  alt="Academia Luxor"
-                  className="max-h-32 w-auto object-contain"
-                />
-              </div>
-
               <LoginForm />
-
-              <p className="text-center text-xs text-gray-400 lg:text-gray-400 text-white/60 mt-8">
-                Supermercados Luxor © {new Date().getFullYear()} — Todos los derechos reservados
-              </p>
             </div>
           </div>
         </div>

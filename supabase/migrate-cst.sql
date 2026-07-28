@@ -9,15 +9,11 @@ SET timezone = 'America/Caracas';
 -- 1. PLANTILLA DE EMPLEADOS
 -- ============================================================
 
--- 1.1 Configuracion de plazas por cargo
-CREATE TABLE IF NOT EXISTS cst_plantilla_cargos (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  cargo_id TEXT NOT NULL REFERENCES cargos(id) ON DELETE CASCADE,
-  total_plazas INTEGER NOT NULL DEFAULT 1 CHECK (total_plazas > 0),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(cargo_id)
-);
+-- 1.1 Agregar total_plazas a cargos existentes
+ALTER TABLE cargos ADD COLUMN IF NOT EXISTS total_plazas INTEGER NOT NULL DEFAULT 1 CHECK (total_plazas > 0);
+
+-- Eliminar tabla separada (ya no se usa)
+DROP TABLE IF EXISTS cst_plantilla_cargos;
 
 -- 1.2 Registro de empleados
 CREATE TABLE IF NOT EXISTS cst_empleados (

@@ -557,21 +557,6 @@ export function LoginForm() {
               </div>
             </div>
 
-            <div className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                id="terms"
-                className="mt-0.5 h-3.5 w-3.5 text-luxor-primary border-gray-300 rounded focus:ring-luxor-primary/30"
-              />
-              <label htmlFor="terms" className="text-xs text-gray-600">
-                Acepto los{" "}
-                <span className="text-[#28315F] hover:text-[#1e2549] font-medium cursor-pointer">
-                  términos y condiciones
-                </span>{" "}
-                de la Academia LUXOR
-              </label>
-            </div>
-
             <button
               type="submit"
               disabled={loading}

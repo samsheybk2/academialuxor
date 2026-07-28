@@ -5,11 +5,6 @@ import { BarChart3, Users, ClipboardList, TrendingUp, Clock, CheckCircle2, Alert
 export default function PanelControlPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Panel de Control</h1>
-        <p className="text-sm text-gray-500 mt-1">Metricas y resumen general del modulo CST</p>
-      </div>
-
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         {[
           { label: "Candidatos Activos", value: "24", icon: Users, color: "text-blue-700", bg: "bg-blue-50" },

@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import Link from "next/link"
-import { LogOut, Calculator, Layers, BarChart3, Clock, History, ArrowUpRight } from "lucide-react"
+import { LogOut, Calculator, Layers, BarChart3, Clock, History, Menu, ArrowUpRight } from "lucide-react"
+import { AppSidebar } from "@/components/layout/AppSidebar"
 
 const navItems = [
   { href: "/nom/calculadora", label: "Calculadora", icon: Calculator },
@@ -58,15 +59,17 @@ interface NomHeaderProps {
 
 export function NomHeader({ onMenuClick }: NomHeaderProps) {
   const { user, logout } = useAuth()
+  const [showAppSwitcher, setShowAppSwitcher] = useState(false)
 
   return (
+    <>
     <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200 flex items-center px-4">
       <div className="flex items-center gap-2 shrink-0">
-        <Link href="/nom" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-600 to-gray-800 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">NOM</span>
-          </div>
-        </Link>
+        {user?.rol === "developer" && (
+          <button onClick={() => setShowAppSwitcher(true)} className="p-1.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+            <Menu className="w-6 h-6" />
+          </button>
+        )}
       </div>
 
       <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
@@ -112,5 +115,8 @@ export function NomHeader({ onMenuClick }: NomHeaderProps) {
         </div>
       </div>
     </header>
+
+    <AppSidebar isOpen={showAppSwitcher} onClose={() => setShowAppSwitcher(false)} />
+    </>
   )
 }

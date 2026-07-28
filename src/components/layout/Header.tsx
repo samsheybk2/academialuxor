@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
-import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Star, LayoutGrid, ArrowUpRight, X, Video, MessageCircle, UserCheck } from "lucide-react"
+import { LogOut, Users, BookOpen, Route, Calendar, Bell, Check, Clock, ArrowLeft, Newspaper, Network, Star, ArrowUpRight, X, Video, MessageCircle, Menu } from "lucide-react"
 import Link from "next/link"
 import { CourseTimer } from "./CourseTimer"
+import { AppSidebar } from "./AppSidebar"
 
 const navByRole = {
   decano: [
@@ -17,7 +18,6 @@ const navByRole = {
     { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   developer: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -29,7 +29,6 @@ const navByRole = {
     { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   facilitador: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -40,7 +39,6 @@ const navByRole = {
     { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   estudiante: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -48,7 +46,6 @@ const navByRole = {
     { href: "/dashboard/video-conferencias", label: "Video Conferencias", icon: Video },
     { href: "/dashboard/chat", label: "Chat", icon: MessageCircle },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
 }
 
@@ -285,22 +282,10 @@ export function Header({ onMenuClick }: HeaderProps) {
 
     <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200 flex items-center px-4">
       <div className="flex items-center gap-2 shrink-0">
-        {user?.rol === "developer" ? (
-          <button onClick={() => setShowAppSwitcher(true)} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-            <img
-              src="/Academia Luxor.webp"
-              alt="Academia Luxor"
-              className="w-9 h-9 object-contain"
-            />
+        {user?.rol === "developer" && (
+          <button onClick={() => setShowAppSwitcher(true)} className="p-1.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+            <Menu className="w-6 h-6" />
           </button>
-        ) : (
-          <Link href="/dashboard" prefetch={true} className="flex items-center gap-2.5">
-            <img
-              src="/Academia Luxor.webp"
-              alt="Academia Luxor"
-              className="w-9 h-9 object-contain"
-            />
-          </Link>
         )}
         {pathname.match(/^\/dashboard\/cursos\/[^/]+$/) && (
           <Link
@@ -399,55 +384,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       </div>
     </header>
 
-    {showAppSwitcher && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAppSwitcher(false)}>
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <LayoutGrid className="w-5 h-5 text-luxor-primary" />
-              <h2 className="text-lg font-semibold text-gray-900">Aplicaciones</h2>
-            </div>
-            <button onClick={() => setShowAppSwitcher(false)} className="p-1.5 rounded-lg hover:bg-gray-100">
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-          </div>
-          <div className="p-4 space-y-2">
-            {[
-              { name: "CYD", desc: "Capacitación y Desarrollo", href: "/dashboard", color: "from-blue-500 to-indigo-600", active: true },
-              { name: "CST", desc: "Captación y Selección de Talento", href: "/cst", color: "from-emerald-500 to-teal-600", active: true },
-              { name: "RRLL", desc: "Relaciones Laborales", href: "/rrll", color: "from-orange-500 to-amber-600", active: false },
-              { name: "SSSL", desc: "Seguridad y Salud en el Trabajo", href: "/sssl", color: "from-red-500 to-rose-600", active: false },
-              { name: "BTH", desc: "Bienestar y Talento Humano", href: "/bth", color: "from-purple-500 to-violet-600", active: false },
-              { name: "NOM", desc: "Nómina y Organización de Meta", href: "/nom", color: "from-slate-600 to-gray-800", active: true },
-            ].map((app) => (
-              <Link
-                key={app.name}
-                href={app.active ? app.href : "#"}
-                prefetch={app.active}
-                onClick={(e) => { if (!app.active) e.preventDefault() }}
-                className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
-                  app.active
-                    ? "border-gray-200 hover:border-luxor-primary hover:shadow-md cursor-pointer"
-                    : "border-gray-100 opacity-50 cursor-not-allowed"
-                }`}
-              >
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${app.color} flex items-center justify-center shrink-0`}>
-                  <span className="text-white font-bold text-sm">{app.name}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-900">{app.name}</span>
-                    {!app.active && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-500 rounded">Próximamente</span>}
-                  </div>
-                  <p className="text-xs text-gray-500 truncate">{app.desc}</p>
-                </div>
-                {app.active && <ArrowUpRight className="w-4 h-4 text-gray-400 shrink-0" />}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-    )}
+    <AppSidebar isOpen={showAppSwitcher} onClose={() => setShowAppSwitcher(false)} />
 
     </>
   )

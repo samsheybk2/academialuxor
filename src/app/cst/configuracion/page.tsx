@@ -5,11 +5,6 @@ import { Settings, Bell, Shield, Users, Building2, FileText } from "lucide-react
 export default function ConfiguracionPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Configuracion</h1>
-        <p className="text-sm text-gray-500 mt-1">Ajustes generales del modulo CST</p>
-      </div>
-
       <div className="space-y-4">
         {[
           { icon: Building2, titulo: "Departamentos", desc: "Gestionar departamentos de la empresa", href: "#" },

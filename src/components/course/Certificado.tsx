@@ -69,11 +69,6 @@ async function buildPdf(origin: string, nombre: string, curso: string, fecha: st
   pdf.setFontSize(5.5); pdf.setTextColor(40, 49, 95)
   pdf.text("VALIDAR", W - 88, 92, { align: "center" })
 
-  try {
-    const l = await loadImage(`${origin}/logo.webp`)
-    pdf.addImage(l, "PNG", cx - 168.75, 55, 337.5, 0)
-  } catch {}
-
   pdf.setFontSize(65); pdf.setTextColor(40, 49, 95)
   pdf.text(tipoLabel, cx, 200, { align: "center" })
   pdf.setDrawColor(139, 156, 199); pdf.setLineWidth(2)

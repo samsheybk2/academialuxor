@@ -16,7 +16,6 @@ const navByRole = {
     { href: "/dashboard/cursos", label: "Cursos", icon: BookOpen },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/video-conferencias", label: "Video", icon: Video },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   developer: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -28,7 +27,6 @@ const navByRole = {
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/insignias", label: "Experiencia", icon: Star },
     { href: "/dashboard/video-conferencias", label: "Video", icon: Video },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   facilitador: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -39,7 +37,6 @@ const navByRole = {
     { href: "/dashboard/cursos", label: "Cursos", icon: BookOpen },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/video-conferencias", label: "Video", icon: Video },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   estudiante: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },

@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createSupabaseClient } from "@/lib/supabase"
 import {
   Search, Plus, MoreHorizontal, Mail, Phone, MapPin, Calendar,
   ChevronDown, Eye, Trash2, ArrowRight, Users, TrendingUp, Clock, CheckCircle2,
   XCircle, Star, GripVertical, X, FileText, Building2, DollarSign, Send, Download,
-  SlidersHorizontal
+  SlidersHorizontal, Loader2
 } from "lucide-react"
 
 type EtapaATS = "nuevo" | "revision" | "entrevista" | "evaluacion" | "oferta" | "contratado" | "rechazado"
@@ -14,16 +15,18 @@ interface Candidato {
   id: string
   nombre: string
   email: string
-  telefono: string
-  ubicacion: string
-  puesto: string
+  telefono?: string
+  cedula?: string
+  ubicacion?: string
+  cargo_id?: string
+  cargo_nombre?: string
   fuente: string
-  salarioEsperado: string
-  fechaPostulacion: string
+  salario_esperado?: string
+  cv_url?: string
+  notas?: string
   etapa: EtapaATS
   calificacion: number
-  notas: string
-  avatar?: string
+  fecha_postulacion: string
 }
 
 const etapas: { id: EtapaATS; label: string; color: string; bgColor: string; borderColor: string }[] = [
@@ -36,23 +39,13 @@ const etapas: { id: EtapaATS; label: string; color: string; bgColor: string; bor
   { id: "rechazado", label: "Rechazado", color: "text-red-700", bgColor: "bg-red-50", borderColor: "border-red-200" },
 ]
 
-const candidatosMock: Candidato[] = [
-  { id: "1", nombre: "Maria Garcia", email: "maria.garcia@email.com", telefono: "+58 412-1234567", ubicacion: "Caracas", puesto: "Gerente de Ventas", fuente: "LinkedIn", salarioEsperado: "$2,500", fechaPostulacion: "2026-07-20", etapa: "nuevo", calificacion: 4, notas: "Experiencia en retail" },
-  { id: "2", nombre: "Carlos Rodriguez", email: "carlos.r@email.com", telefono: "+58 414-7654321", ubicacion: "Maracaibo", puesto: "Analista de RRHH", fuente: "Referido", salarioEsperado: "$1,800", fechaPostulacion: "2026-07-18", etapa: "revision", calificacion: 3, notas: "Buen perfil academico" },
-  { id: "3", nombre: "Ana Martinez", email: "ana.m@email.com", telefono: "+58 416-9876543", ubicacion: "Valencia", puesto: "Coordinador de Logistica", fuente: "Computrabajo", salarioEsperado: "$2,000", fechaPostulacion: "2026-07-15", etapa: "entrevista", calificacion: 5, notas: "Excelente referencia" },
-  { id: "4", nombre: "Luis Hernandez", email: "luis.h@email.com", telefono: "+58 412-5551234", ubicacion: "Barquisimeto", puesto: "Supervisor de Almacen", fuente: "Indeed", salarioEsperado: "$1,600", fechaPostulacion: "2026-07-12", etapa: "evaluacion", calificacion: 4, notas: "Certificado en SCM" },
-  { id: "5", nombre: "Laura Sanchez", email: "laura.s@email.com", telefono: "+58 414-8889900", ubicacion: "Caracas", puesto: "Gerente de TI", fuente: "LinkedIn", salarioEsperado: "$3,500", fechaPostulacion: "2026-07-10", etapa: "oferta", calificacion: 5, notas: "10+ anios de experiencia" },
-  { id: "6", nombre: "Pedro Lopez", email: "pedro.l@email.com", telefono: "+58 416-2223344", ubicacion: "Merida", puesto: "Cajero Senior", fuente: "Computrabajo", salarioEsperado: "$900", fechaPostulacion: "2026-07-08", etapa: "contratado", calificacion: 4, notas: "Aprobado en todas las etapas" },
-  { id: "7", nombre: "Sofia Torres", email: "sofia.t@email.com", telefono: "+58 412-7776655", ubicacion: "Puerto Ordaz", puesto: "Asistente Administrativo", fuente: "Referido", salarioEsperado: "$1,100", fechaPostulacion: "2026-07-05", etapa: "rechazado", calificacion: 2, notas: "No cumple requisitos minimos" },
-  { id: "8", nombre: "Diego Ramirez", email: "diego.r@email.com", telefono: "+58 414-3334455", ubicacion: "Caracas", puesto: "Gerente de Marketing", fuente: "LinkedIn", salarioEsperado: "$2,800", fechaPostulacion: "2026-07-22", etapa: "nuevo", calificacion: 3, notas: "Perfil interesante" },
-  { id: "9", nombre: "Isabella Flores", email: "isabella.f@email.com", telefono: "+58 416-1112233", ubicacion: "Maracay", puesto: "Auditora Interna", fuente: "Indeed", salarioEsperado: "$2,200", fechaPostulacion: "2026-07-19", etapa: "revision", calificacion: 4, notas: "CIA certificada" },
-]
-
 const fuentes = ["Todas", "LinkedIn", "Computrabajo", "Indeed", "Referido", "Boca a boca", "Otros"]
 
 export default function CandidatosPage() {
-  const [candidatos, setCandidatos] = useState<Candidato[]>(candidatosMock)
+  const supabase = createSupabaseClient()
+  const [candidatos, setCandidatos] = useState<Candidato[]>([])
   const [cargos, setCargos] = useState<{ id: string; nombre: string }[]>([])
+  const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState("")
   const [filtroFuente, setFiltroFuente] = useState("Todas")
   const [filtroPuesto, setFiltroPuesto] = useState("Todos")
@@ -61,13 +54,14 @@ export default function CandidatosPage() {
   const [candidatoSeleccionado, setCandidatoSeleccionado] = useState<Candidato | null>(null)
   const [showNuevo, setShowNuevo] = useState(false)
   const [showFiltros, setShowFiltros] = useState(false)
+  const [nuevoForm, setNuevoForm] = useState({ nombre: "", email: "", telefono: "", ubicacion: "", fuente: "LinkedIn", salario_esperado: "", notas: "" })
 
   const candidatosFiltrados = candidatos.filter((c) => {
     const matchBusqueda = c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       c.email.toLowerCase().includes(busqueda.toLowerCase()) ||
-      c.puesto.toLowerCase().includes(busqueda.toLowerCase())
+      (c.cargo_nombre || "").toLowerCase().includes(busqueda.toLowerCase())
     const matchFuente = filtroFuente === "Todas" || c.fuente === filtroFuente
-    const matchPuesto = filtroPuesto === "Todos" || c.puesto === filtroPuesto
+    const matchPuesto = filtroPuesto === "Todos" || c.cargo_nombre === filtroPuesto
     return matchBusqueda && matchFuente && matchPuesto
   })
 
@@ -82,39 +76,78 @@ export default function CandidatosPage() {
   }
 
   useEffect(() => {
-    const fetchCargos = async () => {
-      const { createSupabaseClient } = await import("@/lib/supabase")
-      const supabase = createSupabaseClient()
-      const { data } = await supabase.from("cargos").select("id, nombre").order("nombre")
-      if (data) setCargos(data)
+    const fetchData = async () => {
+      setLoading(true)
+      const [candidatosRes, cargosRes] = await Promise.all([
+        supabase.from("cst_candidatos").select("*").order("fecha_postulacion", { ascending: false }),
+        supabase.from("cargos").select("id, nombre").order("nombre"),
+      ])
+      if (candidatosRes.data) {
+        const cargosMap = new Map((cargosRes.data || []).map((c: any) => [c.id, c.nombre]))
+        const mapped = candidatosRes.data.map((c: any) => ({
+          ...c,
+          cargo_nombre: cargosMap.get(c.cargo_id) || "",
+        }))
+        setCandidatos(mapped as Candidato[])
+      }
+      if (cargosRes.data) setCargos(cargosRes.data)
+      setLoading(false)
     }
-    fetchCargos()
-  }, [])
+    fetchData()
+  }, [supabase])
 
   const cargosOptions = cargos.map((c) => ({ value: c.id, label: c.nombre }))
 
-  const moverCandidato = (id: string, nuevaEtapa: EtapaATS) => {
+  const moverCandidato = async (id: string, nuevaEtapa: EtapaATS) => {
+    const candidato = candidatos.find((c) => c.id === id)
+    if (!candidato || candidato.etapa === nuevaEtapa) return
+    const { error } = await supabase
+      .from("cst_candidatos")
+      .update({ etapa: nuevaEtapa })
+      .eq("id", id)
+    if (error) return
+    await supabase.from("cst_candidato_historial").insert({
+      candidato_id: id,
+      etapa_anterior: candidato.etapa,
+      etapa_nueva: nuevaEtapa,
+    })
     setCandidatos((prev) => prev.map((c) => c.id === id ? { ...c, etapa: nuevaEtapa } : c))
+  }
+
+  const crearCandidato = async () => {
+    if (!nuevoForm.nombre || !nuevoForm.email || !puestoNuevo) return
+    const cargo = cargosOptions.find((c) => c.label === puestoNuevo)
+    const { data, error } = await supabase.from("cst_candidatos").insert({
+      nombre: nuevoForm.nombre,
+      email: nuevoForm.email,
+      telefono: nuevoForm.telefono || null,
+      ubicacion: nuevoForm.ubicacion || null,
+      cargo_id: cargo?.value || null,
+      fuente: nuevoForm.fuente,
+      salario_esperado: nuevoForm.salario_esperado || null,
+      notas: nuevoForm.notas || null,
+      etapa: "nuevo",
+      calificacion: 0,
+    }).select().single()
+    if (!error && data) {
+      const cargoNombre = cargo?.label || ""
+      setCandidatos((prev) => [{ ...data, cargo_nombre: cargoNombre } as unknown as Candidato, ...prev])
+      setShowNuevo(false)
+      setPuestoNuevo("")
+      setNuevoForm({ nombre: "", email: "", telefono: "", ubicacion: "", fuente: "LinkedIn", salario_esperado: "", notas: "" })
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+      </div>
+    )
   }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Candidatos</h1>
-          <p className="text-sm text-gray-500 mt-1">ATS - Seguimiento de captaciones de personal</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowNuevo(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Nuevo Candidato
-          </button>
-        </div>
-      </div>
-
       <div className="flex flex-wrap items-center gap-2 mb-6">
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
           <Users className="w-3.5 h-3.5" />
@@ -134,7 +167,7 @@ export default function CandidatosPage() {
         </span>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+      <div className="flex items-center justify-center gap-3 mb-6">
         <div className="relative w-full max-w-lg">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -184,6 +217,13 @@ export default function CandidatosPage() {
             </div>
           )}
         </div>
+        <button
+          onClick={() => setShowNuevo(true)}
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm whitespace-nowrap"
+        >
+          <Plus className="w-4 h-4" />
+          Nuevo
+        </button>
         <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
           <button
             onClick={() => setVista("kanban")}
@@ -228,7 +268,7 @@ export default function CandidatosPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-gray-900 truncate">{candidato.nombre}</p>
-                            <p className="text-xs text-gray-500 truncate">{candidato.puesto}</p>
+                            <p className="text-xs text-gray-500 truncate">{candidato.cargo_nombre}</p>
                           </div>
                         </div>
                         <button className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all">
@@ -242,7 +282,7 @@ export default function CandidatosPage() {
                         </span>
                         <span className="flex items-center gap-1">
                           <DollarSign className="w-3 h-3" />
-                          {candidato.salarioEsperado}
+                          {candidato.salario_esperado}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -332,16 +372,16 @@ export default function CandidatosPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{candidato.puesto}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{candidato.cargo_nombre}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{candidato.fuente}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{candidato.salarioEsperado}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{candidato.salario_esperado}</td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${etapa.bgColor} ${etapa.color} border ${etapa.borderColor}`}>
                           {etapa.label}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">
-                        {new Date(candidato.fechaPostulacion).toLocaleDateString("es-VE")}
+                        {new Date(candidato.fecha_postulacion).toLocaleDateString("es-VE")}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
@@ -381,7 +421,7 @@ export default function CandidatosPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">{candidatoSeleccionado.nombre}</h3>
-                  <p className="text-sm text-gray-500">{candidatoSeleccionado.puesto}</p>
+                  <p className="text-sm text-gray-500">{candidatoSeleccionado.cargo_nombre}</p>
                   <div className="flex items-center gap-0.5 mt-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
@@ -399,8 +439,8 @@ export default function CandidatosPage() {
                   { icon: Phone, label: "Telefono", value: candidatoSeleccionado.telefono },
                   { icon: MapPin, label: "Ubicacion", value: candidatoSeleccionado.ubicacion },
                   { icon: Building2, label: "Fuente", value: candidatoSeleccionado.fuente },
-                  { icon: DollarSign, label: "Salario Esperado", value: candidatoSeleccionado.salarioEsperado },
-                  { icon: Calendar, label: "Fecha Postulacion", value: new Date(candidatoSeleccionado.fechaPostulacion).toLocaleDateString("es-VE") },
+                  { icon: DollarSign, label: "Salario Esperado", value: candidatoSeleccionado.salario_esperado },
+                  { icon: Calendar, label: "Fecha Postulacion", value: new Date(candidatoSeleccionado.fecha_postulacion).toLocaleDateString("es-VE") },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-gray-50">
@@ -469,21 +509,21 @@ export default function CandidatosPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Nombre completo</label>
-                  <input type="text" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="Nombre y apellido" />
+                  <input type="text" value={nuevoForm.nombre} onChange={(e) => setNuevoForm({ ...nuevoForm, nombre: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="Nombre y apellido" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                  <input type="email" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="email@ejemplo.com" />
+                  <input type="email" value={nuevoForm.email} onChange={(e) => setNuevoForm({ ...nuevoForm, email: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="email@ejemplo.com" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Telefono</label>
-                  <input type="tel" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="+58 412-0000000" />
+                  <input type="tel" value={nuevoForm.telefono} onChange={(e) => setNuevoForm({ ...nuevoForm, telefono: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="+58 412-0000000" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Ubicacion</label>
-                  <input type="text" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="Ciudad" />
+                  <input type="text" value={nuevoForm.ubicacion} onChange={(e) => setNuevoForm({ ...nuevoForm, ubicacion: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="Ciudad" />
                 </div>
               </div>
               <div>
@@ -502,29 +542,29 @@ export default function CandidatosPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Fuente</label>
-                  <select className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
-                    <option>LinkedIn</option>
-                    <option>Computrabajo</option>
-                    <option>Indeed</option>
-                    <option>Referido</option>
-                    <option>Otro</option>
+                  <select value={nuevoForm.fuente} onChange={(e) => setNuevoForm({ ...nuevoForm, fuente: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Computrabajo">Computrabajo</option>
+                    <option value="Indeed">Indeed</option>
+                    <option value="Referido">Referido</option>
+                    <option value="Otro">Otro</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Salario esperado</label>
-                  <input type="text" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="$0,000" />
+                  <input type="text" value={nuevoForm.salario_esperado} onChange={(e) => setNuevoForm({ ...nuevoForm, salario_esperado: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" placeholder="$0,000" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Notas</label>
-                <textarea rows={3} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none" placeholder="Observaciones sobre el candidato..." />
+                <textarea rows={3} value={nuevoForm.notas} onChange={(e) => setNuevoForm({ ...nuevoForm, notas: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none" placeholder="Observaciones sobre el candidato..." />
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100">
               <button onClick={() => setShowNuevo(false)} className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
                 Cancelar
               </button>
-              <button className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors">
+              <button onClick={crearCandidato} className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors">
                 Guardar Candidato
               </button>
             </div>

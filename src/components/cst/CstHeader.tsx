@@ -4,7 +4,8 @@ import { useState } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { LogOut, Users, ClipboardList, BarChart3, Settings, ArrowUpRight, Network, Briefcase } from "lucide-react"
+import { LogOut, Users, ClipboardList, BarChart3, Settings, ArrowUpRight, Network, Briefcase, Menu } from "lucide-react"
+import { AppSidebar } from "@/components/layout/AppSidebar"
 
 const navItems = [
   { href: "/cst/candidatos", label: "Candidatos", icon: Users },
@@ -57,15 +58,17 @@ function TooltipIcon({
 export function CstHeader() {
   const { user, logout } = useAuth()
   const pathname = usePathname()
+  const [showAppSwitcher, setShowAppSwitcher] = useState(false)
 
   return (
+    <>
     <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200 flex items-center px-4">
       <div className="flex items-center gap-2 shrink-0">
-        <Link href="/cst" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">CST</span>
-          </div>
-        </Link>
+        {user?.rol === "developer" && (
+          <button onClick={() => setShowAppSwitcher(true)} className="p-1.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100">
+            <Menu className="w-6 h-6" />
+          </button>
+        )}
       </div>
 
       <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
@@ -111,5 +114,8 @@ export function CstHeader() {
         </div>
       </div>
     </header>
+
+    <AppSidebar isOpen={showAppSwitcher} onClose={() => setShowAppSwitcher(false)} />
+    </>
   )
 }

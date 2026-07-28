@@ -33,7 +33,6 @@ const navByRole = {
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   developer: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -43,7 +42,6 @@ const navByRole = {
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/insignias", label: "Experiencia", icon: Star },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   facilitador: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -52,7 +50,6 @@ const navByRole = {
     { href: "/dashboard/rutas-aprendizaje", label: "Rutas de Aprendizaje", icon: Route },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
     { href: "/dashboard/agenda", label: "Agenda", icon: Calendar },
-    { href: "/cst", label: "CST", icon: UserCheck },
   ],
   estudiante: [
     { href: "/dashboard/noticias", label: "Noticias", icon: Newspaper },
@@ -92,28 +89,7 @@ export function Sidebar({
           collapsed ? "w-[68px]" : "w-64"
         } ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
-          {!collapsed && (
-            <Link href="/dashboard" prefetch={true} className="flex items-center gap-2.5">
-              <img
-                src="/Academia Luxor.webp"
-                alt="Academia Luxor"
-                className="w-8 h-8 object-contain"
-              />
-              <span className="font-bold text-gray-900 text-lg tracking-tight">
-                Academia LUXOR
-              </span>
-            </Link>
-          )}
-          {collapsed && (
-            <div className="w-8 h-8 flex items-center justify-center mx-auto">
-              <img
-                src="/Academia Luxor.webp"
-                alt="Academia Luxor"
-                className="w-8 h-8 object-contain"
-              />
-            </div>
-          )}
+        <div className="flex items-center justify-end h-16 px-4 border-b border-gray-100">
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 lg:hidden"
