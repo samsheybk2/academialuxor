@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { LogOut, Users, ClipboardList, BarChart3, Settings, ArrowUpRight, Network, Briefcase, Menu } from "lucide-react"
+import { LogOut, Users, ClipboardList, BarChart3, Settings, Network, Briefcase, Menu } from "lucide-react"
 import { AppSidebar } from "@/components/layout/AppSidebar"
 
 const navItems = [
@@ -84,14 +84,6 @@ export function CstHeader() {
       </nav>
 
       <div className="flex items-center gap-3 ml-auto shrink-0">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100"
-        >
-          <ArrowUpRight className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">CYD</span>
-        </Link>
-
         <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
           <Link href="/dashboard/perfil" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             {user?.avatar_url ? (

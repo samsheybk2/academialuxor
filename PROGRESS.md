@@ -109,6 +109,8 @@ useEffect(() => {
 - ✅ Botón de hamburguesa (App Sidebar) solo visible para rol "developer"
 - ✅ Texto de copyright "Supermercados Luxor © 2026" removido del Login
 - ✅ Checkbox de términos y condiciones removido del formulario de registro
+- ✅ Botón de CYD eliminado de CstHeader y NomHeader
+- ✅ Página de postulación con fondo emerald-600 y textos blancos
 - ✅ Build exitoso sin errores
 
 ### Pendiente

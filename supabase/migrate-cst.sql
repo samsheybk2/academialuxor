@@ -5,6 +5,11 @@
 
 SET timezone = 'America/Caracas';
 
+-- Permitir lectura anonima de cargos (para formulario publico de postulacion)
+CREATE POLICY "cargos_select_anon"
+  ON cargos FOR SELECT
+  USING (auth.role() = 'anon');
+
 -- ============================================================
 -- 1. PLANTILLA DE EMPLEADOS
 -- ============================================================
@@ -184,6 +189,9 @@ CREATE POLICY "cst_delete_all" ON cst_empleados FOR DELETE USING (
 
 CREATE POLICY "cst_insert_all" ON cst_candidatos FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND rol IN ('decano', 'developer', 'facilitador'))
+);
+CREATE POLICY "cst_insert_anon" ON cst_candidatos FOR INSERT WITH CHECK (
+  auth.role() = 'anon'
 );
 CREATE POLICY "cst_update_all" ON cst_candidatos FOR UPDATE USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND rol IN ('decano', 'developer', 'facilitador'))
