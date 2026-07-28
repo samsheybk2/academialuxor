@@ -410,7 +410,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="p-4 space-y-2">
             {[
               { name: "CYD", desc: "Capacitación y Desarrollo", href: "/dashboard", color: "from-blue-500 to-indigo-600", active: true },
-              { name: "CST", desc: "Captación y Selección de Talento", href: "/cst", color: "from-emerald-500 to-teal-600", active: false },
+              { name: "CST", desc: "Captación y Selección de Talento", href: "/cst", color: "from-emerald-500 to-teal-600", active: true },
               { name: "RRLL", desc: "Relaciones Laborales", href: "/rrll", color: "from-orange-500 to-amber-600", active: false },
               { name: "SSSL", desc: "Seguridad y Salud en el Trabajo", href: "/sssl", color: "from-red-500 to-rose-600", active: false },
               { name: "BTH", desc: "Bienestar y Talento Humano", href: "/bth", color: "from-purple-500 to-violet-600", active: false },
