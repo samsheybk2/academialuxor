@@ -2,13 +2,15 @@
 
 import { useState } from "react"
 import { resetPassword } from "@/lib/auth"
-import { GraduationCap, Mail, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
+import { createSupabaseClient } from "@/lib/supabase"
+import { GraduationCap, Mail, ArrowLeft, Loader2, CheckCircle2, AlertCircle, AtSign } from "lucide-react"
 import Link from "next/link"
 
 export default function RecuperarContrasenaPage() {
-  const [email, setEmail] = useState("")
+  const [identifier, setIdentifier] = useState("")
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [sentEmail, setSentEmail] = useState("")
   const [error, setError] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
@@ -16,7 +18,18 @@ export default function RecuperarContrasenaPage() {
     setError("")
     setLoading(true)
     try {
+      let email = identifier
+      if (!identifier.includes("@")) {
+        const supabase = createSupabaseClient()
+        const { data } = await supabase.from("profiles").select("email").eq("username", identifier).single()
+        if (data?.email) {
+          email = data.email
+        } else {
+          throw new Error("Usuario no encontrado")
+        }
+      }
       await resetPassword(email)
+      setSentEmail(email)
       setSent(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error al enviar el correo")
@@ -50,7 +63,7 @@ export default function RecuperarContrasenaPage() {
               </div>
               <h2 className="text-xl font-bold text-gray-900">Correo enviado</h2>
               <p className="text-gray-500 text-sm leading-relaxed">
-                Enviamos un enlace de recuperación a <strong className="text-gray-900">{email}</strong>. Haz clic en el enlace para crear una nueva contraseña.
+                Enviamos un enlace de recuperación a <strong className="text-gray-900">{sentEmail}</strong>. Haz clic en el enlace para crear una nueva contraseña.
               </p>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">
                 No olvides revisar tu carpeta de spam o correo no deseado.
@@ -68,7 +81,7 @@ export default function RecuperarContrasenaPage() {
               <div className="text-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Recuperar contraseña</h2>
                 <p className="text-gray-500 text-sm mt-1">
-                  Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
+                  Ingresa tu usuario o correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
                 </p>
               </div>
 
@@ -81,14 +94,14 @@ export default function RecuperarContrasenaPage() {
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">Correo electrónico</label>
+                  <label className="block text-sm font-medium text-gray-700">Usuario o correo</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu@luxor.com"
+                      type="text"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="Tu usuario o correo electrónico"
                       required
                       autoFocus
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary"
@@ -98,7 +111,7 @@ export default function RecuperarContrasenaPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || !email.trim()}
+                  disabled={loading || !identifier.trim()}
                   className="w-full py-2.5 px-4 bg-luxor-primary text-white rounded-lg font-medium text-sm hover:bg-luxor-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (

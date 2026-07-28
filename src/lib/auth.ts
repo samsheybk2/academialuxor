@@ -7,8 +7,21 @@ function getClient() {
   return createSupabaseClient()
 }
 
-export async function signIn(email: string, password: string) {
+export async function signIn(identifier: string, password: string) {
   const supabase = getClient()
+  let email = identifier
+  if (!identifier.includes("@")) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("username", identifier)
+      .single()
+    if (data?.email) {
+      email = data.email
+    } else {
+      throw new Error("Usuario no encontrado")
+    }
+  }
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -24,14 +37,15 @@ export async function signUp(
   cedula: string,
   rol: Rol = "estudiante",
   sucursal?: string,
-  cargo?: string
+  cargo?: string,
+  username?: string
 ) {
   const supabase = getClient()
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { nombre, rol, cedula, sucursal, cargo },
+      data: { nombre, rol, cedula, sucursal, cargo, username },
       emailRedirectTo: `${window.location.origin}/login`,
     },
   })
@@ -42,6 +56,7 @@ export async function signUp(
       await supabase.from("profiles").upsert({
         id: data.user.id,
         email,
+        username: username || null,
         nombre,
         rol,
         cedula,

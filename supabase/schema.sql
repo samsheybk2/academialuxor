@@ -21,6 +21,7 @@ SET timezone = 'America/Caracas';
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
+  username TEXT UNIQUE NOT NULL,
   nombre TEXT NOT NULL,
   rol TEXT NOT NULL CHECK (rol IN ('decano', 'facilitador', 'estudiante', 'developer')),
   nivel TEXT CHECK (nivel IN ('gerentes', 'coordinadores', 'administrativos', 'operadores')),
@@ -393,19 +394,22 @@ DECLARE
   meta JSONB;
   user_rol TEXT;
   user_nombre TEXT;
+  user_username TEXT;
   user_cedula TEXT;
   user_sucursal TEXT;
 BEGIN
   meta := COALESCE(NEW.raw_user_meta_data, '{}'::jsonb);
   user_rol := COALESCE(meta ->> 'rol', 'estudiante');
   user_nombre := COALESCE(meta ->> 'nombre', NEW.email);
+  user_username := COALESCE(meta ->> 'username', '');
   user_cedula := COALESCE(meta ->> 'cedula', '');
   user_sucursal := COALESCE(meta ->> 'sucursal', '');
 
-  INSERT INTO public.profiles (id, email, nombre, rol, cedula, sucursal, aprobado)
+  INSERT INTO public.profiles (id, email, username, nombre, rol, cedula, sucursal, aprobado)
   VALUES (
     NEW.id,
     NEW.email,
+    NULLIF(user_username, ''),
     user_nombre,
     user_rol,
     NULLIF(user_cedula, ''),
@@ -416,7 +420,8 @@ BEGIN
     nombre = EXCLUDED.nombre,
     rol = EXCLUDED.rol,
     cedula = EXCLUDED.cedula,
-    sucursal = EXCLUDED.sucursal;
+    sucursal = EXCLUDED.sucursal,
+    username = EXCLUDED.username;
 
   RETURN NEW;
 END;

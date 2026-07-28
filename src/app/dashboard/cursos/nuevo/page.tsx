@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { useAuth } from "@/hooks/useAuth"
 import { createSupabaseClient } from "@/lib/supabase"
-import { Button } from "@/components/ui/Button"
 import { RichTextEditor } from "@/components/ui/RichTextEditor"
 import { TimeInput } from "@/components/ui/TimeInput"
 import { parseDurationToMinutes, formatMinutesToHHMM, formatDuration } from "@/lib/duration"
@@ -12,7 +11,6 @@ import {
   ArrowLeft,
   Plus,
   Trash2,
-  Save,
   Video,
   HelpCircle,
   ChevronDown,
@@ -430,7 +428,7 @@ function NuevoCursoContent() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pb-24">
       <Link
         href="/dashboard/cursos"
         className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
@@ -445,13 +443,6 @@ function NuevoCursoContent() {
           Completa la información del curso y agrega módulos con evaluaciones
         </p>
       </div>
-
-      {saved && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
-          <CheckCircle2 className="w-5 h-5 text-blue-600" />
-          <p className="text-blue-800 font-medium">Curso creado exitosamente</p>
-        </div>
-      )}
 
       {/* Información del curso */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
@@ -1047,28 +1038,56 @@ function NuevoCursoContent() {
         </div>
       </div>
 
-      {/* Botones */}
-      <div className="flex gap-3 pb-8">
-        <Link href="/dashboard/cursos" className="flex-1">
-          <Button variant="secondary" className="w-full">
-            Cancelar
-          </Button>
+      {/* Botones sticky */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 -mx-4 px-4 py-4 flex gap-3 shadow-lg z-40">
+        <Link
+          href="/dashboard/cursos"
+          className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors text-center"
+        >
+          Cancelar
         </Link>
-        <Button
+        <button
           onClick={handleSave}
           disabled={saving || saved || !form.titulo || !form.facilitador_id || form.niveles.length === 0}
-          className="flex-1"
+          className="flex-1 px-4 py-2.5 bg-luxor-primary text-white rounded-lg font-medium hover:bg-luxor-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Guardando...
+            </>
           ) : saved ? (
-            <CheckCircle2 className="w-4 h-4" />
+            <>
+              <CheckCircle2 className="w-4 h-4" />
+              Guardado
+            </>
           ) : (
-            <Save className="w-4 h-4" />
+            "Crear Curso"
           )}
-          {saving ? "Guardando..." : saved ? "Guardado" : "Crear Curso"}
-        </Button>
+        </button>
       </div>
+
+      {/* Overlay con blur al guardar */}
+      {(saving || saved) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/40 animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl px-8 py-6 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-300">
+            {saving && (
+              <>
+                <div className="w-16 h-16 rounded-full border-4 border-luxor-primary/20 border-t-luxor-primary animate-spin" />
+                <p className="text-lg font-semibold text-gray-800">Guardando curso...</p>
+              </>
+            )}
+            {saved && (
+              <>
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center animate-in zoom-in duration-500">
+                  <CheckCircle2 className="w-10 h-10 text-green-600" />
+                </div>
+                <p className="text-lg font-semibold text-green-700">¡Curso creado exitosamente!</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

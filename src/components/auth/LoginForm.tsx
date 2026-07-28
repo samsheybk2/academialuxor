@@ -17,6 +17,7 @@ import {
   IdCard,
   MapPin,
   Briefcase,
+  AtSign,
 } from "lucide-react"
 
 const SUCURSALES = [
@@ -41,6 +42,7 @@ const SUCURSALES = [
 export function LoginForm() {
   const router = useRouter()
   const [mode, setMode] = useState<"login" | "signup">("login")
+  const [loginIdentifier, setLoginIdentifier] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -58,6 +60,9 @@ export function LoginForm() {
   const [cedulaError, setCedulaError] = useState("")
   const [cargo, setCargo] = useState("")
   const [cargos, setCargos] = useState<Array<{ id: string; nombre: string }>>([])
+  const [username, setUsername] = useState("")
+  const [usernameError, setUsernameError] = useState("")
+  const [checkingUsername, setCheckingUsername] = useState(false)
 
   useEffect(() => {
     async function fetchCargos() {
@@ -72,6 +77,7 @@ export function LoginForm() {
   }, [])
 
   function resetSignup() {
+    setLoginIdentifier("")
     setEmail("")
     setPassword("")
     setConfirmPassword("")
@@ -82,6 +88,8 @@ export function LoginForm() {
     setCargo("")
     setError("")
     setNameAutoFilled(false)
+    setUsername("")
+    setUsernameError("")
   }
 
   async function handleCedulaLookup(value: string) {
@@ -112,13 +120,31 @@ export function LoginForm() {
     }
   }
 
+  async function checkUsername(value: string) {
+    const cleaned = value.replace(/[^a-zA-Z0-9_.]/g, "").toLowerCase().slice(0, 20)
+    setUsername(cleaned)
+    setUsernameError("")
+    if (cleaned.length < 3) {
+      setUsernameError("Mínimo 3 caracteres")
+      return
+    }
+    if (cleaned.length >= 3) {
+      setCheckingUsername(true)
+      const supabase = createSupabaseClient()
+      const { data } = await supabase.from("profiles").select("id").eq("username", cleaned).single()
+      if (data) {
+        setUsernameError("Este usuario ya está en uso")
+      }
+      setCheckingUsername(false)
+    }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError("")
     setLoading(true)
-    setError("")
     try {
-      await signIn(email, password)
+      await signIn(loginIdentifier, password)
       router.push("/dashboard/noticias")
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Credenciales incorrectas")
@@ -146,6 +172,18 @@ export function LoginForm() {
 
     if (!apellidos.trim()) {
       setError("Los apellidos son requeridos")
+      setLoading(false)
+      return
+    }
+
+    if (!username.trim() || username.length < 3) {
+      setError("El nombre de usuario debe tener al menos 3 caracteres")
+      setLoading(false)
+      return
+    }
+
+    if (usernameError) {
+      setError(usernameError)
       setLoading(false)
       return
     }
@@ -178,47 +216,15 @@ export function LoginForm() {
         cedula,
         "estudiante",
         sucursal,
-        cargos.find((c) => c.id === cargo)?.nombre || undefined
+        cargos.find((c) => c.id === cargo)?.nombre || undefined,
+        username.trim().toLowerCase()
       )
-      setEmailSent(true)
+      router.push("/pendiente-aprobacion")
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error al crear la cuenta")
     } finally {
       setLoading(false)
     }
-  }
-
-  if (emailSent) {
-    return (
-    <div className="w-full max-w-lg mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              ¡Correo Enviado!
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Hemos enviado un enlace de confirmación a{" "}
-              <span className="font-semibold text-gray-900">{email}</span>.
-              Por favor revisa tu bandeja de entrada y haz clic en el enlace
-              para activar tu cuenta.
-            </p>
-            <button
-              onClick={() => {
-                setEmailSent(false)
-                setMode("login")
-                resetSignup()
-              }}
-              className="w-full bg-[#28315F] text-white py-3 px-4 rounded-lg font-semibold hover:bg-[#1e2549] transition-colors"
-            >
-              Volver al Inicio de Sesión
-            </button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -267,15 +273,15 @@ export function LoginForm() {
           <form onSubmit={handleLogin} className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Correo Electrónico
+                Usuario
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
+                  type="text"
+                  value={loginIdentifier}
+                  onChange={(e) => setLoginIdentifier(e.target.value)}
+                  placeholder="Tu nombre de usuario"
                   required
                   className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400"
                 />
@@ -445,6 +451,35 @@ export function LoginForm() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Nombre de Usuario *
+              </label>
+              <div className="relative">
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => checkUsername(e.target.value)}
+                  placeholder="ej: juan.perez"
+                  maxLength={20}
+                  className={`w-full pl-9 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary outline-none transition-colors text-sm text-gray-900 placeholder:text-gray-400 ${
+                    usernameError ? "border-red-300 bg-red-50" : "border-gray-300"
+                  }`}
+                />
+                {checkingUsername && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-luxor-primary animate-spin" />
+                )}
+                {!checkingUsername && username.length >= 3 && !usernameError && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+                )}
+              </div>
+              {usernameError && (
+                <p className="text-xs text-red-600 mt-1">{usernameError}</p>
+              )}
+              <p className="text-[10px] text-gray-400 mt-0.5">Solo letras, números, puntos y guiones bajos. No se podrá modificar después.</p>
             </div>
 
             <div>

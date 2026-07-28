@@ -2023,6 +2023,16 @@ export function PerfilContent({ viewUserId }: { viewUserId?: string }) {
                 <label className="block text-xs font-medium text-gray-500">Nombre</label>
                 <input type="text" value={modalForm.nombre} onChange={(e) => setModalForm({ ...modalForm, nombre: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm" />
               </div>
+              {effectiveUser?.username && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-gray-500">Usuario</label>
+                  <div className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-sm flex items-center gap-2">
+                    <span className="text-gray-400">@</span>
+                    {effectiveUser.username}
+                    <span className="text-[10px] text-gray-400 ml-auto">No modificable</span>
+                  </div>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <label className="block text-xs font-medium text-gray-500">Presentacion</label>
                 <textarea value={modalForm.bio} onChange={(e) => setModalForm({ ...modalForm, bio: e.target.value.slice(0, 500) })} rows={3} placeholder="Cuentanos sobre ti..." className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-luxor-primary/30 focus:border-luxor-primary text-sm resize-none" />

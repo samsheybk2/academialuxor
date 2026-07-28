@@ -11,6 +11,7 @@ export type EstadoCurso = "borrador" | "pendiente" | "aprobado" | "rechazado"
 export interface UserProfile {
   id: string
   email: string
+  username?: string
   nombre: string
   rol: Rol
   nivel?: NivelContenido

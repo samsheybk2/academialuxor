@@ -7,33 +7,31 @@ import { createSupabaseClient } from "@/lib/supabase"
 import { RichTextEditor } from "@/components/ui/RichTextEditor"
 import { TimeInput } from "@/components/ui/TimeInput"
 import { parseDurationToMinutes, formatMinutesToHHMM, formatDuration } from "@/lib/duration"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
 import {
   ArrowLeft,
   Plus,
   Trash2,
+  X,
+  Save,
   ChevronDown,
   ChevronRight,
-  GripVertical,
   Loader2,
   CheckCircle2,
-  Star,
-  X,
-  FileText,
 } from "lucide-react"
-
-interface Pregunta {
-  id: string
-  pregunta: string
-  tipo: "multiple" | "libre" | "analisis"
-  opciones: Opcion[]
-  respuestaCorrecta: number
-}
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface Opcion {
   id: string
   texto: string
+}
+
+interface Pregunta {
+  id: string
+  pregunta: string
+  tipo: "multiple" | "libre"
+  opciones: Opcion[]
+  respuestaCorrecta: number
 }
 
 interface MaterialPDF {
@@ -70,15 +68,15 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const supabase = createSupabaseClient()
 
-  const [loading, setLoading] = useState(true)
+  const [facilitadores, setFacilitadores] = useState<Facilitador[]>([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [facilitadores, setFacilitadores] = useState<Facilitador[]>([])
-  const [modulos, setModulos] = useState<ModuloForm[]>([])
-  const [initialModulos, setInitialModulos] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
   const [modulosExpandidos, setModulosExpandidos] = useState<string[]>([])
   const [materialPdf, setMaterialPdf] = useState<MaterialPDF[]>([])
+  const [initialModulos, setInitialModulos] = useState<string[]>([])
   const [initialMaterialPdf, setInitialMaterialPdf] = useState<MaterialPDF[]>([])
+  const [cursoOriginal, setCursoOriginal] = useState<{ facilitador_id: string } | null>(null)
 
   const [form, setForm] = useState({
     titulo: "",
@@ -92,10 +90,12 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
   })
   const [portadaFile, setPortadaFile] = useState<File | null>(null)
   const [portadaPreview, setPortadaPreview] = useState<string>("")
-  const [cursoOriginal, setCursoOriginal] = useState<{ facilitador_id: string } | null>(null)
+
+  const [modulos, setModulos] = useState<ModuloForm[]>([])
 
   useEffect(() => {
     async function loadCurso() {
+      setLoading(true)
       const { data: curso } = await supabase
         .from("cursos")
         .select("*")
@@ -127,15 +127,11 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
         if (modulosData) {
           const modulosConPreguntas = await Promise.all(
             modulosData.map(async (mod: { id: string; titulo?: string; introduccion?: string; video_url?: string; imagen_portada?: string; duracion?: string; max_intentos?: number }) => {
-              const { data: preguntasData, error: preguntasError } = await supabase
+              const { data: preguntasData } = await supabase
                 .from("preguntas")
                 .select("*")
                 .eq("modulo_id", mod.id)
                 .order("orden")
-
-              if (preguntasError) {
-                console.error("Error fetching preguntas for modulo", mod.id, preguntasError)
-              }
 
               const safeOpciones = (raw: any): string[] => {
                 if (Array.isArray(raw)) return raw
@@ -155,8 +151,8 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
                   id: p.id,
                   pregunta: p.pregunta,
                   tipo: p.tipo || "multiple",
-                  opciones: safeOpciones(p.opciones).map((o: string, i: number) => ({
-                    id: `opt-${i}`,
+                  opciones: safeOpciones(p.opciones).map((o: string, idx: number) => ({
+                    id: (idx + 1).toString(),
                     texto: o,
                   })),
                   respuestaCorrecta: typeof p.respuesta_correcta === "string" ? parseInt(p.respuesta_correcta) : (p.respuesta_correcta ?? 0),
@@ -194,15 +190,14 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
   }, [id])
 
   useEffect(() => {
-    async function loadFacilitadores() {
+    async function fetchFacilitadores() {
       const { data } = await supabase
         .from("profiles")
         .select("id, nombre, email")
         .in("rol", ["facilitador", "decano", "developer"])
-        .order("nombre")
-      if (data) setFacilitadores(data as Facilitador[])
+      if (data) setFacilitadores(data)
     }
-    loadFacilitadores()
+    fetchFacilitadores()
   }, [])
 
   function toggleNivel(nivel: string) {
@@ -613,13 +608,6 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
           Modifica la información del curso, módulos y evaluaciones
         </p>
       </div>
-
-      {saved && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
-          <CheckCircle2 className="w-5 h-5 text-blue-600" />
-          <p className="text-blue-700 font-medium">Curso actualizado correctamente</p>
-        </div>
-      )}
 
       {/* Información básica */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
@@ -1232,7 +1220,7 @@ function CursoEditarContent({ params }: { params: Promise<{ id: string }> }) {
                     onClick={() => setMaterialPdf((prev) => prev.filter((x) => x.id !== m.id))}
                     className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 ml-2"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
                 <input
