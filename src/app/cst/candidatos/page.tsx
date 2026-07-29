@@ -339,60 +339,47 @@ export default function CandidatosPage() {
 
       {vista === "kanban" ? (
         <div className="h-[calc(100vh-280px)] overflow-hidden">
-          <div className="flex gap-4 overflow-x-auto pb-4 h-full">
+          <div className="flex gap-2 h-full">
             {etapas.map((etapa) => {
               const candidatosEtapa = getCandidatosPorEtapa(etapa.id)
               return (
-                <div key={etapa.id} className="min-w-[280px] max-w-[320px] flex-shrink-0 flex flex-col h-full">
-                  <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${etapa.bgColor} border ${etapa.borderColor} mb-3 flex-shrink-0`}>
-                    <span className={`text-sm font-semibold ${etapa.color}`}>{etapa.label}</span>
-                    <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-medium ${etapa.color} ${etapa.bgColor}`}>
+                <div key={etapa.id} className="flex-1 min-w-0 flex flex-col h-full">
+                  <div className={`flex items-center gap-2 px-2 py-2 rounded-xl ${etapa.bgColor} border ${etapa.borderColor} mb-2 flex-shrink-0`}>
+                    <span className={`text-xs font-semibold ${etapa.color} truncate`}>{etapa.label}</span>
+                    <span className={`ml-auto px-1.5 py-0.5 rounded-full text-[10px] font-medium ${etapa.color} ${etapa.bgColor} flex-shrink-0`}>
                       {candidatosEtapa.length}
                     </span>
                   </div>
-                  <div className="space-y-2 overflow-y-auto flex-1 pr-1">
+                  <div className="space-y-1.5 overflow-y-auto flex-1">
                     {candidatosEtapa.map((candidato) => (
                     <div
                       key={candidato.id}
-                      className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer group"
+                      className="bg-white rounded-lg border border-gray-200 p-2 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer group"
                       onClick={() => setCandidatoSeleccionado(candidato)}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-9 h-9 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                            <span className="text-emerald-700 font-semibold text-sm">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                            <span className="text-emerald-700 font-semibold text-[10px]">
                               {candidato.nombre.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                             </span>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 truncate">{candidato.nombre}</p>
-                            <p className="text-xs text-gray-500 truncate">{candidato.cargo_nombre}</p>
+                            <p className="text-xs font-semibold text-gray-900 truncate">{candidato.nombre}</p>
+                            <p className="text-[10px] text-gray-500 truncate">{candidato.cargo_nombre}</p>
                           </div>
                         </div>
-                        <button className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all">
-                          <MoreHorizontal className="w-4 h-4 text-gray-400" />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3" />
-                          {candidato.fuente}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-3 h-3" />
-                          {candidato.salario_esperado}
-                        </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-0.5">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star
                               key={star}
-                              className={`w-3 h-3 ${star <= candidato.calificacion ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
+                              className={`w-2.5 h-2.5 ${star <= candidato.calificacion ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
                             />
                           ))}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5">
                           {etapa.id !== "nuevo" && (
                             <button
                               onClick={(e) => {
@@ -400,10 +387,10 @@ export default function CandidatosPage() {
                                 const idx = etapas.findIndex((et) => et.id === candidato.etapa)
                                 if (idx > 0) moverCandidato(candidato.id, etapas[idx - 1].id)
                               }}
-                              className="p-1 rounded hover:bg-gray-100 transition-colors"
+                              className="p-0.5 rounded hover:bg-gray-100 transition-colors"
                               title="Mover a etapa anterior"
                             >
-                              <ArrowRight className="w-3 h-3 text-gray-400 rotate-180" />
+                              <ArrowRight className="w-2.5 h-2.5 text-gray-400 rotate-180" />
                             </button>
                           )}
                           {etapa.id !== "contratado" && etapa.id !== "rechazado" && (
@@ -413,10 +400,10 @@ export default function CandidatosPage() {
                                 const idx = etapas.findIndex((et) => et.id === candidato.etapa)
                                 if (idx < etapas.length - 2) moverCandidato(candidato.id, etapas[idx + 1].id)
                               }}
-                              className="p-1 rounded hover:bg-gray-100 transition-colors"
+                              className="p-0.5 rounded hover:bg-gray-100 transition-colors"
                               title="Mover a siguiente etapa"
                             >
-                              <ArrowRight className="w-3 h-3 text-gray-400" />
+                              <ArrowRight className="w-2.5 h-2.5 text-gray-400" />
                             </button>
                           )}
                         </div>
