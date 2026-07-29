@@ -69,6 +69,8 @@ export default function CandidatosPage() {
       puntaje_max: number
     }[]
   } | null>(null)
+  const [confirmarEliminar, setConfirmarEliminar] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
 
   const candidatosFiltrados = candidatos.filter((c) => {
     const matchBusqueda = c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -150,6 +152,23 @@ export default function CandidatosPage() {
       setPuestoNuevo("")
       setNuevoForm({ nombre: "", email: "", telefono: "", ubicacion: "", fuente: "LinkedIn", salario_esperado: "", notas: "" })
     }
+  }
+
+  const eliminarCandidato = async () => {
+    if (!candidatoSeleccionado) return
+    setEliminando(true)
+    const { error } = await supabase
+      .from("cst_candidatos")
+      .delete()
+      .eq("id", candidatoSeleccionado.id)
+    
+    if (!error) {
+      setCandidatos((prev) => prev.filter((c) => c.id !== candidatoSeleccionado.id))
+      setCandidatoSeleccionado(null)
+      setTestResultados(null)
+    }
+    setEliminando(false)
+    setConfirmarEliminar(false)
   }
 
   const fetchTestResultados = async (candidatoId: string) => {
@@ -637,6 +656,12 @@ export default function CandidatosPage() {
                   <Download className="w-4 h-4" />
                   CV
                 </button>
+                <button 
+                  onClick={() => setConfirmarEliminar(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-medium hover:bg-red-100 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -714,6 +739,37 @@ export default function CandidatosPage() {
               <button onClick={crearCandidato} className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors">
                 Guardar Candidato
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmarEliminar && candidatoSeleccionado && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Eliminar Candidato</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                ¿Estás seguro de eliminar a <span className="font-semibold text-gray-900">{candidatoSeleccionado.nombre}</span>? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmarEliminar(false)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={eliminarCandidato}
+                  disabled={eliminando}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {eliminando ? "Eliminando..." : "Eliminar"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
