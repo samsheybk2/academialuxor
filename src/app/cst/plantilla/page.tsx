@@ -5,7 +5,7 @@ import { createSupabaseClient } from "@/lib/supabase"
 import {
   Search, Plus, Users, Briefcase, UserMinus, UserPlus, X, Calendar,
   Mail, Phone, MapPin,   ChevronDown, ChevronRight, AlertTriangle, CheckCircle2,
-  Clock, MoreHorizontal, SlidersHorizontal, Loader2
+  Clock, MoreHorizontal, SlidersHorizontal, Loader2, Edit2, Save
 } from "lucide-react"
 
 interface Empleado {
@@ -43,6 +43,8 @@ export default function PlantillaPage() {
   const [showAgregar, setShowAgregar] = useState(false)
   const [agregarCargo, setAgregarCargo] = useState("")
   const [retirando, setRetirando] = useState<string | null>(null)
+  const [editandoPlazas, setEditandoPlazas] = useState<string | null>(null)
+  const [nuevoTotalPlazas, setNuevoTotalPlazas] = useState(1)
   const [form, setForm] = useState({ nombre: "", cedula: "", email: "", telefono: "", fecha_ingreso: "" })
 
   useEffect(() => {
@@ -99,6 +101,21 @@ export default function PlantillaPage() {
       )
     }
     setRetirando(null)
+  }
+
+  const actualizarPlazas = async (cargoId: string) => {
+    const { error } = await supabase
+      .from("cargos")
+      .update({ total_plazas: nuevoTotalPlazas })
+      .eq("id", cargoId)
+    if (!error) {
+      setCargos((prev) =>
+        prev.map((c) =>
+          c.id === cargoId ? { ...c, total_plazas: nuevoTotalPlazas } : c
+        )
+      )
+    }
+    setEditandoPlazas(null)
   }
 
   const agregarEmpleado = async () => {
@@ -243,9 +260,16 @@ export default function PlantillaPage() {
                             <p className="text-sm font-semibold text-gray-900">{cargo.nombre}</p>
                           </div>
                           <div className="flex items-center gap-4 text-xs">
-                            <span className="flex items-center gap-1 text-blue-600">
-                              {totalPlazas}
-                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditandoPlazas(cargo.id)
+                                setNuevoTotalPlazas(cargo.total_plazas || 1)
+                              }}
+                              className="flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline"
+                            >
+                              {totalPlazas} <Edit2 className="w-3 h-3" />
+                            </button>
                             <span className="flex items-center gap-1 text-emerald-600">
                               {activosCargo.length}
                             </span>
@@ -434,6 +458,51 @@ export default function PlantillaPage() {
                   Retirar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editandoPlazas && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditandoPlazas(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">Editar Plazas</h2>
+              <button onClick={() => setEditandoPlazas(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Total de plazas para este cargo
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={nuevoTotalPlazas}
+                  onChange={(e) => setNuevoTotalPlazas(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                Vacantes actuales: {(nuevoTotalPlazas || 0) - empleados.filter((e) => e.cargo_id === editandoPlazas && e.estatus === "activo").length}
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100">
+              <button
+                onClick={() => setEditandoPlazas(null)}
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => actualizarPlazas(editandoPlazas)}
+                className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Guardar
+              </button>
             </div>
           </div>
         </div>
