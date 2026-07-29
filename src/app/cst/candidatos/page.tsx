@@ -338,19 +338,20 @@ export default function CandidatosPage() {
       </div>
 
       {vista === "kanban" ? (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {etapas.map((etapa) => {
-            const candidatosEtapa = getCandidatosPorEtapa(etapa.id)
-            return (
-              <div key={etapa.id} className="min-w-[280px] flex-shrink-0">
-                <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${etapa.bgColor} border ${etapa.borderColor} mb-3`}>
-                  <span className={`text-sm font-semibold ${etapa.color}`}>{etapa.label}</span>
-                  <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-medium ${etapa.color} ${etapa.bgColor}`}>
-                    {candidatosEtapa.length}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {candidatosEtapa.map((candidato) => (
+        <div className="h-[calc(100vh-280px)] overflow-hidden">
+          <div className="flex gap-4 overflow-x-auto pb-4 h-full">
+            {etapas.map((etapa) => {
+              const candidatosEtapa = getCandidatosPorEtapa(etapa.id)
+              return (
+                <div key={etapa.id} className="min-w-[280px] max-w-[320px] flex-shrink-0 flex flex-col h-full">
+                  <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${etapa.bgColor} border ${etapa.borderColor} mb-3 flex-shrink-0`}>
+                    <span className={`text-sm font-semibold ${etapa.color}`}>{etapa.label}</span>
+                    <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-medium ${etapa.color} ${etapa.bgColor}`}>
+                      {candidatosEtapa.length}
+                    </span>
+                  </div>
+                  <div className="space-y-2 overflow-y-auto flex-1 pr-1">
+                    {candidatosEtapa.map((candidato) => (
                     <div
                       key={candidato.id}
                       className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer group"
@@ -431,6 +432,7 @@ export default function CandidatosPage() {
               </div>
             )
           })}
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
