@@ -6,7 +6,7 @@ import {
   Search, Plus, MoreHorizontal, Mail, Phone, MapPin, Calendar,
   ChevronDown, Eye, Trash2, ArrowRight, Users, TrendingUp, Clock, CheckCircle2,
   XCircle, Star, GripVertical, X, FileText, Building2, DollarSign, Send, Download,
-  SlidersHorizontal, Loader2
+  SlidersHorizontal, Loader2, Award, BarChart3
 } from "lucide-react"
 
 type EtapaATS = "nuevo" | "revision" | "entrevista" | "evaluacion" | "oferta" | "contratado" | "rechazado"
@@ -55,6 +55,20 @@ export default function CandidatosPage() {
   const [showNuevo, setShowNuevo] = useState(false)
   const [showFiltros, setShowFiltros] = useState(false)
   const [nuevoForm, setNuevoForm] = useState({ nombre: "", email: "", telefono: "", ubicacion: "", fuente: "LinkedIn", salario_esperado: "", notas: "" })
+  const [testResultados, setTestResultados] = useState<{
+    puntaje_total: number
+    puntaje_maximo: number
+    porcentaje: number
+    estado: string
+    respuestas: {
+      pregunta_texto: string
+      competencia_nombre: string
+      competencia_color: string
+      respuesta_texto: string
+      puntaje_obtenido: number
+      puntaje_max: number
+    }[]
+  } | null>(null)
 
   const candidatosFiltrados = candidatos.filter((c) => {
     const matchBusqueda = c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -135,6 +149,54 @@ export default function CandidatosPage() {
       setShowNuevo(false)
       setPuestoNuevo("")
       setNuevoForm({ nombre: "", email: "", telefono: "", ubicacion: "", fuente: "LinkedIn", salario_esperado: "", notas: "" })
+    }
+  }
+
+  const fetchTestResultados = async (candidatoId: string) => {
+    setTestResultados(null)
+    const { data: sesion } = await supabase
+      .from("cst_test_sesiones")
+      .select("id, puntaje_total, puntaje_maximo, porcentaje, estado")
+      .eq("candidato_id", candidatoId)
+      .eq("estado", "completado")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!sesion) return
+
+    const { data: respuestas } = await supabase
+      .from("cst_test_respuestas")
+      .select(`
+        puntaje_obtenido,
+        cst_competencia_preguntas:texto, competencia_id,
+        cst_competencia_respuestas:texto,
+        competencias:nombre, color
+      `)
+      .eq("sesion_id", sesion.id)
+
+    if (respuestas) {
+      const mapped = respuestas.map((r: any) => {
+        const pregunta = r.cst_competencia_preguntas as any
+        const respuesta = r.cst_competencia_respuestas as any
+        const comp = r.competencias as any
+        return {
+          pregunta_texto: pregunta?.texto || "",
+          competencia_nombre: comp?.nombre || "",
+          competencia_color: comp?.color || "#6366f1",
+          respuesta_texto: respuesta?.texto || "",
+          puntaje_obtenido: r.puntaje_obtenido,
+          puntaje_max: 10,
+        }
+      })
+
+      setTestResultados({
+        puntaje_total: sesion.puntaje_total,
+        puntaje_maximo: sesion.puntaje_maximo,
+        porcentaje: sesion.porcentaje,
+        estado: sesion.estado,
+        respuestas: mapped,
+      })
     }
   }
 
@@ -404,8 +466,8 @@ export default function CandidatosPage() {
       )}
 
       {candidatoSeleccionado && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setCandidatoSeleccionado(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setCandidatoSeleccionado(null); setTestResultados(null) }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => { e.stopPropagation(); fetchTestResultados(candidatoSeleccionado.id) }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">Detalle del Candidato</h2>
               <button onClick={() => setCandidatoSeleccionado(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
@@ -480,6 +542,75 @@ export default function CandidatosPage() {
                   ))}
                 </div>
               </div>
+
+              {testResultados && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Award className="w-4 h-4 text-emerald-600" />
+                    <p className="text-xs font-semibold text-gray-700">Resultados del Test</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm text-gray-600">Puntaje</span>
+                      <span className="text-lg font-bold text-gray-900">
+                        {testResultados.puntaje_total} / {testResultados.puntaje_maximo}
+                      </span>
+                    </div>
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-500">Porcentaje</span>
+                        <span className={`text-sm font-bold ${
+                          testResultados.porcentaje >= 80 ? "text-green-600" :
+                          testResultados.porcentaje >= 60 ? "text-amber-600" :
+                          "text-red-600"
+                        }`}>
+                          {testResultados.porcentaje}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            testResultados.porcentaje >= 80 ? "bg-green-500" :
+                            testResultados.porcentaje >= 60 ? "bg-amber-500" :
+                            "bg-red-500"
+                          }`}
+                          style={{ width: `${testResultados.porcentaje}%` }}
+                        />
+                      </div>
+                    </div>
+                    {testResultados.respuestas.length > 0 && (
+                      <details className="mt-3">
+                        <summary className="text-xs text-emerald-600 cursor-pointer hover:text-emerald-700 font-medium">
+                          Ver detalle por competencia
+                        </summary>
+                        <div className="mt-2 space-y-2">
+                          {testResultados.respuestas.map((r, idx) => (
+                            <div key={idx} className="bg-white rounded-lg p-2.5 border border-gray-200">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span
+                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white"
+                                  style={{ backgroundColor: r.competencia_color }}
+                                >
+                                  {r.competencia_nombre}
+                                </span>
+                                <span className={`ml-auto text-xs font-bold ${
+                                  r.puntaje_obtenido >= 8 ? "text-green-600" :
+                                  r.puntaje_obtenido >= 5 ? "text-amber-600" :
+                                  "text-red-600"
+                                }`}>
+                                  {r.puntaje_obtenido} pts
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-700 mb-1">{r.pregunta_texto}</p>
+                              <p className="text-xs text-gray-500 italic">"{r.respuesta_texto}"</p>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors">

@@ -2,13 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, ClipboardList, BarChart3, Settings, MoreVertical, X, Network, Briefcase } from "lucide-react"
+import { Users, Award, BarChart3, Settings, MoreVertical, X, Network, Briefcase } from "lucide-react"
 import { useState } from "react"
 
 const cstNav = [
   { href: "/cst/candidatos", label: "Candidatos", icon: Users },
   { href: "/cst/plantilla", label: "Plantilla", icon: Briefcase },
-  { href: "/cst/test-competencias", label: "Tests", icon: ClipboardList },
+  { href: "/cst/competencias", label: "Competencias", icon: Award },
   { href: "/cst/panel-control", label: "Panel", icon: BarChart3 },
   { href: "/cst/configuracion", label: "Config", icon: Settings },
   { href: "/cst/organigrama", label: "Organigrama", icon: Network },
