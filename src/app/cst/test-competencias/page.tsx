@@ -63,6 +63,8 @@ export default function TestCompetenciasPage() {
   const [crearForm, setCrearForm] = useState({ nombre: "", descripcion: "", tipo: "competencias", duracion_minutos: 30, calificacion_minima: 70 })
   const [asignarSeleccionados, setAsignarSeleccionados] = useState<string[]>([])
   const [asignarFechaLimite, setAsignarFechaLimite] = useState("")
+  const [enlacesGenerados, setEnlacesGenerados] = useState<string[]>([])
+  const [showEnlaces, setShowEnlaces] = useState(false)
 
   const testsFiltrados = tests.filter((t) => {
     const matchBusqueda = t.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -126,11 +128,16 @@ export default function TestCompetenciasPage() {
       candidato_id: candidatoId,
       fecha_limite: asignarFechaLimite || null,
     }))
-    const { error } = await supabase.from("cst_test_asignaciones").insert(asignaciones)
-    if (!error) {
+    const { data, error } = await supabase.from("cst_test_asignaciones").insert(asignaciones).select()
+    if (!error && data) {
+      const baseUrl = window.location.origin
+      const enlaces = data.map((a: any) => `${baseUrl}/test/${a.id}`)
+      
       setShowAsignar(false)
       setAsignarSeleccionados([])
       setAsignarFechaLimite("")
+      setEnlacesGenerados(enlaces)
+      setShowEnlaces(true)
     }
   }
 
@@ -577,6 +584,60 @@ export default function TestCompetenciasPage() {
               <button onClick={asignarTest} className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2">
                 <Send className="w-4 h-4" />
                 Asignar Test
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEnlaces && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Enlaces Generados</h3>
+              <button onClick={() => setShowEnlaces(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <p className="text-sm text-gray-600 mb-4">
+                Comparte estos enlaces con los candidatos para que realicen el test:
+              </p>
+              <div className="space-y-3">
+                {enlacesGenerados.map((enlace, index) => (
+                  <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <input
+                      type="text"
+                      readOnly
+                      value={enlace}
+                      className="flex-1 bg-transparent text-sm text-gray-900 focus:outline-none"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(enlace)
+                        alert('Enlace copiado')
+                      }}
+                      className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-end px-6 py-4 border-t border-gray-100">
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(enlacesGenerados.join('\n'))
+                  alert('Todos los enlaces copiados')
+                }}
+                className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors mr-2"
+              >
+                Copiar Todos
+              </button>
+              <button onClick={() => setShowEnlaces(false)} className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
+                Cerrar
               </button>
             </div>
           </div>

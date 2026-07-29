@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluación de Competencias - Academia Luxor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50">
+  <div id="app" class="min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 py-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <h1 class="text-xl font-bold text-slate-900">Evaluación de Competencias</h1>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input 
+              type="text" 
+              id="candidateName" 
+              placeholder="Nombre del candidato" 
+              class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            />
+            <select 
+              id="cargoSelect" 
+              class="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            >
+              <option value="">Seleccionar cargo...</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column: Questions -->
+        <div class="lg:col-span-2 space-y-6">
+          <div id="questionsContainer"></div>
+        </div>
+
+        <!-- Right Column: Stats Panel -->
+        <div class="lg:col-span-1">
+          <div class="sticky top-24 space-y-4">
+            <!-- Score Card -->
+            <div id="scoreCard" class="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 class="text-lg font-semibold text-slate-900 mb-4">Puntaje Total</h3>
+              <div class="text-center">
+                <div id="totalScore" class="text-5xl font-bold text-slate-400">0</div>
+                <div class="text-sm text-slate-500 mt-2">de 200 puntos</div>
+              </div>
+              <div id="decisionBadge" class="mt-4 px-4 py-2 rounded-full text-center font-semibold bg-slate-100 text-slate-500">
+                Sin evaluar
+              </div>
+            </div>
+
+            <!-- Radar Chart -->
+            <div class="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 class="text-lg font-semibold text-slate-900 mb-4">Perfil de Competencias</h3>
+              <canvas id="radarChart"></canvas>
+            </div>
+
+            <!-- Competency Breakdown -->
+            <div class="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 class="text-lg font-semibold text-slate-900 mb-4">Desglose por Competencia</h3>
+              <div id="competencyBreakdown" class="space-y-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========================================
+    // DATOS DE CARGOS Y COMPETENCIAS
+    // ========================================
+    const cargos = {
+      "Coordinación de Almacén": ["Liderazgo", "Gestión del Tiempo", "Trabajo en Equipo", "Pensamiento Analítico", "Orientación al Cliente", "Adaptabilidad", "Integridad", "Confidencialidad", "Resolución de Conflictos", "Resiliencia"],
+      "Gerente de Sucursal": ["Liderazgo", "Toma de Decisiones", "Comunicación", "Orientación al Cliente", "Pensamiento Analítico", "Negociación", "Ética", "Integridad", "Gestión del Tiempo", "Resiliencia"],
+      "Coordinación de Nómina": ["Pensamiento Analítico", "Confidencialidad", "Ética", "Integridad", "Gestión del Tiempo", "Comunicación", "Trabajo en Equipo", "Adaptabilidad", "Resolución de Conflictos", "Resiliencia"],
+      "Analista de Recursos Humanos": ["Comunicación", "Ética", "Integridad", "Confidencialidad", "Resolución de Conflictos", "Trabajo en Equipo", "Adaptabilidad", "Orientación al Cliente", "Pensamiento Analítico", "Resiliencia"],
+      "Ejecutivo de Ventas": ["Comunicación", "Negociación", "Orientación al Cliente", "Resiliencia", "Adaptabilidad", "Toma de Decisiones", "Trabajo en Equipo", "Ética", "Integridad", "Innovación"],
+      "Coordinador de Logística": ["Pensamiento Analítico", "Gestión del Tiempo", "Liderazgo", "Trabajo en Equipo", "Adaptabilidad", "Comunicación", "Resolución de Conflictos", "Orientación al Cliente", "Integridad", "Resiliencia"],
+      "Analista Financiero": ["Pensamiento Analítico", "Ética", "Integridad", "Confidencialidad", "Comunicación", "Toma de Decisiones", "Adaptabilidad", "Gestión del Tiempo", "Trabajo en Equipo", "Resiliencia"],
+      "Coordinador de Marketing": ["Innovación", "Comunicación", "Pensamiento Analítico", "Liderazgo", "Orientación al Cliente", "Negociación", "Trabajo en Equipo", "Adaptabilidad", "Toma de Decisiones", "Resiliencia"],
+      "Jefe de Mantenimiento": ["Liderazgo", "Gestión del Tiempo", "Resolución de Conflictos", "Trabajo en Equipo", "Adaptabilidad", "Comunicación", "Pensamiento Analítico", "Ética", "Integridad", "Resiliencia"],
+      "Analista de Sistemas": ["Pensamiento Analítico", "Innovación", "Adaptabilidad", "Comunicación", "Trabajo en Equipo", "Gestión del Tiempo", "Resolución de Conflictos", "Ética", "Integridad", "Resiliencia"],
+      "Coordinador de Calidad": ["Pensamiento Analítico", "Comunicación", "Liderazgo", "Ética", "Integridad", "Trabajo en Equipo", "Gestión del Tiempo", "Adaptabilidad", "Resolución de Conflictos", "Resiliencia"],
+      "Ejecutivo de Atención al Cliente": ["Comunicación", "Orientación al Cliente", "Resolución de Conflictos", "Resiliencia", "Adaptabilidad", "Trabajo en Equipo", "Ética", "Integridad", "Gestión del Tiempo", "Toma de Decisiones"],
+      "Coordinador de Compras": ["Negociación", "Ética", "Integridad", "Pensamiento Analítico", "Comunicación", "Toma de Decisiones", "Orientación al Cliente", "Trabajo en Equipo", "Adaptabilidad", "Resiliencia"],
+      "Analista de Marketing Digital": ["Innovación", "Pensamiento Analítico", "Comunicación", "Adaptabilidad", "Orientación al Cliente", "Trabajo en Equipo", "Gestión del Tiempo", "Ética", "Integridad", "Resiliencia"],
+      "Jefe de Seguridad": ["Liderazgo", "Ética", "Integridad", "Confidencialidad", "Toma de Decisiones", "Resolución de Conflictos", "Comunicación", "Resiliencia", "Adaptabilidad", "Gestión del Tiempo"],
+      "Coordinador de Capacitación": ["Comunicación", "Liderazgo", "Innovación", "Trabajo en Equipo", "Adaptabilidad", "Orientación al Cliente", "Pensamiento Analítico", "Ética", "Integridad", "Resiliencia"],
+      "Analista de Crédito": ["Pensamiento Analítico", "Ética", "Integridad", "Confidencialidad", "Toma de Decisiones", "Comunicación", "Orientación al Cliente", "Adaptabilidad", "Gestión del Tiempo", "Resiliencia"],
+      "Coordinador de Proyectos": ["Liderazgo", "Comunicación", "Gestión del Tiempo", "Toma de Decisiones", "Resolución de Conflictos", "Trabajo en Equipo", "Pensamiento Analítico", "Adaptabilidad", "Negociación", "Resiliencia"],
+      "Ejecutivo de Cuentas": ["Comunicación", "Negociación", "Orientación al Cliente", "Trabajo en Equipo", "Toma de Decisiones", "Adaptabilidad", "Ética", "Integridad", "Resiliencia", "Innovación"],
+      "Analista de Inventarios": ["Pensamiento Analítico", "Gestión del Tiempo", "Ética", "Integridad", "Confidencialidad", "Trabajo en Equipo", "Comunicación", "Adaptabilidad", "Orientación al Cliente", "Resiliencia"],
+      "Coordinador de TI": ["Liderazgo", "Pensamiento Analítico", "Innovación", "Comunicación", "Gestión del Tiempo", "Trabajo en Equipo", "Adaptabilidad", "Resolución de Conflictos", "Ética", "Integridad"],
+      "Ejecutivo de Logística": ["Comunicación", "Orientación al Cliente", "Gestión del Tiempo", "Pensamiento Analítico", "Trabajo en Equipo", "Adaptabilidad", "Resolución de Conflictos", "Ética", "Integridad", "Resiliencia"],
+      "Analista de Riesgos": ["Pensamiento Analítico", "Ética", "Integridad", "Confidencialidad", "Toma de Decisiones", "Comunicación", "Adaptabilidad", "Gestión del Tiempo", "Trabajo en Equipo", "Resiliencia"],
+      "Coordinador de Servicio al Cliente": ["Liderazgo", "Comunicación", "Orientación al Cliente", "Resolución de Conflictos", "Trabajo en Equipo", "Adaptabilidad", "Ética", "Integridad", "Gestión del Tiempo", "Resiliencia"],
+      "Ejecutivo de Tesorería": ["Ética", "Integridad", "Confidencialidad", "Pensamiento Analítico", "Toma de Decisiones", "Comunicación", "Gestión del Tiempo", "Trabajo en Equipo", "Adaptabilidad", "Resiliencia"],
+      "Analista de Producción": ["Pensamiento Analítico", "Gestión del Tiempo", "Trabajo en Equipo", "Comunicación", "Adaptabilidad", "Ética", "Integridad", "Orientación al Cliente", "Resolución de Conflictos", "Resiliencia"],
+      "Coordinador de Ventas": ["Liderazgo", "Comunicación", "Negociación", "Orientación al Cliente", "Toma de Decisiones", "Trabajo en Equipo", "Pensamiento Analítico", "Adaptabilidad", "Ética", "Integridad"],
+      "Ejecutivo de Reclutamiento": ["Comunicación", "Ética", "Integridad", "Confidencialidad", "Orientación al Cliente", "Trabajo en Equipo", "Adaptabilidad", "Pensamiento Analítico", "Toma de Decisiones", "Resiliencia"],
+      "Analista de Mejora Continua": ["Innovación", "Pensamiento Analítico", "Comunicación", "Gestión del Tiempo", "Trabajo en Equipo", "Adaptabilidad", "Ética", "Integridad", "Liderazgo", "Resiliencia"],
+      "Coordinador de Distribución": ["Liderazgo", "Gestión del Tiempo", "Pensamiento Analítico", "Comunicación", "Trabajo en Equipo", "Orientación al Cliente", "Adaptabilidad", "Ética", "Integridad", "Resiliencia"],
+      "Ejecutivo de Facturación": ["Ética", "Integridad", "Confidencialidad", "Gestión del Tiempo", "Comunicación", "Pensamiento Analítico", "Trabajo en Equipo", "Adaptabilidad", "Orientación al Cliente", "Resiliencia"],
+      "Analista de Investigación y Desarrollo": ["Innovación", "Pensamiento Analítico", "Comunicación", "Adaptabilidad", "Trabajo en Equipo", "Ética", "Integridad", "Gestión del Tiempo", "Toma de Decisiones", "Resiliencia"],
+      "Coordinador de Operaciones": ["Liderazgo", "Pensamiento Analítico", "Gestión del Tiempo", "Comunicación", "Trabajo en Equipo", "Toma de Decisiones", "Adaptabilidad", "Resolución de Conflictos", "Ética", "Integridad"],
+      "Ejecutivo de Compras": ["Negociación", "Ética", "Integridad", "Comunicación", "Pensamiento Analítico", "Orientación al Cliente", "Trabajo en Equipo", "Adaptabilidad", "Toma de Decisiones", "Resiliencia"],
+      "Analista de Business Intelligence": ["Pensamiento Analítico", "Innovación", "Comunicación", "Adaptabilidad", "Ética", "Integridad", "Confidencialidad", "Trabajo en Equipo", "Gestión del Tiempo", "Resiliencia"],
+      "Coordinador de Expansión": ["Liderazgo", "Negociación", "Pensamiento Analítico", "Comunicación", "Toma de Decisiones", "Orientación al Cliente", "Trabajo en Equipo", "Adaptabilidad", "Ética", "Integridad"],
+      "Ejecutivo de Contratos": ["Negociación", "Ética", "Integridad", "Confidencialidad", "Comunicación", "Pensamiento Analítico", "Toma de Decisiones", "Trabajo en Equipo", "Adaptabilidad", "Resiliencia"],
+      "Analista de Sostenibilidad": ["Innovación", "Pensamiento Analítico", "Comunicación", "Ética", "Integridad", "Trabajo en Equipo", "Adaptabilidad", "Orientación al Cliente", "Liderazgo", "Resiliencia"]
+    };
+
+    // ========================================
+    // BANCO DE PREGUNTAS
+    // ========================================
+    const bancoPreguntas = {
+      "Liderazgo": [
+        {texto: "Tu equipo está desmotivado por la carga de trabajo. ¿Qué haces?", opciones: [{texto: "Les escucho, reorganizo prioridades y celebro pequeños logros", puntos: 5}, {texto: "Les digo que se esfuercen más porque es necesario", puntos: 3}, {texto: "Ignoro el problema y sigo con mi trabajo", puntos: 1}, {texto: "Reporto a RRHH que el equipo está quejándose", puntos: 2}]},
+        {texto: "Un colaborador nuevo comete errores repetidos. ¿Cómo lo manejas?", opciones: [{texto: "Lo siento a su lado, le explico y le doy feedback constructivo", puntos: 5}, {texto: "Le asigno tareas más simples para que no afecte al equipo", puntos: 3}, {texto: "Lo reporto a RRHH para que lo evalúen", puntos: 2}, {texto: "Dejo que aprenda solo, es la mejor forma", puntos: 1}]},
+        {texto: "Debes implementar un cambio impopular en el equipo. ¿Qué haces?", opciones: [{texto: "Explico el porqué, escucho preocupaciones y acompaño el proceso", puntos: 5}, {texto: "Lo impongo porque soy el jefe y se acabó", puntos: 2}, {texto: "Lo anuncio por email para evitar confrontación", puntos: 1}, {texto: "Dejo que el equipo decida si lo implementa o no", puntos: 3}]},
+        {texto: "Dos miembros clave de tu equipo tienen un conflicto personal. ¿Intervienes?", opciones: [{texto: "Sí, los reúno, median el conflicto y busco solución conjunta", puntos: 5}, {texto: "Los separo en diferentes proyectos para que no interactúen", puntos: 3}, {texto: "Espero que lo resuelvan solos, son adultos", puntos: 2}, {texto: "Les digo que si no se portan profesionalmente, habrá consecuencias", puntos: 1}]}
+      ],
+      "Ética": [
+        {texto: "Descubres que un proveedor entregó menos mercancía de la facturada pero te ofrece un bono personal por 'no ver nada'. ¿Qué haces?", opciones: [{texto: "Reporto inmediatamente a mi superior y al proveedor por escrito", puntos: 5}, {texto: "Hablo con el proveedor para que lo corrija sin avisar a nadie", puntos: 3}, {texto: "Acepto el bono, total nadie se va a enterar", puntos: 1}, {texto: "Ignoro el tema, no es mi problema", puntos: 1}]},
+        {texto: "Un compañero te pide que firmes un documento sin revisarlo porque 'es solo trámite'. ¿Qué haces?", opciones: [{texto: "Lo reviso completo antes de firmar, es mi responsabilidad", puntos: 5}, {texto: "Lo firmo, confío en mi compañero", puntos: 2}, {texto: "Le digo que no sin explicarle por qué", puntos: 3}, {texto: "Lo firmo pero le digo que la próxima vez me avise antes", puntos: 1}]},
+        {texto: "Encuentras una forma de evadir impuestos legalmente pero cuestionable éticamente. ¿Qué haces?", opciones: [{texto: "Consulto con el área legal y contable antes de tomar cualquier decisión", puntos: 5}, {texto: "Lo implemento, si es legal está bien", puntos: 2}, {texto: "Lo descarto completamente, no vale la pena el riesgo", puntos: 3}, {texto: "Lo comparto con mi equipo para ver qué opinan", puntos: 1}]},
+        {texto: "Tu jefe te pide que manipules un reporte para que se vea mejor. ¿Qué haces?", opciones: [{texto: "Me niego respetuosamente y explico por qué es incorrecto", puntos: 5}, {texto: "Lo hago, es mi jefe y tengo que obedecer", puntos: 1}, {texto: "Lo hago pero me siento incómodo", puntos: 2}, {texto: "Lo hablo con RRHH de forma anónima", puntos: 3}]}
+      ],
+      "Integridad": [
+        {texto: "Cometes un error que afecta un proyecto importante. Nadie lo sabe aún. ¿Qué haces?", opciones: [{texto: "Lo reconozco inmediatamente, asumo responsabilidad y propongo solución", puntos: 5}, {texto: "Espero a ver si alguien más lo descubre", puntos: 2}, {texto: "Trato de arreglarlo en secreto antes de que alguien lo note", puntos: 3}, {texto: "Culpo a otro factor o persona para no quedar mal", puntos: 1}]},
+        {texto: "Un cliente te ofrece un regalo costoso por 'agilizar' su proceso. ¿Qué haces?", opciones: [{texto: "Lo rechazo amablemente y explico la política de la empresa", puntos: 5}, {texto: "Lo acepto, total es solo un regalo", puntos: 1}, {texto: "Lo acepto y lo reporto a mi jefe", puntos: 3}, {texto: "Lo dono a caridad para no quedármelo", puntos: 2}]},
+        {texto: "Descubres que un compañero está usando recursos de la empresa para su negocio personal. ¿Qué haces?", opciones: [{texto: "Hablo con él primero, si no cambia, lo reporto", puntos: 5}, {texto: "Lo reporto inmediatamente a RRHH", puntos: 3}, {texto: "No hago nada, no es mi problema", puntos: 1}, {texto: "Le pido que me incluya en su negocio", puntos: 1}]},
+        {texto: "Te ofrecen ascender si 'cierras los ojos' ante ciertas prácticas cuestionables. ¿Qué haces?", opciones: [{texto: "Rechazo el ascenso, mis valores no son negociables", puntos: 5}, {texto: "Acepto, es una oportunidad de carrera", puntos: 1}, {texto: "Lo consulto con mi familia antes de decidir", puntos: 2}, {texto: "Acepto pero trato de cambiar las cosas desde adentro", puntos: 3}]}
+      ],
+      "Comunicación": [
+        {texto: "Debes explicar un tema técnico complejo a personas no técnicas. ¿Cómo lo haces?", opciones: [{texto: "Uso analogías simples, ejemplos visuales y verifico que entiendan", puntos: 5}, {texto: "Les doy la información técnica completa, ellos deben entender", puntos: 2}, {texto: "Les digo que consulten con el área técnica", puntos: 1}, {texto: "Les envío un documento extenso para que lo lean", puntos: 3}]},
+        {texto: "Un cliente está furioso y te grita por teléfono. ¿Cómo respondes?", opciones: [{texto: "Mantengo la calma, escucho activamente y busco solución", puntos: 5}, {texto: "Le grito de vuelta, no voy a dejar que me falten al respeto", puntos: 1}, {texto: "Cuelgo el teléfono, es inaceptable", puntos: 2}, {texto: "Lo transfiero a otro departamento para no lidiar con él", puntos: 3}]},
+        {texto: "Descubres que tu equipo no entendió las instrucciones que diste. ¿Qué haces?", opciones: [{texto: "Asumo responsabilidad, reformulo y verifico comprensión", puntos: 5}, {texto: "Les digo que no prestaron atención", puntos: 1}, {texto: "Les envío las instrucciones por escrito para que las lean", puntos: 3}, {texto: "Dejo que figuren como están, ya aprenderán", puntos: 2}]},
+        {texto: "Debes dar feedback negativo a un colaborador. ¿Cómo lo haces?", opciones: [{texto: "En privado, específico, enfocado en comportamiento y solución", puntos: 5}, {texto: "En público para que todos aprendan", puntos: 1}, {texto: "Por email para evitar confrontación", puntos: 2}, {texto: "Espero a la evaluación anual para decírselo", puntos: 3}]}
+      ],
+      "Trabajo en Equipo": [
+        {texto: "Un compañero no cumple su parte del proyecto y te afecta. ¿Qué haces?", opciones: [{texto: "Hablo con él para entender qué pasa y buscar solución conjunta", puntos: 5}, {texto: "Lo hago yo para no afectar el proyecto", puntos: 3}, {texto: "Lo reporto al jefe inmediatamente", puntos: 2}, {texto: "Dejo que se note su falta de responsabilidad", puntos: 1}]},
+        {texto: "El equipo debe tomar una decisión y hay dos posturas divididas. ¿Qué haces?", opciones: [{texto: "Facilito diálogo, busco puntos en común y consenso", puntos: 5}, {texto: "Voto por la opción que me parece mejor", puntos: 3}, {texto: "Dejo que el jefe decida", puntos: 2}, {texto: "Me quedo con mi postura y discuto hasta ganar", puntos: 1}]},
+        {texto: "Un compañero nuevo se integra a tu equipo. ¿Cómo lo recibes?", opciones: [{texto: "Lo presento al equipo, le explico dinámicas y me ofrezco a ayudarlo", puntos: 5}, {texto: "Lo dejo que se adapte solo, es lo mejor", puntos: 2}, {texto: "Le asigno un buddy para que no me quite tiempo", puntos: 3}, {texto: "Le doy la información básica y espero que pregunte si necesita algo", puntos: 1}]},
+        {texto: "El equipo logra un éxito importante. ¿Cómo celebras?", opciones: [{texto: "Reconozco el esfuerzo de todos públicamente", puntos: 5}, {texto: "Celebro mi contribución individual", puntos: 1}, {texto: "Organizo una celebración para todo el equipo", puntos: 4}, {texto: "No hago nada especial, es parte del trabajo", puntos: 2}]}
+      ],
+      "Adaptabilidad": [
+        {texto: "Cambian completamente los requisitos del proyecto a mitad de camino. ¿Qué haces?", opciones: [{texto: "Reevalúo el plan, priorizo y me adapto a los nuevos requisitos", puntos: 5}, {texto: "Me quejo porque se pierde el trabajo hecho", puntos: 2}, {texto: "Insisto en mantener el plan original", puntos: 1}, {texto: "Hago ambos planes para cubrir todas las posibilidades", puntos: 3}]},
+        {texto: "Te asignan a un área completamente nueva para ti. ¿Cómo reaccionas?", opciones: [{texto: "Acepto el reto, investigo y pido ayuda si la necesito", puntos: 5}, {texto: "Digo que no estoy calificado para eso", puntos: 2}, {texto: "Acepto pero me siento ansioso todo el tiempo", puntos: 3}, {texto: "Rechazo el cambio, me gusta mi área actual", puntos: 1}]},
+        {texto: "La empresa implementa un nuevo sistema que complica tu trabajo diario. ¿Qué haces?", opciones: [{texto: "Aprendo el sistema, doy feedback constructivo sobre mejoras", puntos: 5}, {texto: "Sigo usando el sistema anterior en paralelo", puntos: 2}, {texto: "Me quejo con mis compañeros sobre el cambio", puntos: 1}, {texto: "Uso el sistema solo cuando es obligatorio", puntos: 3}]},
+        {texto: "Tu horario de trabajo cambia por necesidades del negocio. ¿Cómo lo manejas?", opciones: [{texto: "Me ajusto, reorganizo mi vida personal para adaptarme", puntos: 5}, {texto: "Acepto pero busco otro trabajo con horario fijo", puntos: 3}, {texto: "Me niego, tengo compromisos personales inamovibles", puntos: 1}, {texto: "Acepto pero llego tarde o me voy temprano cuando puedo", puntos: 2}]}
+      ],
+      "Toma de Decisiones": [
+        {texto: "Debes tomar una decisión urgente sin tener toda la información. ¿Qué haces?", opciones: [{texto: "Analizo lo que tengo, consulto rápido y decido con lo disponible", puntos: 5}, {texto: "Espero a tener toda la información antes de decidir", puntos: 2}, {texto: "Delego la decisión a alguien con más información", puntos: 3}, {texto: "Tomo la decisión más conservadora para no arriesgar", puntos: 1}]},
+        {texto: "Dos opciones son igualmente válidas pero contradictorias. ¿Cómo eliges?", opciones: [{texto: "Evalúo impacto a largo plazo, consulto stakeholders y decido", puntos: 5}, {texto: "Elijo la opción más popular entre el equipo", puntos: 3}, {texto: "Lanzo una moneda, es igual de bueno", puntos: 1}, {texto: "No decido y dejo que el tiempo resuelva", puntos: 2}]},
+        {texto: "Tu decisión fue incorrecta y causó problemas. ¿Qué haces?", opciones: [{texto: "Asumo responsabilidad, corrijo y aprendo para la próxima", puntos: 5}, {texto: "Culpo a la información que me dieron", puntos: 1}, {texto: "Trato de minimizar el daño sin admitir el error", puntos: 2}, {texto: "Analizo qué salió mal pero no lo comunico", puntos: 3}]},
+        {texto: "Debes decidir entre dos candidatos igualmente calificados. ¿En qué te basas?", opciones: [{texto: "Evalúo competencias blandas, cultura y potencial de crecimiento", puntos: 5}, {texto: "Elijo al que tiene más experiencia", puntos: 3}, {texto: "Dejo que el equipo vote", puntos: 2}, {texto: "Elijo al que me cae mejor", puntos: 1}]}
+      ],
+      "Resolución de Conflictos": [
+        {texto: "Dos departamentos tienen objetivos contradictorios. ¿Cómo lo manejas?", opciones: [{texto: "Reúno a ambos, busco objetivos comunes y acuerdo mutuamente beneficioso", puntos: 5}, {texto: "Favorezco al departamento que tiene razón", puntos: 2}, {texto: "Dejo que lo resuelvan los jefes de cada área", puntos: 3}, {texto: "Ignoro el conflicto, no es mi responsabilidad", puntos: 1}]},
+        {texto: "Un cliente exige algo que va contra la política de la empresa. ¿Qué haces?", opciones: [{texto: "Explico la política, ofrezco alternativas y busco solución creativa", puntos: 5}, {texto: "Hago una excepción para no perder al cliente", puntos: 2}, {texto: "Me niego rotundamente, la política es la política", puntos: 3}, {texto: "Lo transfiero a otro departamento para que lidie con él", puntos: 1}]},
+        {texto: "Dos miembros de tu equipo tienen un desacuerdo personal que afecta el trabajo. ¿Qué haces?", opciones: [{texto: "Los reúno, median el conflicto y establezco acuerdos de trabajo", puntos: 5}, {texto: "Los separo en diferentes proyectos", puntos: 3}, {texto: "Les digo que son profesionales y deben resolverlo", puntos: 2}, {texto: "Espero que se les pase solo", puntos: 1}]},
+        {texto: "Recibes críticas injustas de un superior. ¿Cómo respondes?", opciones: [{texto: "Escucho, pido ejemplos específicos y busco clarificación", puntos: 5}, {texto: "Me defiendo inmediatamente y explico mi versión", puntos: 3}, {texto: "Me callo pero me siento resentido", puntos: 2}, {texto: "Me quejo con otros compañeros sobre la injusticia", puntos: 1}]}
+      ],
+      "Orientación al Cliente": [
+        {texto: "Un cliente tiene una queja válida pero la solución es costosa. ¿Qué haces?", opciones: [{texto: "Busco la mejor solución posible dentro de lo razonable y la comunico", puntos: 5}, {texto: "Le ofrezco una solución mínima para cumplir", puntos: 2}, {texto: "Le explico que es muy costoso y no podemos hacerlo", puntos: 3}, {texto: "Lo transfiero a otro departamento", puntos: 1}]},
+        {texto: "Un cliente pide información que no está en tu área. ¿Qué haces?", opciones: [{texto: "Lo conecto con la persona correcta y hago seguimiento", puntos: 5}, {texto: "Le digo que no es mi área y le doy el contacto", puntos: 3}, {texto: "Le digo que no sé y que busque en otro lado", puntos: 1}, {texto: "Trato de ayudarlo aunque no sea mi área", puntos: 4}]},
+        {texto: "Un cliente está insatisfecho con el servicio. ¿Cómo reaccionas?", opciones: [{texto: "Escucho, me disculpo, investigo y ofrezco solución concreta", puntos: 5}, {texto: "Le explico que hicimos todo correctamente", puntos: 2}, {texto: "Le ofrezco un descuento para que se calle", puntos: 3}, {texto: "Le digo que si no le gusta, puede irse a la competencia", puntos: 1}]},
+        {texto: "Debes negar una solicitud de un cliente importante. ¿Cómo lo haces?", opciones: [{texto: "Explico el porqué, ofrezco alternativas y mantengo la relación", puntos: 5}, {texto: "Le digo que no sin explicación", puntos: 2}, {texto: "Hago una excepción para no perderlo", puntos: 1}, {texto: "Lo postergo para no darle la mala noticia", puntos: 3}]}
+      ],
+      "Pensamiento Analítico": [
+        {texto: "Los datos muestran una tendencia preocupante pero no hay causa clara. ¿Qué haces?", opciones: [{texto: "Analizo variables, busco patrones y formulo hipótesis para probar", puntos: 5}, {texto: "Reporto la tendencia y espero que alguien más la analice", puntos: 2}, {texto: "Asumo la causa más obvia y actúo sobre ella", puntos: 3}, {texto: "Ignoro la tendencia, probablemente es temporal", puntos: 1}]},
+        {texto: "Debes presentar un problema complejo a la dirección. ¿Cómo lo haces?", opciones: [{texto: "Descompongo el problema, presento datos, causas y opciones de solución", puntos: 5}, {texto: "Presento el problema general y dejo que ellos lo analicen", puntos: 2}, {texto: "Presento solo la solución que yo prefiero", puntos: 3}, {texto: "Espero a que alguien más lo note y lo presente", puntos: 1}]},
+        {texto: "Recibes información contradictoria de dos fuentes confiables. ¿Qué haces?", opciones: [{texto: "Verifico fuentes, cruzo datos y busco evidencia adicional", puntos: 5}, {texto: "Creo en la fuente que me parece más confiable", puntos: 3}, {texto: "Presento ambas versiones y dejo que otros decidan", puntos: 2}, {texto: "Ignoro ambas y busco una tercera opinión", puntos: 1}]},
+        {texto: "Un proceso no funciona como debería. ¿Cómo lo mejoras?", opciones: [{texto: "Mapeo el proceso, identifico cuellos de botella y propongo mejoras", puntos: 5}, {texto: "Cambio lo que claramente no funciona", puntos: 3}, {texto: "Dejo que el equipo lo mejore solo", puntos: 2}, {texto: "Sigo como está, si funciona más o menos, no lo toco", puntos: 1}]}
+      ],
+      "Gestión del Tiempo": [
+        {texto: "Tienes múltiples tareas urgentes y no puedes hacerlas todas. ¿Qué haces?", opciones: [{texto: "Priorizo por impacto y deadline, comunico y renegocio plazos", puntos: 5}, {texto: "Hago todas un poco, aunque ninguna quede perfecta", puntos: 3}, {texto: "Hago la más fácil primero para sentir progreso", puntos: 2}, {texto: "Espero a ver cuáles son realmente urgentes", puntos: 1}]},
+        {texto: "Una reunión se extiende más de lo planeado y afecta tu agenda. ¿Qué haces?", opciones: [{texto: "Propongo continuar por email o reagendar lo no esencial", puntos: 5}, {texto: "Me quedo aunque se afecte mi agenda, es importante", puntos: 3}, {texto: "Me voy a la mitad para cumplir con mis otras tareas", puntos: 2}, {texto: "Me quejo internamente pero me quedo", puntos: 1}]},
+        {texto: "Te interrumpen constantemente y no avanzas en tus tareas. ¿Qué haces?", opciones: [{texto: "Bloqueo tiempo en agenda, comunico disponibilidad y agrupo interrupciones", puntos: 5}, {texto: "Atiendo las interrupciones y trabajo extra después", puntos: 2}, {texto: "Ignoro las interrupciones y sigo trabajando", puntos: 3}, {texto: "Me quejo pero no hago nada para cambiarlo", puntos: 1}]},
+        {texto: "Un proyecto toma más tiempo del esperado. ¿Cómo lo manejas?", opciones: [{texto: "Reevalúo el plan, priorizo lo esencial y comunico el nuevo timeline", puntos: 5}, {texto: "Trabajo horas extra para cumplir el plazo original", puntos: 3}, {texto: "Entrego lo que tenga en la fecha original", puntos: 2}, {texto: "Pido más tiempo sin explicar por qué", puntos: 1}]}
+      ],
+      "Confidencialidad": [
+        {texto: "Un compañero te pregunta sobre el salario de otro colega. ¿Qué haces?", opciones: [{texto: "Me niego amablemente, es información confidencial", puntos: 5}, {texto: "Le doy un rango aproximado, no es exacto", puntos: 2}, {texto: "Le digo que pregunte directamente al colega", puntos: 3}, {texto: "Se lo digo, total todos hablan de eso", puntos: 1}]},
+        {texto: "Descubres información sensible sobre un despido próximo. ¿Qué haces?", opciones: [{texto: "Mantengo total confidencialidad hasta que se anuncie oficialmente", puntos: 5}, {texto: "Se lo digo a la persona involucrada para que se prepare", puntos: 1}, {texto: "Se lo cuento solo a mi compañero más cercano", puntos: 2}, {texto: "Dejo pistas para que la persona lo sospeche", puntos: 3}]},
+        {texto: "Un cliente te pide información confidencial de otro cliente. ¿Qué haces?", opciones: [{texto: "Me niego, es información confidencial de otro cliente", puntos: 5}, {texto: "Le doy información general sin datos específicos", puntos: 3}, {texto: "Se la doy, es un cliente importante", puntos: 1}, {texto: "Le digo que consulte con el otro cliente directamente", puntos: 2}]},
+        {texto: "Encuentras documentos confidenciales en la impresora. ¿Qué haces?", opciones: [{texto: "Los recojo, los destruyo y busco al dueño para avisarle", puntos: 5}, {texto: "Los dejo ahí, alguien los recogerá", puntos: 2}, {texto: "Los leo por curiosidad y los dejo", puntos: 1}, {texto: "Los recojo y los guardo en mi escritorio", puntos: 3}]}
+      ],
+      "Negociación": [
+        {texto: "Un proveedor quiere subir precios 20%. ¿Cómo negocias?", opciones: [{texto: "Analizo el mercado, presento datos y busco acuerdo mutuamente beneficioso", puntos: 5}, {texto: "Acepto si es el único proveedor disponible", puntos: 2}, {texto: "Me niego rotundamente y busco otro proveedor", puntos: 3}, {texto: "Acepto pero pido mejores condiciones de pago", puntos: 4}]},
+        {texto: "Dos áreas quieren el mismo presupuesto limitado. ¿Cómo decides?", opciones: [{texto: "Evalúo ROI de cada proyecto y busco alternativas de financiamiento", puntos: 5}, {texto: "Divido el presupuesto 50/50 para ser justo", puntos: 3}, {texto: "Doy todo al área que me parece más importante", puntos: 2}, {texto: "Dejo que los jefes de área lo resuelvan", puntos: 1}]},
+        {texto: "Un cliente quiere un descuento grande que no puedes dar. ¿Qué haces?", opciones: [{texto: "Ofrezco valor agregado, mejores condiciones o alternativas", puntos: 5}, {texto: "Doy el descuento aunque afecte mi margen", puntos: 2}, {texto: "Me niego, el precio es el precio", puntos: 3}, {texto: "Lo transfiero a otro vendedor para que lidie con él", puntos: 1}]},
+        {texto: "Tu equipo quiere trabajar remoto pero la empresa prefiere presencial. ¿Cómo negocias?", opciones: [{texto: "Presento datos, propongo modelo híbrido y mido resultados", puntos: 5}, {texto: "Acepto lo que diga la empresa sin negociar", puntos: 2}, {texto: "Insisto en remoto aunque la empresa se niegue", puntos: 3}, {texto: "Dejo que cada quien decida individualmente", puntos: 1}]}
+      ],
+      "Innovación": [
+        {texto: "Un proceso funciona pero es muy lento. ¿Qué haces?", opciones: [{texto: "Analizo el proceso, investigo mejores prácticas y propongo mejoras", puntos: 5}, {texto: "Lo dejo como está, si funciona no lo toco", puntos: 2}, {texto: "Cambio lo obvio pero mantengo la estructura", puntos: 3}, {texto: "Espero a que alguien más lo mejore", puntos: 1}]},
+        {texto: "Tienes una idea innovadora pero arriesgada. ¿Qué haces?", opciones: [{texto: "La presento con datos, análisis de riesgo y plan de contingencia", puntos: 5}, {texto: "La implemento sin avisar para ver si funciona", puntos: 2}, {texto: "La guardo, probablemente la rechacen", puntos: 1}, {texto: "La comparto con compañeros para ver qué opinan", puntos: 3}]},
+        {texto: "La competencia implementa algo nuevo y exitoso. ¿Qué haces?", opciones: [{texto: "Analizo su enfoque, adapto a nuestro contexto y mejoro la idea", puntos: 5}, {texto: "Copio exactamente lo que hicieron", puntos: 2}, {texto: "Ignoro, nosotros tenemos nuestra forma de hacer las cosas", puntos: 1}, {texto: "Espero a ver si funciona a largo plazo antes de copiar", puntos: 3}]},
+        {texto: "Tu idea es rechazada por la dirección. ¿Qué haces?", opciones: [{texto: "Pido feedback, mejoro la propuesta y la presento de nuevo", puntos: 5}, {texto: "Me frustro y dejo de proponer ideas", puntos: 1}, {texto: "La implemento por mi cuenta para demostrar que funciona", puntos: 2}, {texto: "Acepto la decisión y paso a otra cosa", puntos: 3}]}
+      ],
+      "Resiliencia": [
+        {texto: "Fallas en un proyecto importante frente a todos. ¿Cómo reaccionas?", opciones: [{texto: "Asumo responsabilidad, aprendo y me enfoco en la próxima oportunidad", puntos: 5}, {texto: "Me siento avergonzado y evito a la gente por un tiempo", puntos: 2}, {texto: "Culpo a factores externos para no sentirme mal", puntos: 1}, {texto: "Me quejo de que no me dieron las herramientas necesarias", puntos: 3}]},
+        {texto: "Recibes múltiples rechazos en tu área de trabajo. ¿Qué haces?", opciones: [{texto: "Analizo feedback, ajusto enfoque y sigo intentando", puntos: 5}, {texto: "Me desanimo y considero cambiar de área", puntos: 2}, {texto: "Insisto con el mismo enfoque, eventualmente funcionará", puntos: 3}, {texto: "Dejo de intentarlo, claramente no es para mí", puntos: 1}]},
+        {texto: "Cambian las reglas del juego en medio de un proyecto importante. ¿Qué haces?", opciones: [{texto: "Me adapto rápidamente, reevalúo y ajusto el plan", puntos: 5}, {texto: "Me frustro pero sigo adelante", puntos: 3}, {texto: "Me quejo del cambio y sigo con el plan original", puntos: 1}, {texto: "Abandono el proyecto, ya no tiene sentido", puntos: 2}]},
+        {texto: "Tienes un día terrible en el trabajo. ¿Cómo lo manejas?", opciones: [{texto: "Desconecto al salir, descanso y mañana será otro día", puntos: 5}, {texto: "Me llevo el estrés a casa y no puedo dormir", puntos: 2}, {texto: "Salgo a desahogarme con amigos o familia", puntos: 3}, {texto: "Sigo trabajando aunque me sienta mal", puntos: 1}]}
+      ]
+    };
+
+    // ========================================
+    // VARIABLES GLOBALES
+    // ========================================
+    let respuestas = {};
+    let competenciasActuales = [];
+    let preguntasAleatorias = {};
+    let radarChart = null;
+
+    // ========================================
+    // FUNCIONES PRINCIPALES
+    // ========================================
+    function init() {
+      populateCargoSelect();
+      setupEventListeners();
+      initRadarChart();
+    }
+
+    function populateCargoSelect() {
+      const select = document.getElementById('cargoSelect');
+      Object.keys(cargos).sort().forEach(cargo => {
+        const option = document.createElement('option');
+        option.value = cargo;
+        option.textContent = cargo;
+        select.appendChild(option);
+      });
+    }
+
+    function setupEventListeners() {
+      document.getElementById('cargoSelect').addEventListener('change', handleCargoChange);
+      document.getElementById('candidateName').addEventListener('input', validateForm);
+    }
+
+    function handleCargoChange(e) {
+      const cargo = e.target.value;
+      if (!cargo) return;
+
+      competenciasActuales = cargos[cargo];
+      respuestas = {};
+      preguntasAleatorias = {};
+
+      // Aleatorizar preguntas por competencia
+      competenciasActuales.forEach(comp => {
+        const preguntas = [...bancoPreguntas[comp]];
+        preguntasAleatorias[comp] = shuffleArray(preguntas);
+      });
+
+      renderQuestions();
+      updateScore();
+    }
+
+    function shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    function renderQuestions() {
+      const container = document.getElementById('questionsContainer');
+      container.innerHTML = '';
+
+      competenciasActuales.forEach((competencia, compIndex) => {
+        const section = document.createElement('div');
+        section.className = 'bg-white rounded-xl border border-slate-200 p-6 mb-6';
+        
+        const header = document.createElement('div');
+        header.className = 'flex items-center gap-3 mb-4';
+        header.innerHTML = `
+          <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+            <span class="text-emerald-600 font-bold">${compIndex + 1}</span>
+          </div>
+          <h2 class="text-lg font-semibold text-slate-900">${competencia}</h2>
+        `;
+        section.appendChild(header);
+
+        const questionsDiv = document.createElement('div');
+        questionsDiv.className = 'space-y-6';
+
+        preguntasAleatorias[competencia].forEach((pregunta, qIndex) => {
+          const questionBlock = document.createElement('div');
+          questionBlock.className = 'border-l-4 border-slate-200 pl-4';
+          
+          const questionText = document.createElement('p');
+          questionText.className = 'text-slate-700 font-medium mb-3';
+          questionText.textContent = `${qIndex + 1}. ${pregunta.texto}`;
+          questionBlock.appendChild(questionText);
+
+          const optionsDiv = document.createElement('div');
+          optionsDiv.className = 'space-y-2';
+
+          pregunta.opciones.forEach((opcion, oIndex) => {
+            const optionLabel = document.createElement('label');
+            optionLabel.className = 'flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors';
+            
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = `q_${competencia}_${qIndex}`;
+            radio.value = oIndex;
+            radio.className = 'mt-1';
+            radio.addEventListener('change', () => handleAnswer(competencia, qIndex, oIndex, opcion.puntos));
+            
+            const text = document.createElement('span');
+            text.className = 'text-slate-600';
+            text.textContent = opcion.texto;
+            
+            optionLabel.appendChild(radio);
+            optionLabel.appendChild(text);
+            optionsDiv.appendChild(optionLabel);
+          });
+
+          questionBlock.appendChild(optionsDiv);
+          questionsDiv.appendChild(questionBlock);
+        });
+
+        section.appendChild(questionsDiv);
+        container.appendChild(section);
+      });
+    }
+
+    function handleAnswer(competencia, questionIndex, optionIndex, puntos) {
+      if (!respuestas[competencia]) {
+        respuestas[competencia] = {};
+      }
+      respuestas[competencia][questionIndex] = puntos;
+      updateScore();
+    }
+
+    function updateScore() {
+      let totalScore = 0;
+      let competenciaScores = {};
+      let competenciasRespondidas = 0;
+
+      competenciasActuales.forEach(comp => {
+        if (respuestas[comp]) {
+          const puntos = Object.values(respuestas[comp]);
+          const promedio = puntos.reduce((a, b) => a + b, 0) / puntos.length;
+          competenciaScores[comp] = promedio;
+          totalScore += promedio * 4; // Factor de 4 preguntas
+          competenciasRespondidas++;
+        }
+      });
+
+      // Actualizar puntaje total
+      document.getElementById('totalScore').textContent = Math.round(totalScore);
+      document.getElementById('totalScore').className = 'text-5xl font-bold ' + getScoreColor(totalScore);
+
+      // Actualizar badge de decisión
+      updateDecisionBadge(totalScore, competenciaScores);
+
+      // Actualizar radar chart
+      updateRadarChart(competenciaScores);
+
+      // Actualizar desglose
+      updateCompetencyBreakdown(competenciaScores);
+    }
+
+    function getScoreColor(score) {
+      if (score >= 170) return 'text-emerald-600';
+      if (score >= 140) return 'text-blue-600';
+      return 'text-slate-400';
+    }
+
+    function updateDecisionBadge(totalScore, competenciaScores) {
+      const badge = document.getElementById('decisionBadge');
+      
+      // Verificar red flags
+      const redFlags = ['Ética', 'Integridad', 'Confidencialidad'];
+      const hasRedFlag = redFlags.some(comp => 
+        competenciaScores[comp] && competenciaScores[comp] <= 2
+      );
+
+      if (hasRedFlag) {
+        badge.textContent = 'DESCARTADO POR VALORES';
+        badge.className = 'mt-4 px-4 py-2 rounded-full text-center font-semibold bg-red-100 text-red-700';
+      } else if (totalScore >= 170) {
+        badge.textContent = 'SOBRESALIENTE';
+        badge.className = 'mt-4 px-4 py-2 rounded-full text-center font-semibold bg-emerald-100 text-emerald-700';
+      } else if (totalScore >= 140) {
+        badge.textContent = 'APTO';
+        badge.className = 'mt-4 px-4 py-2 rounded-full text-center font-semibold bg-blue-100 text-blue-700';
+      } else if (totalScore > 0) {
+        badge.textContent = 'NO APTO';
+        badge.className = 'mt-4 px-4 py-2 rounded-full text-center font-semibold bg-slate-100 text-slate-600';
+      } else {
+        badge.textContent = 'Sin evaluar';
+        badge.className = 'mt-4 px-4 py-2 rounded-full text-center font-semibold bg-slate-100 text-slate-500';
+      }
+    }
+
+    function initRadarChart() {
+      const ctx = document.getElementById('radarChart').getContext('2d');
+      radarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Nivel de Competencia',
+            data: [],
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            borderColor: 'rgb(16, 185, 129)',
+            pointBackgroundColor: 'rgb(16, 185, 129)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgb(16, 185, 129)'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 5,
+              ticks: {
+                stepSize: 1,
+                font: {
+                  family: 'Plus Jakarta Sans'
+                }
+              },
+              pointLabels: {
+                font: {
+                  family: 'Plus Jakarta Sans',
+                  size: 11
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    function updateRadarChart(competenciaScores) {
+      if (!radarChart) return;
+
+      const labels = Object.keys(competenciaScores);
+      const data = Object.values(competenciaScores);
+
+      radarChart.data.labels = labels;
+      radarChart.data.datasets[0].data = data;
+      radarChart.update();
+    }
+
+    function updateCompetencyBreakdown(competenciaScores) {
+      const container = document.getElementById('competencyBreakdown');
+      container.innerHTML = '';
+
+      competenciasActuales.forEach(comp => {
+        const score = competenciaScores[comp];
+        if (score === undefined) return;
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between';
+
+        const label = document.createElement('span');
+        label.className = 'text-sm text-slate-600';
+        label.textContent = comp;
+
+        const value = document.createElement('span');
+        value.className = 'text-sm font-semibold ' + getCompetencyColor(score);
+        value.textContent = score.toFixed(1);
+
+        row.appendChild(label);
+        row.appendChild(value);
+        container.appendChild(row);
+      });
+    }
+
+    function getCompetencyColor(score) {
+      if (score >= 4) return 'text-emerald-600';
+      if (score >= 3) return 'text-blue-600';
+      if (score >= 2) return 'text-amber-600';
+      return 'text-red-600';
+    }
+
+    function validateForm() {
+      // Validación simple
+      const name = document.getElementById('candidateName').value.trim();
+      const cargo = document.getElementById('cargoSelect').value;
+      return name && cargo;
+    }
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
