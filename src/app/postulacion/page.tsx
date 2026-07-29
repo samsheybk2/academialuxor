@@ -74,10 +74,12 @@ export default function PostulacionPage() {
   const cargarTestCompetencias = async (candidatoId: string, cargoId: string) => {
     setCargandoTest(true)
 
-    const { data: cargoComps } = await supabase
+    const { data: cargoComps, error: ccError } = await supabase
       .from("cargo_competencias")
       .select("competencia_id, competencias(id, nombre, color)")
       .eq("cargo_id", cargoId)
+
+    console.log("cargo_competencias:", { cargoComps, ccError, cargoId })
 
     if (!cargoComps || cargoComps.length === 0) {
       setEnviado(true)
@@ -88,16 +90,26 @@ export default function PostulacionPage() {
     const preguntas: PreguntaTest[] = []
     for (const cc of cargoComps) {
       const comp = cc.competencias as any
-      const { data: pRegs } = await supabase
+
+      const { data: pRegs, error: pError } = await supabase
         .from("cst_competencia_preguntas")
-        .select("id, competencia_id, texto, orden, cst_competencia_respuestas(id, texto, puntaje, orden)")
+        .select("id, competencia_id, texto, orden")
         .eq("competencia_id", comp.id)
         .order("orden")
 
+      console.log("preguntas:", { pRegs, pError, compId: comp.id })
+
       if (pRegs) {
         for (const p of pRegs) {
-          const respuestas = (p as any).cst_competencia_respuestas || []
-          if (respuestas.length > 0) {
+          const { data: respData, error: rError } = await supabase
+            .from("cst_competencia_respuestas")
+            .select("id, texto, puntaje, orden")
+            .eq("pregunta_id", p.id)
+            .order("orden")
+
+          console.log("respuestas:", { respData, rError, preguntaId: p.id })
+
+          if (respData && respData.length > 0) {
             preguntas.push({
               id: p.id,
               competencia_id: p.competencia_id,
@@ -105,17 +117,19 @@ export default function PostulacionPage() {
               orden: p.orden,
               competencia_nombre: comp.nombre,
               competencia_color: comp.color || "#6366f1",
-              respuestas: respuestas.map((r: any) => ({
+              respuestas: respData.map((r: any) => ({
                 id: r.id,
                 texto: r.texto,
                 puntaje: r.puntaje,
                 orden: r.orden,
-              })).sort((a: any, b: any) => a.orden - b.orden),
+              })),
             })
           }
         }
       }
     }
+
+    console.log("total preguntas:", preguntas.length)
 
     if (preguntas.length === 0) {
       setEnviado(true)

@@ -81,10 +81,14 @@ CREATE POLICY "cst_comp_respuestas_delete" ON cst_competencia_respuestas FOR DEL
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND rol IN ('decano', 'developer'))
 );
 
-CREATE POLICY "cst_test_sesiones_insert_anon" ON cst_test_sesiones FOR INSERT WITH CHECK (auth.role() = 'anon');
-CREATE POLICY "cst_test_sesiones_update_anon" ON cst_test_sesiones FOR UPDATE USING (auth.role() = 'anon');
+DROP POLICY IF EXISTS "cst_test_sesiones_insert_anon" ON cst_test_sesiones;
+CREATE POLICY "cst_test_sesiones_insert_anon" ON cst_test_sesiones FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "cst_test_respuestas_insert_anon" ON cst_test_respuestas FOR INSERT WITH CHECK (auth.role() = 'anon');
+DROP POLICY IF EXISTS "cst_test_sesiones_update_anon" ON cst_test_sesiones;
+CREATE POLICY "cst_test_sesiones_update_anon" ON cst_test_sesiones FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "cst_test_respuestas_insert_anon" ON cst_test_respuestas;
+CREATE POLICY "cst_test_respuestas_insert_anon" ON cst_test_respuestas FOR INSERT WITH CHECK (true);
 
 CREATE INDEX idx_cst_comp_preguntas_competencia ON cst_competencia_preguntas(competencia_id);
 CREATE INDEX idx_cst_comp_respuestas_pregunta ON cst_competencia_respuestas(pregunta_id);

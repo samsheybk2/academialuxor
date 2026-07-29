@@ -167,38 +167,54 @@ export default function CandidatosPage() {
 
     const { data: respuestas } = await supabase
       .from("cst_test_respuestas")
-      .select(`
-        puntaje_obtenido,
-        cst_competencia_preguntas:texto, competencia_id,
-        cst_competencia_respuestas:texto,
-        competencias:nombre, color
-      `)
+      .select("pregunta_id, respuesta_id, puntaje_obtenido")
       .eq("sesion_id", sesion.id)
 
-    if (respuestas) {
-      const mapped = respuestas.map((r: any) => {
-        const pregunta = r.cst_competencia_preguntas as any
-        const respuesta = r.cst_competencia_respuestas as any
-        const comp = r.competencias as any
-        return {
-          pregunta_texto: pregunta?.texto || "",
+    if (!respuestas || respuestas.length === 0) return
+
+    const mapped = []
+    for (const r of respuestas) {
+      const { data: pregunta } = await supabase
+        .from("cst_competencia_preguntas")
+        .select("texto, competencia_id, competencias(nombre, color)")
+        .eq("id", r.pregunta_id)
+        .single()
+
+      const { data: respuestaTexto } = await supabase
+        .from("cst_competencia_respuestas")
+        .select("texto")
+        .eq("id", r.respuesta_id)
+        .single()
+
+      if (pregunta) {
+        const comp = pregunta.competencias as any
+        mapped.push({
+          pregunta_texto: pregunta.texto || "",
           competencia_nombre: comp?.nombre || "",
           competencia_color: comp?.color || "#6366f1",
-          respuesta_texto: respuesta?.texto || "",
+          respuesta_texto: respuestaTexto?.texto || "",
           puntaje_obtenido: r.puntaje_obtenido,
           puntaje_max: 10,
-        }
-      })
-
-      setTestResultados({
-        puntaje_total: sesion.puntaje_total,
-        puntaje_maximo: sesion.puntaje_maximo,
-        porcentaje: sesion.porcentaje,
-        estado: sesion.estado,
-        respuestas: mapped,
-      })
+        })
+      }
     }
+
+    setTestResultados({
+      puntaje_total: sesion.puntaje_total,
+      puntaje_maximo: sesion.puntaje_maximo,
+      porcentaje: sesion.porcentaje,
+      estado: sesion.estado,
+      respuestas: mapped,
+    })
   }
+
+  useEffect(() => {
+    if (candidatoSeleccionado) {
+      fetchTestResultados(candidatoSeleccionado.id)
+    } else {
+      setTestResultados(null)
+    }
+  }, [candidatoSeleccionado])
 
   if (loading) {
     return (
@@ -467,7 +483,7 @@ export default function CandidatosPage() {
 
       {candidatoSeleccionado && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setCandidatoSeleccionado(null); setTestResultados(null) }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => { e.stopPropagation(); fetchTestResultados(candidatoSeleccionado.id) }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">Detalle del Candidato</h2>
               <button onClick={() => setCandidatoSeleccionado(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
