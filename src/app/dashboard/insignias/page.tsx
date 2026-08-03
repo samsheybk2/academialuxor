@@ -256,7 +256,7 @@ export default function ExperienciaPage() {
   const [formC, setFormC] = useState(EMPTY_CATEGORIA)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
-  useEffect(() => { if (user?.rol === "developer") { fetchAll(); fetchCargos(); fetchCursos() } }, [user])
+  useEffect(() => { if (user?.rol === "developer" || user?.rol === "decano") { fetchAll(); fetchCargos(); fetchCursos() } }, [user])
 
   useEffect(() => {
     if (tab === "insignias" && !descripcionManual) {
@@ -397,7 +397,7 @@ export default function ExperienciaPage() {
     if (e) setError(e.message); setDeleteId(null); setSaving(false); fetchAll()
   }
 
-  if (user?.rol !== "developer") return <div className="flex items-center justify-center py-20"><p className="text-gray-500">Solo el developer puede gestionar experiencia.</p></div>
+  if (user?.rol !== "developer" && user?.rol !== "decano") return <div className="flex items-center justify-center py-20"><p className="text-gray-500">Solo administradores pueden gestionar experiencia.</p></div>
 
   return (
     <div className="w-full space-y-4">

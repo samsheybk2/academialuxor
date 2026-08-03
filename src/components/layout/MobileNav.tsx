@@ -15,6 +15,7 @@ const navByRole = {
     { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
     { href: "/dashboard/cursos", label: "Cursos", icon: BookOpen },
     { href: "/dashboard/organigrama", label: "Organigrama", icon: Network },
+    { href: "/dashboard/insignias", label: "Experiencia", icon: Star },
     { href: "/dashboard/video-conferencias", label: "Video", icon: Video },
   ],
   developer: [
